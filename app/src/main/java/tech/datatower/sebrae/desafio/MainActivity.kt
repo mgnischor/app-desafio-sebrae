@@ -4,7 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import tech.datatower.sebrae.desafio.ui.home.HomeScreen
+import androidx.navigation.compose.rememberNavController
+import tech.datatower.sebrae.desafio.navigation.AppNavHost
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
 class MainActivity : ComponentActivity() {
@@ -13,7 +14,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             AppDesafioSEBRAETheme {
-                HomeScreen()
+                val navController = rememberNavController()
+                AppNavHost(navController = navController)
             }
         }
     }
