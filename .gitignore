@@ -1,15 +1,152 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+# Apple macOS
+__MACOSX/
+._*
+.apdisk
+.AppleDB
+.AppleDesktop
+.AppleDouble
+.com.apple.timemachine.donotpresent
+.DocumentRevisions-V100
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.fseventsd
+.LSOverride
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+Network Trash Folder
+Temporary Items
+
+# Microsoft Windows
+[Dd]esktop.ini
+*.cab
+*.lnk
+*.msi
+*.msix
+*.msm
+*.msp
+*.stackdump
+$RECYCLE.BIN/
+ehthumbs_vista.db
+ehthumbs.db
+Thumbs.db
+Thumbs.db:encryptable
+
+# Apple Xcode
+xcuserdata/
+
+# Microsoft Visual Studio Code
+.history/
+.vscode/
+*.vsix
+
+# JetBrains
+.idea_modules/
+.idea/.cache/.Apifox_Helper
+.idea/*.iml
+.idea/**/aws.xml
+.idea/**/contentModel.xml
+.idea/**/copilot.data.migration.*.xml
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/dataSources/
+.idea/**/dbnavigator.xml
+.idea/**/dictionaries
+.idea/**/dynamic.xml
+.idea/**/gradle.xml
+.idea/**/libraries
+.idea/**/mongoSettings.xml
+.idea/**/shelf
+.idea/**/sqlDataSources.xml
+.idea/**/tasks.xml
+.idea/**/uiDesigner.xml
+.idea/**/usage.statistics.xml
+.idea/**/workspace.xml
+.idea/ApifoxUploaderProjectSetting.xml
+.idea/artifacts
+.idea/caches/build_file_checksums.ser
+.idea/compiler.xml
+.idea/httpRequests
+.idea/jarRepositories.xml
+.idea/modules
+.idea/modules.xml
+.idea/replstate.xml
+.idea/sonarlint.xml
+.idea/sonarlint/
+*.iml
+*.ipr
+*.iws
+atlassian-ide-plugin.xml
+cmake-build-*/
+com_crashlytics_export_strings.xml
+crashlytics-build.properties
+crashlytics.properties
+fabric.properties
+http-client.private.env.json
+out/
+
+# Sublime Text
+*.stTheme.cache
+*.sublime-project
+*.sublime-workspace
+*.tmlanguage.cache
+*.tmPreferences.cache
+bh_unicode_properties.cache
+GitHub.sublime-settings
+oscrypto-ca-bundle.crt
+Package Control.ca-bundle
+Package Control.ca-certs/
+Package Control.ca-list
+Package Control.cache/
+Package Control.last-run
+Package Control.merged-ca-bundle
+Package Control.system-ca-bundle
+Package Control.user-ca-bundle
+sftp-config-alt*.json
+sftp-config.json
+
+# Java/Kotlin
+.kotlin/
+.mtj.tmp/
+*.class
+*.ctxt
+*.ear
+*.jar
+*.log
+*.nar
+*.rar
+*.tar.gz
+*.war
+*.zip
+hs_err_pid*
+replay_pid*
+
+# Gradle
+.classpath
+.gradle
+.gradletasknamecache
+.project
+**/build/
+gradle-app.setting
+!**/src/**/build/
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# Android
+.cxx/
+.externalNativeBuild/
+.idea/
+*.aab
+*.apk
+*.hprof
+*.iml
+*.jks
+*.keystore
+*.log
+captures/
+deploymentTargetDropDown.xml
+google-services.json
 local.properties
+misc.xml
+output-metadata.json
+render.experimental.xml
