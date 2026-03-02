@@ -61,38 +61,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.model.MenuModule
+import tech.datatower.sebrae.desafio.data.model.QuickStat
+import tech.datatower.sebrae.desafio.data.model.RecentActivity
+import tech.datatower.sebrae.desafio.navigation.AppRoutes
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 import java.util.Calendar
 
-// ── Data models ───────────────────────────────────────────────────────────────
-
-data class MenuModule(
-    val titleRes: Int,
-    val descriptionRes: Int,
-    val icon: ImageVector,
-    val badgeCount: Int = 0,
-)
-
-data class QuickStat(
-    val labelRes: Int,
-    val value: String,
-    val progress: Float? = null,   // 0f..1f  — null = não mostrar barra
-    val trendLabel: String? = null,
-)
-
-data class RecentActivity(
-    val title: String,
-    val subtitle: String,
-    val icon: ImageVector,
-    val timeLabel: String,
-)
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -101,7 +82,7 @@ data class RecentActivity(
 fun HomeScreen(
     userName: String = "Maria",
     notificationCount: Int = 3,
-    onModuleClick: (Int) -> Unit = {},
+    onModuleClick: (String) -> Unit = {},
     onNotificationsClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
 ) {
@@ -430,7 +411,7 @@ private fun StatCard(stat: QuickStat, modifier: Modifier = Modifier) {
 @Composable
 private fun ModulesGrid(
     modules: List<MenuModule>,
-    onModuleClick: (Int) -> Unit,
+    onModuleClick: (String) -> Unit,
 ) {
     // Fixed-height grid (avoids nested scroll issues inside LazyColumn)
     val rows = (modules.size + 1) / 2
@@ -449,7 +430,7 @@ private fun ModulesGrid(
         userScrollEnabled = false,
     ) {
         items(modules) { module ->
-            ModuleCard(module = module, onClick = { onModuleClick(module.titleRes) })
+            ModuleCard(module = module, onClick = { onModuleClick(module.route) })
         }
     }
 }
@@ -573,14 +554,14 @@ private fun RecentActivityItem(item: RecentActivity, modifier: Modifier = Modifi
 @Composable
 private fun rememberModules(): List<MenuModule> = remember {
     listOf(
-        MenuModule(R.string.menu_students,     R.string.menu_students_desc,     Icons.Outlined.Person),
-        MenuModule(R.string.menu_courses,      R.string.menu_courses_desc,      Icons.AutoMirrored.Outlined.MenuBook, badgeCount = 2),
-        MenuModule(R.string.menu_classes,      R.string.menu_classes_desc,      Icons.Outlined.Group),
-        MenuModule(R.string.menu_teachers,     R.string.menu_teachers_desc,     Icons.Outlined.School),
-        MenuModule(R.string.menu_reports,      R.string.menu_reports_desc,      Icons.Outlined.InsertChart),
-        MenuModule(R.string.menu_certificates, R.string.menu_certificates_desc, Icons.Outlined.Bookmarks),
-        MenuModule(R.string.menu_calendar,     R.string.menu_calendar_desc,     Icons.Outlined.DateRange),
-        MenuModule(R.string.menu_settings,     R.string.menu_settings_desc,     Icons.Outlined.Settings),
+        MenuModule(R.string.menu_students,     R.string.menu_students_desc,     Icons.Outlined.Person,                    AppRoutes.STUDENTS),
+        MenuModule(R.string.menu_courses,      R.string.menu_courses_desc,      Icons.AutoMirrored.Outlined.MenuBook,     AppRoutes.COURSES,      badgeCount = 2),
+        MenuModule(R.string.menu_classes,      R.string.menu_classes_desc,      Icons.Outlined.Group,                    AppRoutes.CLASSES),
+        MenuModule(R.string.menu_teachers,     R.string.menu_teachers_desc,     Icons.Outlined.School,                   AppRoutes.TEACHERS),
+        MenuModule(R.string.menu_reports,      R.string.menu_reports_desc,      Icons.Outlined.InsertChart,              AppRoutes.REPORTS),
+        MenuModule(R.string.menu_certificates, R.string.menu_certificates_desc, Icons.Outlined.Bookmarks,                AppRoutes.CERTIFICATES),
+        MenuModule(R.string.menu_calendar,     R.string.menu_calendar_desc,     Icons.Outlined.DateRange,                AppRoutes.CALENDAR),
+        MenuModule(R.string.menu_settings,     R.string.menu_settings_desc,     Icons.Outlined.Settings,                 AppRoutes.SETTINGS),
     )
 }
 
