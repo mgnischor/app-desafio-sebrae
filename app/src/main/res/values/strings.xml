@@ -1,3 +1,46 @@
 <resources>
     <string name="app_name">App Desafio SEBRAE</string>
+
+    <!-- Home / Menu -->
+    <string name="home_greeting_morning">Bom dia</string>
+    <string name="home_greeting_afternoon">Boa tarde</string>
+    <string name="home_greeting_evening">Boa noite</string>
+    <string name="home_subtitle">Gestão Educacional</string>
+    <string name="home_search_placeholder">Buscar cursos, alunos ou turmas…</string>
+
+    <!-- Quick Stats -->
+    <string name="stat_students">Alunos</string>
+    <string name="stat_courses">Cursos</string>
+    <string name="stat_classes">Turmas</string>
+    <string name="stat_completion">Conclusão</string>
+
+    <!-- Menu Items -->
+    <string name="menu_students">Alunos</string>
+    <string name="menu_students_desc">Cadastro e acompanhamento</string>
+    <string name="menu_courses">Cursos</string>
+    <string name="menu_courses_desc">Conteúdos e trilhas</string>
+    <string name="menu_classes">Turmas</string>
+    <string name="menu_classes_desc">Organização de grupos</string>
+    <string name="menu_teachers">Instrutores</string>
+    <string name="menu_teachers_desc">Equipe docente</string>
+    <string name="menu_reports">Relatórios</string>
+    <string name="menu_reports_desc">Desempenho e métricas</string>
+    <string name="menu_certificates">Certificados</string>
+    <string name="menu_certificates_desc">Emissão e histórico</string>
+    <string name="menu_calendar">Calendário</string>
+    <string name="menu_calendar_desc">Agenda de aulas e eventos</string>
+    <string name="menu_settings">Configurações</string>
+    <string name="menu_settings_desc">Preferências do sistema</string>
+
+    <!-- Section titles -->
+    <string name="section_overview">Visão Geral</string>
+    <string name="section_modules">Módulos</string>
+    <string name="section_recent">Atividade Recente</string>
+
+    <!-- Recent activity -->
+    <string name="recent_empty">Nenhuma atividade recente.</string>
+    <string name="see_all">Ver tudo</string>
+
+    <!-- Notifications -->
+    <string name="notifications">Notificações</string>
 </resources>
