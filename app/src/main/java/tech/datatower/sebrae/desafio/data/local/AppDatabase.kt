@@ -167,14 +167,11 @@ data class AppSettingsEntity(
 )
 
 class AppConverters {
-  @TypeConverter
-  fun localDateToString(value: LocalDate?): String? = value?.toString()
+  @TypeConverter fun localDateToString(value: LocalDate?): String? = value?.toString()
 
-  @TypeConverter
-  fun stringToLocalDate(value: String?): LocalDate? = value?.let(LocalDate::parse)
+  @TypeConverter fun stringToLocalDate(value: String?): LocalDate? = value?.let(LocalDate::parse)
 
-  @TypeConverter
-  fun accommodationsToString(items: List<String>): String = items.joinToString("||")
+  @TypeConverter fun accommodationsToString(items: List<String>): String = items.joinToString("||")
 
   @TypeConverter
   fun stringToAccommodations(value: String): List<String> =
@@ -183,14 +180,12 @@ class AppConverters {
 
 @Dao
 interface AppDao {
-  @Query("SELECT COUNT(*) FROM courses")
-  suspend fun countCourses(): Int
+  @Query("SELECT COUNT(*) FROM courses") suspend fun countCourses(): Int
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertCourses(items: List<CourseEntity>)
 
-  @Query("SELECT * FROM courses ORDER BY title")
-  fun observeCourses(): Flow<List<CourseEntity>>
+  @Query("SELECT * FROM courses ORDER BY title") fun observeCourses(): Flow<List<CourseEntity>>
 
   @Query("SELECT * FROM courses WHERE id = :courseId LIMIT 1")
   fun observeCourseById(courseId: Int): Flow<CourseEntity?>
@@ -213,8 +208,7 @@ interface AppDao {
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertTeachers(items: List<TeacherEntity>)
 
-  @Query("SELECT * FROM teachers ORDER BY name")
-  fun observeTeachers(): Flow<List<TeacherEntity>>
+  @Query("SELECT * FROM teachers ORDER BY name") fun observeTeachers(): Flow<List<TeacherEntity>>
 
   @Query("SELECT * FROM teachers WHERE id = :teacherId LIMIT 1")
   fun observeTeacherById(teacherId: Int): Flow<TeacherEntity?>
@@ -222,8 +216,7 @@ interface AppDao {
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertStudents(items: List<StudentEntity>)
 
-  @Query("SELECT * FROM students ORDER BY name")
-  fun observeStudents(): Flow<List<StudentEntity>>
+  @Query("SELECT * FROM students ORDER BY name") fun observeStudents(): Flow<List<StudentEntity>>
 
   @Query("SELECT * FROM students WHERE id = :studentId LIMIT 1")
   fun observeStudentById(studentId: Int): Flow<StudentEntity?>
@@ -291,42 +284,40 @@ interface AppDao {
   @Query("SELECT COUNT(*) FROM courses WHERE isPublished = 1")
   fun observePublishedCoursesCount(): Flow<Int>
 
-  @Query("SELECT COUNT(*) FROM school_classes")
-  fun observeClassesCount(): Flow<Int>
+  @Query("SELECT COUNT(*) FROM school_classes") fun observeClassesCount(): Flow<Int>
 
-  @Query("SELECT COUNT(*) FROM certificates")
-  fun observeCertificatesCount(): Flow<Int>
+  @Query("SELECT COUNT(*) FROM certificates") fun observeCertificatesCount(): Flow<Int>
 
-  @Query("SELECT AVG(completionRate) FROM courses")
-  fun observeAverageCompletionRate(): Flow<Float?>
+  @Query("SELECT AVG(completionRate) FROM courses") fun observeAverageCompletionRate(): Flow<Float?>
 
-  @Query("SELECT AVG(rating) FROM teachers")
-  fun observeAverageTeacherRating(): Flow<Float?>
+  @Query("SELECT AVG(rating) FROM teachers") fun observeAverageTeacherRating(): Flow<Float?>
 
   @Query("SELECT * FROM settings WHERE id = 1 LIMIT 1")
   fun observeSettings(): Flow<AppSettingsEntity?>
 
-  @Upsert
-  suspend fun upsertSettings(settings: AppSettingsEntity)
+  @Query("SELECT * FROM settings WHERE id = 1 LIMIT 1")
+  suspend fun observeSettingsOnce(): AppSettingsEntity?
+
+  @Upsert suspend fun upsertSettings(settings: AppSettingsEntity)
 }
 
 @Database(
     entities =
         [
-          CourseEntity::class,
-          SchoolClassEntity::class,
-          TeacherEntity::class,
-          StudentEntity::class,
-          CertificateEntity::class,
-          CalendarEventEntity::class,
-          RecentActivityEntity::class,
-          MonthlyEnrollmentEntity::class,
-          AttendanceEntity::class,
-          BehaviorEntity::class,
-          PedagogicalNeedEntity::class,
-          PsychologicalNeedEntity::class,
-          ParentFollowUpEntity::class,
-          AppSettingsEntity::class,
+            CourseEntity::class,
+            SchoolClassEntity::class,
+            TeacherEntity::class,
+            StudentEntity::class,
+            CertificateEntity::class,
+            CalendarEventEntity::class,
+            RecentActivityEntity::class,
+            MonthlyEnrollmentEntity::class,
+            AttendanceEntity::class,
+            BehaviorEntity::class,
+            PedagogicalNeedEntity::class,
+            PsychologicalNeedEntity::class,
+            ParentFollowUpEntity::class,
+            AppSettingsEntity::class,
         ],
     version = 1,
     exportSchema = false,
@@ -335,4 +326,3 @@ interface AppDao {
 abstract class AppDatabase : RoomDatabase() {
   abstract fun appDao(): AppDao
 }
-
