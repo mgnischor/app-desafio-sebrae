@@ -1,5 +1,6 @@
 package tech.datatower.sebrae.desafio.ui.classes
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,21 +40,36 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tech.datatower.sebrae.desafio.data.model.ClassStatus
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
+import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.EmptyState
 import tech.datatower.sebrae.desafio.ui.components.ListSearchHeader
 import tech.datatower.sebrae.desafio.ui.components.StatusChip
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
+/**
+ * Tela de acompanhamento de turmas.
+ *
+ * Suporta filtro por nome da turma, curso e instrutor, além de exibir status e ocupação de vagas
+ * por turma.
+ *
+ * @param onBack Ação de navegação para retornar à tela anterior.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ClassesScreen(onBack: () -> Unit = {}) {
-  val allClasses = remember { sampleClasses() }
+fun ClassesScreen(
+    onBack: () -> Unit = {},
+    onOpenClassDetail: (Int) -> Unit = {},
+) {
+  val context = LocalContext.current
+  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val allClasses by repository.observeClasses().collectAsState(initial = emptyList())
   var query by rememberSaveable { mutableStateOf("") }
   val listState = rememberLazyListState()
 
@@ -109,7 +126,7 @@ fun ClassesScreen(onBack: () -> Unit = {}) {
               key = { it.id },
               contentType = { "class" },
           ) { sc ->
-            ClassCard(sc)
+            ClassCard(sc = sc, onClick = { onOpenClassDetail(sc.id) })
           }
         }
       }
@@ -117,14 +134,22 @@ fun ClassesScreen(onBack: () -> Unit = {}) {
   }
 }
 
+/**
+ * Cartão com os dados principais de uma turma.
+ *
+ * @param sc Turma a ser representada no item da lista.
+ */
 @Composable
-private fun ClassCard(sc: SchoolClass) {
+private fun ClassCard(
+    sc: SchoolClass,
+    onClick: () -> Unit,
+) {
   ElevatedCard(
-      modifier = Modifier.fillMaxWidth(),
+      modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
       shape = RoundedCornerShape(16.dp),
       colors =
           CardDefaults.elevatedCardColors(
-              containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+              containerColor = MaterialTheme.colorScheme.surfaceContainerLow
           ),
       elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
   ) {
@@ -210,6 +235,11 @@ private fun ClassCard(sc: SchoolClass) {
   }
 }
 
+/**
+ * Produz dados estáticos para composição e pré-visualização da tela.
+ *
+ * @return Lista fixa de turmas em diferentes estágios e ocupações.
+ */
 private fun sampleClasses() =
     listOf(
         SchoolClass(
@@ -264,6 +294,7 @@ private fun sampleClasses() =
         ),
     )
 
+/** Pré-visualização da tela de turmas para validação visual. */
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun ClassesPreview() {
