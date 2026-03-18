@@ -17,6 +17,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+/**
+ * Exibe uma mensagem de estado vazio para listas sem conteúdo.
+ *
+ * @param icon Ícone ilustrativo para reforçar o contexto da ausência de dados.
+ * @param message Mensagem principal exibida ao usuário.
+ * @param modifier Modificador opcional para customização de layout externo.
+ */
 @Composable
 fun EmptyState(
     icon: ImageVector,
