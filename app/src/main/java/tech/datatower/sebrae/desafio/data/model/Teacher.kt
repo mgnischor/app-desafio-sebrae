@@ -1,5 +1,8 @@
 package tech.datatower.sebrae.desafio.data.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class Teacher(
     val id: Int,
     val name: String,
@@ -7,6 +10,5 @@ data class Teacher(
     val specialty: String,
     val activeCourses: Int,
     val totalStudents: Int,
-    val rating: Float,          // 0f..5f
+    val rating: Float, // 0f..5f
 )
-
