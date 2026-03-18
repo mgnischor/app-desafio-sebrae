@@ -1,5 +1,6 @@
 package tech.datatower.sebrae.desafio.ui.teachers
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,20 +40,35 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.util.Locale
 import tech.datatower.sebrae.desafio.data.model.Teacher
+import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.EmptyState
 import tech.datatower.sebrae.desafio.ui.components.ListSearchHeader
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
+/**
+ * Tela de gestão de instrutores.
+ *
+ * Oferece busca por nome e especialidade, exibindo os registros em lista com componentes
+ * performáticos do Compose.
+ *
+ * @param onBack Ação de retorno para a tela anterior.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TeachersScreen(onBack: () -> Unit = {}) {
-  val allTeachers = remember { sampleTeachers() }
+fun TeachersScreen(
+    onBack: () -> Unit = {},
+    onOpenTeacherDetail: (Int) -> Unit = {},
+) {
+  val context = LocalContext.current
+  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val allTeachers by repository.observeTeachers().collectAsState(initial = emptyList())
   var query by rememberSaveable { mutableStateOf("") }
   val listState = rememberLazyListState()
 
@@ -109,7 +126,7 @@ fun TeachersScreen(onBack: () -> Unit = {}) {
               key = { it.id },
               contentType = { "teacher" },
           ) { teacher ->
-            TeacherCard(teacher)
+            TeacherCard(teacher = teacher, onClick = { onOpenTeacherDetail(teacher.id) })
           }
         }
       }
@@ -117,14 +134,22 @@ fun TeachersScreen(onBack: () -> Unit = {}) {
   }
 }
 
+/**
+ * Cartão com informações principais de um instrutor.
+ *
+ * @param teacher Instrutor a ser apresentado no item de lista.
+ */
 @Composable
-private fun TeacherCard(teacher: Teacher) {
+private fun TeacherCard(
+    teacher: Teacher,
+    onClick: () -> Unit,
+) {
   ElevatedCard(
-      modifier = Modifier.fillMaxWidth(),
+      modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
       shape = RoundedCornerShape(16.dp),
       colors =
           CardDefaults.elevatedCardColors(
-              containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+              containerColor = MaterialTheme.colorScheme.surfaceContainerLow
           ),
       elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
   ) {
@@ -198,48 +223,7 @@ private fun TeacherCard(teacher: Teacher) {
   }
 }
 
-private fun sampleTeachers() =
-    listOf(
-        Teacher(
-            1,
-            "Profa. Helena Martins",
-            "helena@inst.com",
-            "Marketing & Comunicação",
-            3,
-            320,
-            4.9f,
-        ),
-        Teacher(2, "Prof. André Nunes", "andre@inst.com", "Tecnologia da Informação", 2, 210, 4.7f),
-        Teacher(
-            3,
-            "Profa. Carla Faria",
-            "carla@inst.com",
-            "Empreendedorismo & Gestão",
-            2,
-            180,
-            4.8f,
-        ),
-        Teacher(
-            4,
-            "Prof. Roberto Lima",
-            "roberto@inst.com",
-            "Finanças & Contabilidade",
-            1,
-            95,
-            4.5f,
-        ),
-        Teacher(
-            5,
-            "Profa. Bianca Torres",
-            "bianca@inst.com",
-            "Design & Criatividade",
-            1,
-            140,
-            4.6f,
-        ),
-        Teacher(6, "Prof. Sérgio Campos", "sergio@inst.com", "Vendas & Negociação", 1, 260, 4.4f),
-    )
-
+/** Pré-visualização da tela de instrutores para desenvolvimento. */
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun TeachersPreview() {
