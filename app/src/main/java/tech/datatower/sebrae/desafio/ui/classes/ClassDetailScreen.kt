@@ -61,12 +61,25 @@ fun ClassDetailScreen(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.elevatedCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
         ) {
-          Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(schoolClass!!.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+          Column(
+              modifier = Modifier.padding(16.dp),
+              verticalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            Text(
+                schoolClass!!.name,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
             Text("Curso: ${schoolClass!!.course}", style = MaterialTheme.typography.bodyMedium)
-            Text("Instrutor: ${schoolClass!!.instructor}", style = MaterialTheme.typography.bodySmall)
+            Text(
+                "Instrutor: ${schoolClass!!.instructor}",
+                style = MaterialTheme.typography.bodySmall,
+            )
             Text("Horário: ${schoolClass!!.schedule}", style = MaterialTheme.typography.bodySmall)
-            Text("Ocupação: ${schoolClass!!.studentsCount}/${schoolClass!!.maxCapacity}", style = MaterialTheme.typography.bodySmall)
+            Text(
+                "Ocupação: ${schoolClass!!.studentsCount}/${schoolClass!!.maxCapacity}",
+                style = MaterialTheme.typography.bodySmall,
+            )
             Text("Status: ${schoolClass!!.status}", style = MaterialTheme.typography.bodySmall)
           }
         }
@@ -87,12 +100,23 @@ fun ClassDetailScreen(
           ElevatedCard(
               modifier = Modifier.fillMaxWidth(),
               shape = RoundedCornerShape(14.dp),
-              colors = CardDefaults.elevatedCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
+              colors =
+                  CardDefaults.elevatedCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
           ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-              Text(student.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+              Text(
+                  student.name,
+                  style = MaterialTheme.typography.titleSmall,
+                  fontWeight = FontWeight.Medium,
+              )
               Text(student.email, style = MaterialTheme.typography.bodySmall)
-              Text("Progresso: ${(student.progress * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
+              Text(
+                  "Progresso: ${(student.progress * 100).toInt()}%",
+                  style = MaterialTheme.typography.bodySmall,
+              )
               Text("Status: ${student.status}", style = MaterialTheme.typography.bodySmall)
             }
           }
@@ -101,4 +125,3 @@ fun ClassDetailScreen(
     }
   }
 }
-
