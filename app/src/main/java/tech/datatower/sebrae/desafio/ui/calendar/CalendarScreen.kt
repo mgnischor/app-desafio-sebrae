@@ -29,24 +29,35 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tech.datatower.sebrae.desafio.data.model.CalendarEvent
 import tech.datatower.sebrae.desafio.data.model.EventType
+import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.StatusChip
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
+/**
+ * Tela de calendário com eventos acadêmicos e institucionais agrupados por data.
+ *
+ * @param onBack Ação executada ao retornar para a tela anterior.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(onBack: () -> Unit = {}) {
-  val events = remember { sampleEvents() }
+  val context = LocalContext.current
+  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val events by repository.observeCalendarEvents().collectAsState(initial = emptyList())
   val listState = rememberLazyListState()
   val grouped = remember(events) { events.groupBy { it.date }.entries.toList() }
 
@@ -93,6 +104,11 @@ fun CalendarScreen(onBack: () -> Unit = {}) {
   }
 }
 
+/**
+ * Cartão visual para exibição de um evento de calendário.
+ *
+ * @param event Evento renderizado no item da lista.
+ */
 @Composable
 private fun EventCard(event: CalendarEvent) {
   ElevatedCard(
@@ -175,100 +191,7 @@ private fun EventCard(event: CalendarEvent) {
   }
 }
 
-private fun sampleEvents() =
-    listOf(
-        CalendarEvent(
-            1,
-            "Empreendedorismo — Turma C2",
-            "Empreendedorismo",
-            "Sex, 07 Mar",
-            "08h–12h",
-            "Sala 3",
-            EventType.Class,
-        ),
-        CalendarEvent(
-            2,
-            "Reunião de Coordenação",
-            "Institucional",
-            "Sex, 07 Mar",
-            "14h–15h",
-            "Sala de Reuniões",
-            EventType.Meeting,
-        ),
-        CalendarEvent(
-            3,
-            "Marketing Digital — Turma A1",
-            "Marketing Digital",
-            "Seg, 10 Mar",
-            "18h–20h",
-            "Sala 1",
-            EventType.Class,
-        ),
-        CalendarEvent(
-            4,
-            "Excel para Negócios — Turma B3",
-            "Excel p/ Negócios",
-            "Ter, 11 Mar",
-            "19h–21h",
-            "Lab de TI",
-            EventType.Class,
-        ),
-        CalendarEvent(
-            5,
-            "Avaliação Final — Turma A1",
-            "Marketing Digital",
-            "Qua, 12 Mar",
-            "18h–20h",
-            "Sala 1",
-            EventType.Exam,
-        ),
-        CalendarEvent(
-            6,
-            "Design Gráfico — Turma D1",
-            "Design Gráfico",
-            "Qua, 12 Mar",
-            "14h–16h",
-            "Sala 2",
-            EventType.Class,
-        ),
-        CalendarEvent(
-            7,
-            "Excel para Negócios — Turma B3",
-            "Excel p/ Negócios",
-            "Qui, 13 Mar",
-            "19h–21h",
-            "Lab de TI",
-            EventType.Class,
-        ),
-        CalendarEvent(
-            8,
-            "Conselho de Instrutores",
-            "Institucional",
-            "Qui, 13 Mar",
-            "10h–11h30",
-            "Auditório",
-            EventType.Meeting,
-        ),
-        CalendarEvent(
-            9,
-            "Finanças Pessoais — Turma A2",
-            "Finanças Pessoais",
-            "Sáb, 15 Mar",
-            "09h–12h",
-            "Sala 4",
-            EventType.Class,
-        ),
-        CalendarEvent(
-            10,
-            "Cerimônia de Formatura",
-            "Institucional",
-            "Sáb, 15 Mar",
-            "16h–19h",
-            "Auditório",
-            EventType.Other,
-        ),
-    )
-
+/** Pré-visualização da tela de calendário para desenvolvimento. */
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun CalendarPreview() {
