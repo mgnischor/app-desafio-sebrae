@@ -1,17 +1,17 @@
 package tech.datatower.sebrae.desafio
 
+import org.junit.Assert.*
 import org.junit.Test
 
-import org.junit.Assert.*
-
 /**
- * Example local unit test, which will execute on the development machine (host).
+ * Exemplo de teste unitário local executado na máquina de desenvolvimento.
  *
- * See [testing documentation](http://d.android.com/tools/testing).
+ * Serve como verificação mínima da configuração de testes do módulo.
  */
 class ExampleUnitTest {
-    @Test
-    fun addition_isCorrect() {
-        assertEquals(4, 2 + 2)
-    }
+  /** Garante que a soma de referência permanece correta. */
+  @Test
+  fun addition_isCorrect() {
+    assertEquals(4, 2 + 2)
+  }
 }
