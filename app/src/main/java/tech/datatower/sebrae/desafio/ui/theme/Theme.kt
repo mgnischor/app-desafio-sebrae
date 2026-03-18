@@ -89,6 +89,14 @@ private val DarkColorScheme =
         surfaceContainerHighest = Neutral22,
     )
 
+/**
+ * Aplica o tema visual global da aplicação com suporte a modo claro e escuro.
+ *
+ * Também ajusta a aparência da status bar para manter contraste adequado em cada tema.
+ *
+ * @param darkTheme Indica se o esquema escuro deve ser utilizado.
+ * @param content Conteúdo Compose que será renderizado com o tema aplicado.
+ */
 @Composable
 fun AppDesafioSEBRAETheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
