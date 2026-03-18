@@ -1,5 +1,6 @@
 package tech.datatower.sebrae.desafio.ui.students
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,21 +42,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tech.datatower.sebrae.desafio.data.model.Student
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
+import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.EmptyState
 import tech.datatower.sebrae.desafio.ui.components.ListSearchHeader
 import tech.datatower.sebrae.desafio.ui.components.StatusChip
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
+/**
+ * Tela de gerenciamento de alunos.
+ *
+ * Permite buscar por nome, curso ou turma e apresenta os resultados em lista otimizada com
+ * `LazyColumn`.
+ *
+ * @param onBack Ação acionada ao retornar para a tela anterior.
+ * @param onOpenStudentMonitoring Ação para abrir o acompanhamento detalhado do aluno.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StudentsScreen(onBack: () -> Unit = {}) {
-  val allStudents = remember { sampleStudents() }
+fun StudentsScreen(
+    onBack: () -> Unit = {},
+    onOpenStudentMonitoring: (Int) -> Unit = {},
+) {
+  val context = LocalContext.current
+  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val allStudents by repository.observeStudents().collectAsState(initial = emptyList())
   var query by rememberSaveable { mutableStateOf("") }
   val listState = rememberLazyListState()
 
@@ -111,7 +129,10 @@ fun StudentsScreen(onBack: () -> Unit = {}) {
               key = { it.id },
               contentType = { "student" },
           ) { student ->
-            StudentCard(student = student)
+            StudentCard(
+                student = student,
+                onClick = { onOpenStudentMonitoring(student.id) },
+            )
           }
         }
       }
@@ -119,10 +140,19 @@ fun StudentsScreen(onBack: () -> Unit = {}) {
   }
 }
 
+/**
+ * Cartão de exibição resumida de um aluno.
+ *
+ * @param student Dados do aluno que serão renderizados no cartão.
+ * @param onClick Ação de navegação para o detalhe de acompanhamento do aluno.
+ */
 @Composable
-private fun StudentCard(student: Student) {
+private fun StudentCard(
+    student: Student,
+    onClick: () -> Unit,
+) {
   ElevatedCard(
-      modifier = Modifier.fillMaxWidth(),
+      modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
       shape = RoundedCornerShape(16.dp),
       colors =
           CardDefaults.elevatedCardColors(
@@ -218,82 +248,7 @@ private fun StudentCard(student: Student) {
   }
 }
 
-private fun sampleStudents() =
-    listOf(
-        Student(
-            1,
-            "Ana Lima",
-            "ana.lima@email.com",
-            "Marketing Digital",
-            "Turma A1",
-            0.87f,
-            StudentStatus.Active,
-        ),
-        Student(
-            2,
-            "Carlos Souza",
-            "carlos@email.com",
-            "Excel para Negócios",
-            "Turma B3",
-            0.42f,
-            StudentStatus.Active,
-        ),
-        Student(
-            3,
-            "Fernanda Costa",
-            "fernanda@email.com",
-            "Empreendedorismo",
-            "Turma C2",
-            0.95f,
-            StudentStatus.Graduated,
-        ),
-        Student(
-            4,
-            "Ricardo Alves",
-            "ricardo@email.com",
-            "Finanças Pessoais",
-            "Turma A2",
-            0.20f,
-            StudentStatus.Inactive,
-        ),
-        Student(
-            5,
-            "Mariana Pereira",
-            "mariana@email.com",
-            "Marketing Digital",
-            "Turma A1",
-            0.65f,
-            StudentStatus.Active,
-        ),
-        Student(
-            6,
-            "Lucas Oliveira",
-            "lucas@email.com",
-            "Excel para Negócios",
-            "Turma B3",
-            0.78f,
-            StudentStatus.Active,
-        ),
-        Student(
-            7,
-            "Juliana Santos",
-            "juliana@email.com",
-            "Empreendedorismo",
-            "Turma C2",
-            1.0f,
-            StudentStatus.Graduated,
-        ),
-        Student(
-            8,
-            "Pedro Rodrigues",
-            "pedro@email.com",
-            "Finanças Pessoais",
-            "Turma A2",
-            0.10f,
-            StudentStatus.Active,
-        ),
-    )
-
+/** Pré-visualização da tela de alunos no Android Studio/IntelliJ. */
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun StudentsPreview() {
