@@ -1,5 +1,8 @@
 package tech.datatower.sebrae.desafio.data.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class SchoolClass(
     val id: Int,
     val name: String,
@@ -11,5 +14,8 @@ data class SchoolClass(
     val status: ClassStatus,
 )
 
-enum class ClassStatus { Open, InProgress, Closed }
-
+enum class ClassStatus {
+  Open,
+  InProgress,
+  Closed,
+}
