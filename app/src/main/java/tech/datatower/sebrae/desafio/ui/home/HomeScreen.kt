@@ -52,6 +52,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,11 +75,24 @@ import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.MenuModule
 import tech.datatower.sebrae.desafio.data.model.QuickStat
 import tech.datatower.sebrae.desafio.data.model.RecentActivity
+import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.navigation.AppRoutes
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
+/**
+ * Tela inicial do aplicativo com visão geral operacional.
+ *
+ * Reúne atalhos de módulos, indicadores rápidos e atividades recentes, além de permitir busca
+ * textual para filtrar conteúdo visível.
+ *
+ * @param userName Nome do usuário usado na saudação contextual.
+ * @param notificationCount Quantidade de notificações pendentes exibida na barra superior.
+ * @param onModuleClick Callback chamado ao selecionar um módulo do grid.
+ * @param onNotificationsClick Callback chamado ao tocar no ícone de notificações.
+ * @param onProfileClick Callback chamado ao tocar no ícone de perfil.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -89,10 +103,11 @@ fun HomeScreen(
     onProfileClick: () -> Unit = {},
 ) {
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+  val repository = AppGraph.repository(LocalContext.current.applicationContext)
 
   val modules = rememberModules()
-  val stats = rememberStats()
-  val recents = rememberRecents()
+  val stats by repository.observeHomeQuickStats().collectAsState(initial = emptyList())
+  val recents by repository.observeRecentActivities().collectAsState(initial = emptyList())
   val context = LocalContext.current
   var query by rememberSaveable { mutableStateOf("") }
 
@@ -215,6 +230,14 @@ fun HomeScreen(
 
 // ── TopAppBar ─────────────────────────────────────────────────────────────────
 
+/**
+ * Barra superior da tela inicial com branding e ações rápidas.
+ *
+ * @param scrollBehavior Comportamento de scroll aplicado ao `TopAppBar`.
+ * @param notificationCount Quantidade de notificações pendentes.
+ * @param onNotificationsClick Ação para abrir notificações.
+ * @param onProfileClick Ação para abrir perfil do usuário.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeTopBar(
@@ -291,6 +314,11 @@ private fun HomeTopBar(
 
 // ── Greeting ──────────────────────────────────────────────────────────────────
 
+/**
+ * Bloco de saudação com mensagem contextual baseada no horário atual.
+ *
+ * @param userName Nome a ser exibido na saudação.
+ */
 @Composable
 private fun GreetingSection(userName: String) {
   val greetingRes =
@@ -332,6 +360,12 @@ private fun GreetingSection(userName: String) {
 
 // ── Search ────────────────────────────────────────────────────────────────────
 
+/**
+ * Campo de busca principal da Home.
+ *
+ * @param query Valor atual do filtro textual.
+ * @param onQueryChange Callback acionado quando o texto de busca é alterado.
+ */
 @Composable
 private fun SearchBar(
     query: String,
@@ -368,6 +402,12 @@ private fun SearchBar(
 
 // ── Section title ─────────────────────────────────────────────────────────────
 
+/**
+ * Título padronizado para seções internas da tela inicial.
+ *
+ * @param text Texto do título.
+ * @param modifier Modificador opcional para posicionamento externo.
+ */
 @Composable
 private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
   Text(
@@ -381,6 +421,11 @@ private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 
 // ── Stats row ─────────────────────────────────────────────────────────────────
 
+/**
+ * Linha horizontal de indicadores rápidos.
+ *
+ * @param stats Lista de métricas a serem renderizadas.
+ */
 @Composable
 private fun StatsRow(stats: List<QuickStat>) {
   Row(
@@ -391,6 +436,12 @@ private fun StatsRow(stats: List<QuickStat>) {
   }
 }
 
+/**
+ * Cartão de indicador rápido com valor, rótulo e dados opcionais de tendência.
+ *
+ * @param stat Métrica exibida no cartão.
+ * @param modifier Modificador opcional para composição externa.
+ */
 @Composable
 private fun StatCard(stat: QuickStat, modifier: Modifier = Modifier) {
   ElevatedCard(
@@ -438,6 +489,14 @@ private fun StatCard(stat: QuickStat, modifier: Modifier = Modifier) {
 
 // ── Modules grid ──────────────────────────────────────────────────────────────
 
+/**
+ * Grid fixo de módulos navegáveis exibido na Home.
+ *
+ * O componente desabilita rolagem própria para evitar conflito com a `LazyColumn` pai.
+ *
+ * @param modules Lista de módulos a serem exibidos.
+ * @param onModuleClick Callback acionado com a rota do módulo selecionado.
+ */
 @Composable
 private fun ModulesGrid(
     modules: List<MenuModule>,
@@ -466,6 +525,12 @@ private fun ModulesGrid(
   }
 }
 
+/**
+ * Cartão clicável de um módulo da aplicação.
+ *
+ * @param module Metadados do módulo (título, descrição, ícone e rota).
+ * @param onClick Ação executada ao selecionar o cartão.
+ */
 @Composable
 private fun ModuleCard(module: MenuModule, onClick: () -> Unit) {
   Card(
@@ -524,6 +589,12 @@ private fun ModuleCard(module: MenuModule, onClick: () -> Unit) {
 
 // ── Recent activity ───────────────────────────────────────────────────────────
 
+/**
+ * Item de atividade recente no feed da tela inicial.
+ *
+ * @param item Dados da atividade a ser exibida.
+ * @param modifier Modificador opcional para customização de layout.
+ */
 @Composable
 private fun RecentActivityItem(item: RecentActivity, modifier: Modifier = Modifier) {
   ElevatedCard(
@@ -578,6 +649,11 @@ private fun RecentActivityItem(item: RecentActivity, modifier: Modifier = Modifi
 
 // ── Static data helpers ───────────────────────────────────────────────────────
 
+/**
+ * Memoriza os módulos disponíveis na Home para evitar recriações desnecessárias.
+ *
+ * @return Lista imutável de módulos com suas respectivas rotas.
+ */
 @Composable
 private fun rememberModules(): List<MenuModule> = remember {
   listOf(
@@ -633,6 +709,11 @@ private fun rememberModules(): List<MenuModule> = remember {
   )
 }
 
+/**
+ * Memoriza os indicadores de resumo exibidos no topo da Home.
+ *
+ * @return Lista de métricas rápidas para o dashboard.
+ */
 @Composable
 private fun rememberStats(): List<QuickStat> = remember {
   listOf(
@@ -643,6 +724,11 @@ private fun rememberStats(): List<QuickStat> = remember {
   )
 }
 
+/**
+ * Memoriza o feed de atividades recentes da tela inicial.
+ *
+ * @return Lista de atividades recentes exibidas ao usuário.
+ */
 @Composable
 private fun rememberRecents(): List<RecentActivity> = remember {
   listOf(
@@ -675,12 +761,14 @@ private fun rememberRecents(): List<RecentActivity> = remember {
 
 // ── Preview ───────────────────────────────────────────────────────────────────
 
+/** Pré-visualização da Home no tema claro. */
 @Preview(showBackground = true, showSystemUi = true, name = "Home — Light")
 @Composable
 private fun HomeScreenPreviewLight() {
   AppDesafioSEBRAETheme(darkTheme = false) { HomeScreen() }
 }
 
+/** Pré-visualização da Home no tema escuro. */
 @Preview(showBackground = true, showSystemUi = true, name = "Home — Dark")
 @Composable
 private fun HomeScreenPreviewDark() {
