@@ -38,7 +38,8 @@ fun TeacherDetailScreen(
   val classesFlow =
       remember(teacher?.name) {
         val teacherName = teacher?.name
-        if (teacherName == null) flowOf(emptyList()) else repository.observeClassesByTeacher(teacherName)
+        if (teacherName == null) flowOf(emptyList())
+        else repository.observeClassesByTeacher(teacherName)
       }
   val classes by classesFlow.collectAsState(initial = emptyList())
 
@@ -61,13 +62,29 @@ fun TeacherDetailScreen(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.elevatedCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
         ) {
-          Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(teacher!!.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+          Column(
+              modifier = Modifier.padding(16.dp),
+              verticalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            Text(
+                teacher!!.name,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
             Text(teacher!!.specialty, style = MaterialTheme.typography.bodyMedium)
             Text("E-mail: ${teacher!!.email}", style = MaterialTheme.typography.bodySmall)
-            Text("Cursos ativos: ${teacher!!.activeCourses}", style = MaterialTheme.typography.bodySmall)
-            Text("Total de alunos: ${teacher!!.totalStudents}", style = MaterialTheme.typography.bodySmall)
-            Text("Avaliação: ${"%.1f".format(teacher!!.rating)}", style = MaterialTheme.typography.bodySmall)
+            Text(
+                "Cursos ativos: ${teacher!!.activeCourses}",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                "Total de alunos: ${teacher!!.totalStudents}",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                "Avaliação: ${"%.1f".format(teacher!!.rating)}",
+                style = MaterialTheme.typography.bodySmall,
+            )
           }
         }
       }
@@ -87,13 +104,24 @@ fun TeacherDetailScreen(
           ElevatedCard(
               modifier = Modifier.fillMaxWidth(),
               shape = RoundedCornerShape(14.dp),
-              colors = CardDefaults.elevatedCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
+              colors =
+                  CardDefaults.elevatedCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
           ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-              Text(schoolClass.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+              Text(
+                  schoolClass.name,
+                  style = MaterialTheme.typography.titleSmall,
+                  fontWeight = FontWeight.Medium,
+              )
               Text("Curso: ${schoolClass.course}", style = MaterialTheme.typography.bodySmall)
               Text("Horário: ${schoolClass.schedule}", style = MaterialTheme.typography.bodySmall)
-              Text("Alunos: ${schoolClass.studentsCount}/${schoolClass.maxCapacity}", style = MaterialTheme.typography.bodySmall)
+              Text(
+                  "Alunos: ${schoolClass.studentsCount}/${schoolClass.maxCapacity}",
+                  style = MaterialTheme.typography.bodySmall,
+              )
             }
           }
         }
@@ -101,4 +129,3 @@ fun TeacherDetailScreen(
     }
   }
 }
-
