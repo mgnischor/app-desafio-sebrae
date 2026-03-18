@@ -61,14 +61,36 @@ fun CourseDetailScreen(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.elevatedCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
         ) {
-          Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(course!!.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+          Column(
+              modifier = Modifier.padding(16.dp),
+              verticalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            Text(
+                course!!.title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
             Text(course!!.category, style = MaterialTheme.typography.bodyMedium)
-            Text("Instrutor principal: ${course!!.instructor}", style = MaterialTheme.typography.bodySmall)
-            Text("Carga horária: ${course!!.durationHours}h", style = MaterialTheme.typography.bodySmall)
-            Text("Matrículas: ${course!!.totalStudents}", style = MaterialTheme.typography.bodySmall)
-            Text("Conclusão média: ${(course!!.completionRate * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
-            Text(if (course!!.isPublished) "Status: Publicado" else "Status: Rascunho", style = MaterialTheme.typography.bodySmall)
+            Text(
+                "Instrutor principal: ${course!!.instructor}",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                "Carga horária: ${course!!.durationHours}h",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                "Matrículas: ${course!!.totalStudents}",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                "Conclusão média: ${(course!!.completionRate * 100).toInt()}%",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                if (course!!.isPublished) "Status: Publicado" else "Status: Rascunho",
+                style = MaterialTheme.typography.bodySmall,
+            )
           }
         }
       }
@@ -88,13 +110,27 @@ fun CourseDetailScreen(
           ElevatedCard(
               modifier = Modifier.fillMaxWidth(),
               shape = RoundedCornerShape(14.dp),
-              colors = CardDefaults.elevatedCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
+              colors =
+                  CardDefaults.elevatedCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
           ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-              Text(schoolClass.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+              Text(
+                  schoolClass.name,
+                  style = MaterialTheme.typography.titleSmall,
+                  fontWeight = FontWeight.Medium,
+              )
               Text("Horário: ${schoolClass.schedule}", style = MaterialTheme.typography.bodySmall)
-              Text("Instrutor: ${schoolClass.instructor}", style = MaterialTheme.typography.bodySmall)
-              Text("Alunos: ${schoolClass.studentsCount}/${schoolClass.maxCapacity}", style = MaterialTheme.typography.bodySmall)
+              Text(
+                  "Instrutor: ${schoolClass.instructor}",
+                  style = MaterialTheme.typography.bodySmall,
+              )
+              Text(
+                  "Alunos: ${schoolClass.studentsCount}/${schoolClass.maxCapacity}",
+                  style = MaterialTheme.typography.bodySmall,
+              )
             }
           }
         }
@@ -102,4 +138,3 @@ fun CourseDetailScreen(
     }
   }
 }
-
