@@ -16,6 +16,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+/**
+ * Componente padrão de busca e contador de resultados para telas de listagem.
+ *
+ * @param query Valor atual digitado no campo de busca.
+ * @param onQueryChange Callback acionado a cada alteração de texto.
+ * @param placeholder Texto de ajuda exibido quando o campo está vazio.
+ * @param resultCount Quantidade de itens retornados após o filtro.
+ * @param resultLabel Rótulo textual complementar do contador.
+ * @param modifier Modificador opcional para customização externa.
+ */
 @Composable
 fun ListSearchHeader(
     query: String,
