@@ -13,6 +13,9 @@ object AppRoutes {
   const val CLASS_ID_ARG = "classId"
   const val TEACHER_ID_ARG = "teacherId"
 
+  /** Rota da tela de login. */
+  const val LOGIN = "login"
+
   /** Rota da tela inicial com visão geral e atalhos dos módulos. */
   const val HOME = "home"
 
