@@ -25,38 +25,36 @@ fun DetailScaffold(
     actions: @Composable () -> Unit = {},
     content: @Composable (PaddingValues, TopAppBarScrollBehavior) -> Unit,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        rememberTopAppBarState()
-    )
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Voltar",
-                        )
-                    }
-                },
-                actions = { actions() },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor         = MaterialTheme.colorScheme.surface,
+  val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+  Scaffold(
+      modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+      topBar = {
+        TopAppBar(
+            title = {
+              Text(
+                  text = title,
+                  style = MaterialTheme.typography.titleMedium,
+              )
+            },
+            navigationIcon = {
+              IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "Voltar",
+                )
+              }
+            },
+            actions = { actions() },
+            colors =
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ),
-                scrollBehavior = scrollBehavior,
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { innerPadding ->
-        content(innerPadding, scrollBehavior)
-    }
+            scrollBehavior = scrollBehavior,
+        )
+      },
+      containerColor = MaterialTheme.colorScheme.background,
+  ) { innerPadding ->
+    content(innerPadding, scrollBehavior)
+  }
 }
-
