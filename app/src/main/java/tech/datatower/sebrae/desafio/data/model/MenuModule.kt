@@ -1,7 +1,9 @@
 package tech.datatower.sebrae.desafio.data.model
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 
+@Immutable
 data class MenuModule(
     val titleRes: Int,
     val descriptionRes: Int,
@@ -9,4 +11,3 @@ data class MenuModule(
     val route: String,
     val badgeCount: Int = 0,
 )
-
