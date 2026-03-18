@@ -5,6 +5,15 @@ import java.time.LocalDate
 
 /**
  * Agrega os dados de acompanhamento do aluno por domínio.
+ *
+ * @property studentId Identificador único do aluno.
+ * @property studentName Nome completo exibido nos cabeçalhos das telas.
+ * @property enrolledClass Turma atual vinculada ao aluno.
+ * @property attendanceRecords Histórico de frequência por data/aula.
+ * @property behaviorRecords Histórico de comportamento e desempenho acadêmico.
+ * @property pedagogicalNeeds Necessidades pedagógicas e adaptações ativas.
+ * @property psychologicalNeeds Necessidades psicológicas com nível de sigilo.
+ * @property parentFollowUps Registros de contato e devolutiva dos responsáveis.
  */
 @Immutable
 data class StudentMonitoringSnapshot(
@@ -18,6 +27,14 @@ data class StudentMonitoringSnapshot(
     val parentFollowUps: List<ParentFollowUp>,
 )
 
+/**
+ * Registro unitário de frequência do aluno.
+ *
+ * @property date Data do registro.
+ * @property status Situação de presença no período.
+ * @property minutesLate Minutos de atraso quando aplicável.
+ * @property justification Justificativa textual para faltas justificadas.
+ */
 @Immutable
 data class AttendanceRecord(
     val date: LocalDate,
@@ -26,6 +43,7 @@ data class AttendanceRecord(
     val justification: String? = null,
 )
 
+/** Situações de frequência aceitas para lançamento em diário. */
 enum class AttendanceStatus {
   Present,
   Absent,
@@ -33,6 +51,16 @@ enum class AttendanceStatus {
   Late,
 }
 
+/**
+ * Registro de comportamento e desempenho observado em um período.
+ *
+ * @property date Data da observação.
+ * @property participationScore Escala de participação no intervalo de 1 a 5.
+ * @property activityDelivery Situação da entrega de atividade.
+ * @property delayMinutes Minutos de atraso no período.
+ * @property grade Nota acadêmica opcional no intervalo de 0 a 10.
+ * @property note Observação contextual do professor.
+ */
 @Immutable
 data class BehaviorRecord(
     val date: LocalDate,
@@ -43,12 +71,21 @@ data class BehaviorRecord(
     val note: String,
 )
 
+/** Situações de entrega de atividade no contexto de acompanhamento. */
 enum class ActivityDeliveryStatus {
   OnTime,
   Late,
   Missing,
 }
 
+/**
+ * Necessidade pedagógica formalizada para o aluno.
+ *
+ * @property type Tipo de necessidade registrada.
+ * @property description Descrição objetiva do cenário pedagógico.
+ * @property expiresAt Data de validade do documento, quando existir.
+ * @property accommodations Adaptações ativas orientadas pela equipe.
+ */
 @Immutable
 data class PedagogicalNeed(
     val type: PedagogicalNeedType,
@@ -57,12 +94,21 @@ data class PedagogicalNeed(
     val accommodations: List<String>,
 )
 
+/** Tipos de necessidade pedagógica contemplados no cadastro. */
 enum class PedagogicalNeedType {
   Report,
   MedicalCertificate,
   SpecialNeed,
 }
 
+/**
+ * Registro de acompanhamento psicológico do aluno.
+ *
+ * @property summary Resumo clínico/pedagógico compartilhável no contexto autorizado.
+ * @property confidentiality Nível de sigilo do registro.
+ * @property nextStep Próxima ação planejada no acompanhamento.
+ * @property reviewAt Data prevista de revisão do caso.
+ */
 @Immutable
 data class PsychologicalNeed(
     val summary: String,
@@ -71,11 +117,21 @@ data class PsychologicalNeed(
     val reviewAt: LocalDate,
 )
 
+/** Níveis de sigilo aplicáveis ao registro psicológico. */
 enum class ConfidentialityLevel {
   Restricted,
   SharedSummary,
 }
 
+/**
+ * Histórico de contato com responsáveis do aluno.
+ *
+ * @property date Data do contato.
+ * @property channel Canal utilizado para comunicação.
+ * @property outcome Resultado atual do acompanhamento com a família.
+ * @property responsible Profissional que conduziu o contato.
+ * @property notes Observações do atendimento.
+ */
 @Immutable
 data class ParentFollowUp(
     val date: LocalDate,
@@ -85,6 +141,7 @@ data class ParentFollowUp(
     val notes: String,
 )
 
+/** Canais oficiais de comunicação com responsáveis. */
 enum class ParentContactChannel {
   Meeting,
   Phone,
@@ -92,6 +149,7 @@ enum class ParentContactChannel {
   Email,
 }
 
+/** Situações do fluxo de acompanhamento com responsáveis. */
 enum class ParentFollowUpStatus {
   Pending,
   WaitingResponse,
@@ -99,44 +157,73 @@ enum class ParentFollowUpStatus {
   NoShow,
 }
 
+/**
+ * Alerta derivado automaticamente a partir das regras de acompanhamento.
+ *
+ * @property message Mensagem orientativa exibida no painel do aluno.
+ * @property level Severidade do alerta para priorização de ação.
+ */
 @Immutable
 data class MonitoringAlert(
     val message: String,
     val level: MonitoringAlertLevel,
 )
 
+/** Níveis de severidade usados no painel de pendências. */
 enum class MonitoringAlertLevel {
   Info,
   Warning,
   Critical,
 }
 
-/**
- * Regras de negócio centrais para validações e alertas da tela de acompanhamento.
- */
+/** Regras de negócio centrais para validações e alertas da tela de acompanhamento. */
 object StudentMonitoringRules {
+  /** Percentual mínimo de frequência esperado para evitar alerta crítico. */
   const val minimumAttendanceRate = 0.75f
+
+  /** Pontuação mínima de participação tolerada antes de alerta recorrente. */
   const val minimumParticipationScore = 2
+
+  /** Nota máxima permitida no lançamento acadêmico. */
   const val maximumGrade = 10f
 
+  /**
+   * Calcula a taxa de presença considerando faltas justificadas fora da base.
+   *
+   * @param records Lista de registros de frequência analisados.
+   * @return Taxa de presença no intervalo `0f..1f`.
+   */
   fun attendanceRate(records: List<AttendanceRecord>): Float {
     if (records.isEmpty()) return 1f
 
     val baseCount = records.count { it.status != AttendanceStatus.JustifiedAbsence }
     if (baseCount == 0) return 1f
 
-    val presentCount = records.count {
-      it.status == AttendanceStatus.Present || it.status == AttendanceStatus.Late
-    }
+    val presentCount =
+        records.count {
+          it.status == AttendanceStatus.Present || it.status == AttendanceStatus.Late
+        }
     return presentCount.toFloat() / baseCount.toFloat()
   }
 
+  /**
+   * Calcula a média das notas disponíveis no histórico comportamental.
+   *
+   * @param records Lista de registros de comportamento.
+   * @return Média de notas no intervalo `0f..10f`; retorna `0f` sem notas lançadas.
+   */
   fun averageGrade(records: List<BehaviorRecord>): Float {
     val grades = records.mapNotNull { it.grade }
     if (grades.isEmpty()) return 0f
     return grades.average().toFloat()
   }
 
+  /**
+   * Valida consistência de um registro de comportamento antes de persistência.
+   *
+   * @param record Registro a ser validado.
+   * @return Lista de mensagens de erro; vazia quando o registro é válido.
+   */
   fun validateBehaviorRecord(record: BehaviorRecord): List<String> {
     val errors = mutableListOf<String>()
 
@@ -156,6 +243,12 @@ object StudentMonitoringRules {
     return errors
   }
 
+  /**
+   * Gera alertas automáticos para apoiar priorização do acompanhamento escolar.
+   *
+   * @param snapshot Estado consolidado de acompanhamento do aluno.
+   * @return Lista de alertas ordenada conforme as regras aplicadas.
+   */
   fun buildAlerts(snapshot: StudentMonitoringSnapshot): List<MonitoringAlert> {
     val alerts = mutableListOf<MonitoringAlert>()
 
@@ -178,7 +271,8 @@ object StudentMonitoringRules {
           )
     }
 
-    val lowParticipation = snapshot.behaviorRecords.count { it.participationScore <= minimumParticipationScore }
+    val lowParticipation =
+        snapshot.behaviorRecords.count { it.participationScore <= minimumParticipationScore }
     if (lowParticipation >= 3) {
       alerts +=
           MonitoringAlert(
@@ -189,7 +283,8 @@ object StudentMonitoringRules {
 
     val overdueParentFollowUps =
         snapshot.parentFollowUps.count {
-          it.outcome == ParentFollowUpStatus.Pending || it.outcome == ParentFollowUpStatus.WaitingResponse
+          it.outcome == ParentFollowUpStatus.Pending ||
+              it.outcome == ParentFollowUpStatus.WaitingResponse
         }
     if (overdueParentFollowUps >= 2) {
       alerts +=
@@ -202,4 +297,3 @@ object StudentMonitoringRules {
     return alerts
   }
 }
-
