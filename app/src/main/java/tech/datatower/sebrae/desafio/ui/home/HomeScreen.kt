@@ -72,7 +72,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.util.Calendar
 import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.MenuModule
+import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.data.model.QuickStat
 import tech.datatower.sebrae.desafio.data.model.RecentActivity
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
@@ -85,27 +87,29 @@ import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
  * Tela inicial do aplicativo com visão geral operacional.
  *
  * Reúne atalhos de módulos, indicadores rápidos e atividades recentes, além de permitir busca
- * textual para filtrar conteúdo visível.
+ * textual para filtrar conteúdo visível. Os módulos exibidos são filtrados de acordo com o perfil
+ * do usuário autenticado.
  *
- * @param userName Nome do usuário usado na saudação contextual.
+ * @param user Usuário autenticado; define os módulos acessíveis.
  * @param notificationCount Quantidade de notificações pendentes exibida na barra superior.
  * @param onModuleClick Callback chamado ao selecionar um módulo do grid.
  * @param onNotificationsClick Callback chamado ao tocar no ícone de notificações.
- * @param onProfileClick Callback chamado ao tocar no ícone de perfil.
+ * @param onLogout Callback chamado ao solicitar encerramento de sessão.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    userName: String = "Maria",
+    user: AppUser? = null,
     notificationCount: Int = 3,
     onModuleClick: (String) -> Unit = {},
     onNotificationsClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
+    onLogout: () -> Unit = {},
 ) {
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
   val repository = AppGraph.repository(LocalContext.current.applicationContext)
 
-  val modules = rememberModules()
+  val allModules = rememberModules()
+  val modules = remember(allModules, user) { filterModulesByRole(allModules, user?.role) }
   val stats by repository.observeHomeQuickStats().collectAsState(initial = emptyList())
   val recents by repository.observeRecentActivities().collectAsState(initial = emptyList())
   val context = LocalContext.current
@@ -147,7 +151,7 @@ fun HomeScreen(
             scrollBehavior = scrollBehavior,
             notificationCount = notificationCount,
             onNotificationsClick = onNotificationsClick,
-            onProfileClick = onProfileClick,
+            onLogout = onLogout,
         )
       },
       containerColor = MaterialTheme.colorScheme.background,
@@ -158,7 +162,7 @@ fun HomeScreen(
     ) {
 
       // ── Greeting + search ──────────────────────────────────────────
-      item { GreetingSection(userName = userName) }
+      item { GreetingSection(userName = user?.name ?: "") }
 
       item {
         SearchBar(
@@ -236,7 +240,7 @@ fun HomeScreen(
  * @param scrollBehavior Comportamento de scroll aplicado ao `TopAppBar`.
  * @param notificationCount Quantidade de notificações pendentes.
  * @param onNotificationsClick Ação para abrir notificações.
- * @param onProfileClick Ação para abrir perfil do usuário.
+ * @param onLogout Ação para encerrar a sessão do usuário.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -244,7 +248,7 @@ private fun HomeTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     notificationCount: Int,
     onNotificationsClick: () -> Unit,
-    onProfileClick: () -> Unit,
+    onLogout: () -> Unit,
 ) {
   TopAppBar(
       title = {
@@ -295,10 +299,10 @@ private fun HomeTopBar(
             )
           }
         }
-        IconButton(onClick = onProfileClick) {
+        IconButton(onClick = onLogout) {
           Icon(
               imageVector = Icons.Outlined.AccountCircle,
-              contentDescription = "Perfil",
+              contentDescription = stringResource(R.string.logout),
               tint = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
@@ -650,9 +654,40 @@ private fun RecentActivityItem(item: RecentActivity, modifier: Modifier = Modifi
 // ── Static data helpers ───────────────────────────────────────────────────────
 
 /**
+ * Filtra a lista completa de módulos de acordo com o perfil do usuário.
+ *
+ * - **PROFESSOR**: Alunos, Calendário e Certificados.
+ * - **COORDENADOR**: Alunos, Cursos, Turmas, Instrutores, Calendário, Certificados e Relatórios.
+ * - **ADMINISTRADOR**: Todos os módulos.
+ *
+ * @param allModules Lista completa de módulos disponíveis na aplicação.
+ * @param role Perfil do usuário autenticado; `null` exibe apenas módulos básicos.
+ * @return Lista filtrada de módulos permitidos para o perfil informado.
+ */
+private fun filterModulesByRole(allModules: List<MenuModule>, role: UserRole?): List<MenuModule> {
+  val allowedRoutes =
+      when (role) {
+        UserRole.PROFESSOR ->
+            setOf(AppRoutes.STUDENTS, AppRoutes.CALENDAR, AppRoutes.CERTIFICATES)
+        UserRole.COORDENADOR ->
+            setOf(
+                AppRoutes.STUDENTS,
+                AppRoutes.COURSES,
+                AppRoutes.CLASSES,
+                AppRoutes.TEACHERS,
+                AppRoutes.CALENDAR,
+                AppRoutes.CERTIFICATES,
+                AppRoutes.REPORTS,
+            )
+        UserRole.ADMINISTRADOR, null -> null // null = all routes visible
+      }
+  return if (allowedRoutes == null) allModules else allModules.filter { it.route in allowedRoutes }
+}
+
+/**
  * Memoriza os módulos disponíveis na Home para evitar recriações desnecessárias.
  *
- * @return Lista imutável de módulos com suas respectivas rotas.
+ * @return Lista imutável com todos os módulos e suas respectivas rotas.
  */
 @Composable
 private fun rememberModules(): List<MenuModule> = remember {

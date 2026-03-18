@@ -1,11 +1,14 @@
 package tech.datatower.sebrae.desafio.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.ui.calendar.CalendarScreen
 import tech.datatower.sebrae.desafio.ui.certificates.CertificatesScreen
 import tech.datatower.sebrae.desafio.ui.classes.ClassDetailScreen
@@ -13,6 +16,7 @@ import tech.datatower.sebrae.desafio.ui.classes.ClassesScreen
 import tech.datatower.sebrae.desafio.ui.courses.CourseDetailScreen
 import tech.datatower.sebrae.desafio.ui.courses.CoursesScreen
 import tech.datatower.sebrae.desafio.ui.home.HomeScreen
+import tech.datatower.sebrae.desafio.ui.login.LoginScreen
 import tech.datatower.sebrae.desafio.ui.reports.ReportsScreen
 import tech.datatower.sebrae.desafio.ui.settings.SettingsScreen
 import tech.datatower.sebrae.desafio.ui.students.StudentMonitoringScreen
@@ -23,8 +27,10 @@ import tech.datatower.sebrae.desafio.ui.teachers.TeachersScreen
 /**
  * Declara o grafo de navegação principal da aplicação.
  *
- * Define a tela inicial e mapeia cada rota de `AppRoutes` para sua respectiva tela Compose,
- * centralizando a orquestração de navegação.
+ * Define a tela inicial (login) e mapeia cada rota de `AppRoutes` para sua respectiva tela
+ * Compose, centralizando a orquestração de navegação. A rota de início é a tela de login; após
+ * autenticação bem-sucedida, o usuário é direcionado para a Home sem possibilidade de voltar para
+ * o login via botão "back".
  *
  * @param navController Controlador responsável por navegar entre destinos e gerenciar o back stack.
  */
@@ -32,11 +38,28 @@ import tech.datatower.sebrae.desafio.ui.teachers.TeachersScreen
 fun AppNavHost(navController: NavHostController) {
   NavHost(
       navController = navController,
-      startDestination = AppRoutes.HOME,
+      startDestination = AppRoutes.LOGIN,
   ) {
+    composable(AppRoutes.LOGIN) {
+      LoginScreen(
+          onLoginSuccess = {
+            navController.navigate(AppRoutes.HOME) {
+              popUpTo(AppRoutes.LOGIN) { inclusive = true }
+            }
+          }
+      )
+    }
     composable(AppRoutes.HOME) {
+      val currentUser by AuthManager.currentUser.collectAsState()
       HomeScreen(
+          user = currentUser,
           onModuleClick = { route -> navController.navigate(route) },
+          onLogout = {
+            AuthManager.logout()
+            navController.navigate(AppRoutes.LOGIN) {
+              popUpTo(AppRoutes.HOME) { inclusive = true }
+            }
+          },
       )
     }
     composable(AppRoutes.STUDENTS) {
