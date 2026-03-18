@@ -1,5 +1,8 @@
 package tech.datatower.sebrae.desafio.data.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class Certificate(
     val id: Int,
     val studentName: String,
@@ -8,4 +11,3 @@ data class Certificate(
     val hours: Int,
     val code: String,
 )
-
