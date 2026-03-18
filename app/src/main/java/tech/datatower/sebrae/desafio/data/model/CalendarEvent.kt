@@ -1,5 +1,8 @@
 package tech.datatower.sebrae.desafio.data.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class CalendarEvent(
     val id: Int,
     val title: String,
@@ -10,5 +13,9 @@ data class CalendarEvent(
     val type: EventType,
 )
 
-enum class EventType { Class, Exam, Meeting, Other }
-
+enum class EventType {
+  Class,
+  Exam,
+  Meeting,
+  Other,
+}
