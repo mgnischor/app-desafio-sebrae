@@ -14,17 +14,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -44,22 +47,44 @@ import tech.datatower.sebrae.desafio.data.model.PedagogicalNeedType
 import tech.datatower.sebrae.desafio.data.model.PsychologicalNeed
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringRules
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringSnapshot
+import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.StatusChip
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
 /**
- * Tela de acompanhamento integral do aluno com regras de negócio já aplicadas.
+ * Tela de acompanhamento integral do aluno.
+ *
+ * Consolida cadastro e leitura de frequência, comportamento, necessidades pedagógicas, necessidades
+ * psicológicas e acompanhamento dos pais em uma navegação por abas.
+ *
+ * @param studentId Identificador do aluno selecionado na listagem.
+ * @param onBack Ação executada ao retornar para a tela anterior.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentMonitoringScreen(
     studentId: Int,
     onBack: () -> Unit = {},
 ) {
-  val snapshot = remember(studentId) { sampleMonitoringSnapshot(studentId) }
-  val alerts = remember(snapshot) { StudentMonitoringRules.buildAlerts(snapshot) }
-  val attendanceRate = remember(snapshot) { StudentMonitoringRules.attendanceRate(snapshot.attendanceRecords) }
-  val averageGrade = remember(snapshot) { StudentMonitoringRules.averageGrade(snapshot.behaviorRecords) }
+  val context = LocalContext.current
+  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val snapshot by
+      repository.observeStudentMonitoringSnapshot(studentId).collectAsState(initial = null)
+  if (snapshot == null) {
+    DetailScaffold(title = "Acompanhamento", onBack = onBack) { innerPadding, _ ->
+      Column(modifier = Modifier.padding(innerPadding).padding(20.dp)) {
+        Text("Aluno não encontrado.")
+      }
+    }
+    return
+  }
+
+  val data = snapshot!!
+  val alerts = remember(data) { StudentMonitoringRules.buildAlerts(data) }
+  val attendanceRate =
+      remember(data) { StudentMonitoringRules.attendanceRate(data.attendanceRecords) }
+  val averageGrade = remember(data) { StudentMonitoringRules.averageGrade(data.behaviorRecords) }
 
   var selectedTab by remember { mutableIntStateOf(0) }
   val tabs = listOf("Frequência", "Comportamentos", "Pedagógico", "Psicológico", "Pais")
@@ -72,8 +97,8 @@ fun StudentMonitoringScreen(
     ) {
       item {
         StudentHeader(
-            name = snapshot.studentName,
-            enrolledClass = snapshot.enrolledClass,
+            name = data.studentName,
+            enrolledClass = data.enrolledClass,
             attendanceRate = attendanceRate,
             averageGrade = averageGrade,
         )
@@ -84,26 +109,38 @@ fun StudentMonitoringScreen(
       }
 
       item {
-        TabRow(selectedTabIndex = selectedTab) {
+        PrimaryTabRow(selectedTabIndex = selectedTab) {
           tabs.forEachIndexed { index, title ->
-            Tab(selected = selectedTab == index, onClick = { selectedTab = index }, text = { Text(title) })
+            Tab(
+                selected = selectedTab == index,
+                onClick = { selectedTab = index },
+                text = { Text(title) },
+            )
           }
         }
       }
 
       item {
         when (selectedTab) {
-          0 -> AttendanceSection(snapshot)
-          1 -> BehaviorSection(snapshot)
-          2 -> PedagogicalSection(snapshot)
-          3 -> PsychologicalSection(snapshot)
-          else -> ParentSection(snapshot)
+          0 -> AttendanceSection(data)
+          1 -> BehaviorSection(data)
+          2 -> PedagogicalSection(data)
+          3 -> PsychologicalSection(data)
+          else -> ParentSection(data)
         }
       }
     }
   }
 }
 
+/**
+ * Cabeçalho resumido com identificação do aluno e indicadores principais.
+ *
+ * @param name Nome do aluno exibido no topo.
+ * @param enrolledClass Turma vinculada ao aluno.
+ * @param attendanceRate Taxa de frequência consolidada.
+ * @param averageGrade Média de notas do período.
+ */
 @Composable
 private fun StudentHeader(
     name: String,
@@ -114,10 +151,17 @@ private fun StudentHeader(
   ElevatedCard(
       modifier = Modifier.fillMaxWidth(),
       shape = RoundedCornerShape(16.dp),
-      colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+      colors =
+          CardDefaults.elevatedCardColors(
+              containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+          ),
   ) {
     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-      Text(text = name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+      Text(
+          text = name,
+          style = MaterialTheme.typography.titleMedium,
+          fontWeight = FontWeight.SemiBold,
+      )
       Text(
           text = enrolledClass,
           style = MaterialTheme.typography.bodyMedium,
@@ -139,12 +183,20 @@ private fun StudentHeader(
   }
 }
 
+/**
+ * Bloco de alertas automáticos gerados pelas regras de acompanhamento.
+ *
+ * @param alerts Alertas ativos para o aluno no contexto atual.
+ */
 @Composable
 private fun AlertsCard(alerts: List<MonitoringAlert>) {
   ElevatedCard(
       modifier = Modifier.fillMaxWidth(),
       shape = RoundedCornerShape(16.dp),
-      colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+      colors =
+          CardDefaults.elevatedCardColors(
+              containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+          ),
   ) {
     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
       Text(
@@ -174,6 +226,11 @@ private fun AlertsCard(alerts: List<MonitoringAlert>) {
   }
 }
 
+/**
+ * Renderiza regras e histórico de frequência.
+ *
+ * @param snapshot Snapshot consolidado do acompanhamento do aluno.
+ */
 @Composable
 private fun AttendanceSection(snapshot: StudentMonitoringSnapshot) {
   DomainSectionCard(
@@ -193,7 +250,9 @@ private fun AttendanceSection(snapshot: StudentMonitoringSnapshot) {
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
         shape = RoundedCornerShape(14.dp),
         colors =
-            CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
     ) {
       Row(
           modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -220,6 +279,11 @@ private fun AttendanceSection(snapshot: StudentMonitoringSnapshot) {
   }
 }
 
+/**
+ * Renderiza regras e histórico de comportamento em sala.
+ *
+ * @param snapshot Snapshot consolidado do acompanhamento do aluno.
+ */
 @Composable
 private fun BehaviorSection(snapshot: StudentMonitoringSnapshot) {
   DomainSectionCard(
@@ -240,7 +304,9 @@ private fun BehaviorSection(snapshot: StudentMonitoringSnapshot) {
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
         shape = RoundedCornerShape(14.dp),
         colors =
-            CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
     ) {
       Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = record.date.toString(), style = MaterialTheme.typography.labelMedium)
@@ -266,6 +332,11 @@ private fun BehaviorSection(snapshot: StudentMonitoringSnapshot) {
   }
 }
 
+/**
+ * Renderiza regras e histórico de necessidades pedagógicas.
+ *
+ * @param snapshot Snapshot consolidado do acompanhamento do aluno.
+ */
 @Composable
 private fun PedagogicalSection(snapshot: StudentMonitoringSnapshot) {
   DomainSectionCard(
@@ -285,7 +356,9 @@ private fun PedagogicalSection(snapshot: StudentMonitoringSnapshot) {
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
         shape = RoundedCornerShape(14.dp),
         colors =
-            CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
     ) {
       Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = pedagogicalTypeLabel(need.type), style = MaterialTheme.typography.titleSmall)
@@ -301,6 +374,11 @@ private fun PedagogicalSection(snapshot: StudentMonitoringSnapshot) {
   }
 }
 
+/**
+ * Renderiza regras e histórico de necessidades psicológicas.
+ *
+ * @param snapshot Snapshot consolidado do acompanhamento do aluno.
+ */
 @Composable
 private fun PsychologicalSection(snapshot: StudentMonitoringSnapshot) {
   DomainSectionCard(
@@ -320,7 +398,9 @@ private fun PsychologicalSection(snapshot: StudentMonitoringSnapshot) {
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
         shape = RoundedCornerShape(14.dp),
         colors =
-            CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
     ) {
       Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = need.summary, style = MaterialTheme.typography.bodyMedium)
@@ -340,6 +420,11 @@ private fun PsychologicalSection(snapshot: StudentMonitoringSnapshot) {
   }
 }
 
+/**
+ * Renderiza regras e histórico de contato com responsáveis.
+ *
+ * @param snapshot Snapshot consolidado do acompanhamento do aluno.
+ */
 @Composable
 private fun ParentSection(snapshot: StudentMonitoringSnapshot) {
   DomainSectionCard(
@@ -359,10 +444,15 @@ private fun ParentSection(snapshot: StudentMonitoringSnapshot) {
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
         shape = RoundedCornerShape(14.dp),
         colors =
-            CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
     ) {
       Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(text = "${followUp.date} · ${channelLabel(followUp.channel)}", style = MaterialTheme.typography.labelMedium)
+        Text(
+            text = "${followUp.date} · ${channelLabel(followUp.channel)}",
+            style = MaterialTheme.typography.labelMedium,
+        )
         Text(
             text = "Responsável: ${followUp.responsible}",
             style = MaterialTheme.typography.bodySmall,
@@ -382,15 +472,28 @@ private fun ParentSection(snapshot: StudentMonitoringSnapshot) {
   }
 }
 
+/**
+ * Cartão padrão para destacar regras de negócio e opções de cadastro por domínio.
+ *
+ * @param title Título da seção de regras.
+ * @param options Lista de orientações operacionais exibidas ao usuário.
+ */
 @Composable
 private fun DomainSectionCard(title: String, options: List<String>) {
   ElevatedCard(
       modifier = Modifier.fillMaxWidth(),
       shape = RoundedCornerShape(14.dp),
-      colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+      colors =
+          CardDefaults.elevatedCardColors(
+              containerColor = MaterialTheme.colorScheme.surfaceContainer
+          ),
   ) {
     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-      Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+      Text(
+          text = title,
+          style = MaterialTheme.typography.titleSmall,
+          fontWeight = FontWeight.SemiBold,
+      )
       options.forEach { option ->
         Text(text = "• $option", style = MaterialTheme.typography.bodySmall)
       }
@@ -398,6 +501,12 @@ private fun DomainSectionCard(title: String, options: List<String>) {
   }
 }
 
+/**
+ * Converte o status de frequência para o rótulo exibido na interface.
+ *
+ * @param record Registro de frequência analisado.
+ * @return Texto amigável para o status da frequência.
+ */
 private fun attendanceStatusLabel(record: AttendanceRecord): String =
     when (record.status) {
       AttendanceStatus.Present -> "Presente"
@@ -406,6 +515,12 @@ private fun attendanceStatusLabel(record: AttendanceRecord): String =
       AttendanceStatus.Late -> "Atraso ${record.minutesLate} min"
     }
 
+/**
+ * Mapeia a situação de entrega de atividades para rótulo de exibição.
+ *
+ * @param status Situação da entrega cadastrada.
+ * @return Texto amigável para a UI.
+ */
 private fun deliveryLabel(status: ActivityDeliveryStatus): String =
     when (status) {
       ActivityDeliveryStatus.OnTime -> "no prazo"
@@ -413,6 +528,12 @@ private fun deliveryLabel(status: ActivityDeliveryStatus): String =
       ActivityDeliveryStatus.Missing -> "não entregue"
     }
 
+/**
+ * Mapeia o tipo de necessidade pedagógica para rótulo de exibição.
+ *
+ * @param type Tipo cadastrado da necessidade.
+ * @return Texto amigável para a UI.
+ */
 private fun pedagogicalTypeLabel(type: PedagogicalNeedType): String =
     when (type) {
       PedagogicalNeedType.Report -> "Laudo"
@@ -420,12 +541,24 @@ private fun pedagogicalTypeLabel(type: PedagogicalNeedType): String =
       PedagogicalNeedType.SpecialNeed -> "Necessidade especial"
     }
 
+/**
+ * Mapeia o nível de confidencialidade psicológica para rótulo de exibição.
+ *
+ * @param level Nível de confidencialidade do registro.
+ * @return Texto amigável para a UI.
+ */
 private fun confidentialityLabel(level: ConfidentialityLevel): String =
     when (level) {
       ConfidentialityLevel.Restricted -> "Restrito"
       ConfidentialityLevel.SharedSummary -> "Resumo compartilhado"
     }
 
+/**
+ * Mapeia o canal de contato com responsáveis para rótulo de exibição.
+ *
+ * @param channel Canal utilizado no contato.
+ * @return Texto amigável para a UI.
+ */
 private fun channelLabel(channel: ParentContactChannel): String =
     when (channel) {
       ParentContactChannel.Meeting -> "Reunião"
@@ -434,6 +567,12 @@ private fun channelLabel(channel: ParentContactChannel): String =
       ParentContactChannel.Email -> "E-mail"
     }
 
+/**
+ * Mapeia o status do acompanhamento familiar para rótulo de exibição.
+ *
+ * @param status Situação atual do contato com os responsáveis.
+ * @return Texto amigável para a UI.
+ */
 private fun followUpStatusLabel(status: ParentFollowUpStatus): String =
     when (status) {
       ParentFollowUpStatus.Pending -> "Pendente"
@@ -442,16 +581,23 @@ private fun followUpStatusLabel(status: ParentFollowUpStatus): String =
       ParentFollowUpStatus.NoShow -> "Não compareceu"
     }
 
+/**
+ * Gera dados de exemplo para prototipação da tela de acompanhamento.
+ *
+ * @param studentId Identificador do aluno solicitado.
+ * @return Snapshot completo com dados mockados por domínio.
+ */
 private fun sampleMonitoringSnapshot(studentId: Int): StudentMonitoringSnapshot {
   val base = LocalDate.now()
   return StudentMonitoringSnapshot(
       studentId = studentId,
-      studentName = when (studentId) {
-        1 -> "Ana Lima"
-        2 -> "Carlos Souza"
-        3 -> "Fernanda Costa"
-        else -> "Aluno #$studentId"
-      },
+      studentName =
+          when (studentId) {
+            1 -> "Ana Lima"
+            2 -> "Carlos Souza"
+            3 -> "Fernanda Costa"
+            else -> "Aluno #$studentId"
+          },
       enrolledClass = "Turma A1",
       attendanceRecords =
           listOf(
@@ -536,9 +682,9 @@ private fun sampleMonitoringSnapshot(studentId: Int): StudentMonitoringSnapshot 
   )
 }
 
+/** Pré-visualização da tela de acompanhamento de aluno. */
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun StudentMonitoringPreview() {
   AppDesafioSEBRAETheme { StudentMonitoringScreen(studentId = 1) }
 }
-
