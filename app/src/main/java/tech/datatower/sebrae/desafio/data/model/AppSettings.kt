@@ -8,4 +8,3 @@ data class AppSettings(
     val pushEnabled: Boolean,
     val emailEnabled: Boolean,
 )
-
