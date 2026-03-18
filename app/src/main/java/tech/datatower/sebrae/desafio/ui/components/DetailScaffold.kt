@@ -17,6 +17,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 
+/**
+ * Estrutura base para telas internas com barra superior e ação de retorno.
+ *
+ * Encapsula um `TopAppBar` com comportamento de scroll e delega o conteúdo da tela para o bloco
+ * `content`.
+ *
+ * @param title Título principal exibido no topo da tela.
+ * @param onBack Ação executada ao tocar no ícone de voltar.
+ * @param actions Conteúdo opcional para ações no topo.
+ * @param content Conteúdo principal da tela; recebe os `PaddingValues` do `Scaffold` e o
+ *   `TopAppBarScrollBehavior` para integração de scroll.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScaffold(
