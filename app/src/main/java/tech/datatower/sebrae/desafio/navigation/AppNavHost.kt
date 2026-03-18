@@ -16,39 +16,24 @@ import tech.datatower.sebrae.desafio.ui.teachers.TeachersScreen
 
 @Composable
 fun AppNavHost(navController: NavHostController) {
-    NavHost(
-        navController = navController,
-        startDestination = AppRoutes.HOME,
-    ) {
-        composable(AppRoutes.HOME) {
-            HomeScreen(
-                onModuleClick = { route -> navController.navigate(route) },
-            )
-        }
-        composable(AppRoutes.STUDENTS) {
-            StudentsScreen(onBack = { navController.popBackStack() })
-        }
-        composable(AppRoutes.COURSES) {
-            CoursesScreen(onBack = { navController.popBackStack() })
-        }
-        composable(AppRoutes.CLASSES) {
-            ClassesScreen(onBack = { navController.popBackStack() })
-        }
-        composable(AppRoutes.TEACHERS) {
-            TeachersScreen(onBack = { navController.popBackStack() })
-        }
-        composable(AppRoutes.REPORTS) {
-            ReportsScreen(onBack = { navController.popBackStack() })
-        }
-        composable(AppRoutes.CERTIFICATES) {
-            CertificatesScreen(onBack = { navController.popBackStack() })
-        }
-        composable(AppRoutes.CALENDAR) {
-            CalendarScreen(onBack = { navController.popBackStack() })
-        }
-        composable(AppRoutes.SETTINGS) {
-            SettingsScreen(onBack = { navController.popBackStack() })
-        }
+  NavHost(
+      navController = navController,
+      startDestination = AppRoutes.HOME,
+  ) {
+    composable(AppRoutes.HOME) {
+      HomeScreen(
+          onModuleClick = { route -> navController.navigate(route) },
+      )
     }
+    composable(AppRoutes.STUDENTS) { StudentsScreen(onBack = { navController.popBackStack() }) }
+    composable(AppRoutes.COURSES) { CoursesScreen(onBack = { navController.popBackStack() }) }
+    composable(AppRoutes.CLASSES) { ClassesScreen(onBack = { navController.popBackStack() }) }
+    composable(AppRoutes.TEACHERS) { TeachersScreen(onBack = { navController.popBackStack() }) }
+    composable(AppRoutes.REPORTS) { ReportsScreen(onBack = { navController.popBackStack() }) }
+    composable(AppRoutes.CERTIFICATES) {
+      CertificatesScreen(onBack = { navController.popBackStack() })
+    }
+    composable(AppRoutes.CALENDAR) { CalendarScreen(onBack = { navController.popBackStack() }) }
+    composable(AppRoutes.SETTINGS) { SettingsScreen(onBack = { navController.popBackStack() }) }
+  }
 }
-
