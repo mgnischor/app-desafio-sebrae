@@ -29,4 +29,3 @@ object AppGraph {
     return repo
   }
 }
-
