@@ -12,6 +12,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+/**
+ * Exibe um rótulo curto com destaque visual para estado ou categoria.
+ *
+ * @param label Texto mostrado dentro do chip.
+ * @param containerColor Cor de fundo do chip.
+ * @param contentColor Cor do texto exibido no chip.
+ */
 @Composable
 fun StatusChip(
     label: String,
