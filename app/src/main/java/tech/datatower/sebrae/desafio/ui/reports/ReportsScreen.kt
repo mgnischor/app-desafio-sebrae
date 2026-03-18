@@ -21,20 +21,45 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import java.util.Locale
+import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportsScreen(onBack: () -> Unit = {}) {
+  val context = LocalContext.current
+  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val summary by
+      repository
+          .observeReportSummary()
+          .collectAsState(
+              initial =
+                  tech.datatower.sebrae.desafio.data.repository.ReportSummary(
+                      activeStudents = 0,
+                      activeCourses = 0,
+                      totalClasses = 0,
+                      completionRate = 0f,
+                      certificates = 0,
+                      averageTeacherRating = 0f,
+                  )
+          )
+  val courseCompletion by
+      repository.observeCourseCompletionMetrics().collectAsState(initial = emptyList())
+  val monthly by repository.observeMonthlyEnrollmentMetrics().collectAsState(initial = emptyList())
+
   DetailScaffold(title = "Relatórios", onBack = onBack) { innerPadding, _ ->
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -47,9 +72,9 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-          KpiCard("1.240", "Alunos Ativos", Modifier.weight(1f))
-          KpiCard("38", "Cursos Ativos", Modifier.weight(1f))
-          KpiCard("74", "Turmas", Modifier.weight(1f))
+          KpiCard(summary.activeStudents.toString(), "Alunos Ativos", Modifier.weight(1f))
+          KpiCard(summary.activeCourses.toString(), "Cursos Ativos", Modifier.weight(1f))
+          KpiCard(summary.totalClasses.toString(), "Turmas", Modifier.weight(1f))
         }
       }
       item {
@@ -57,15 +82,23 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-          KpiCard("82%", "Taxa de Conclusão", Modifier.weight(1f))
-          KpiCard("148", "Certificados", Modifier.weight(1f))
-          KpiCard("4.7★", "Avaliação Média", Modifier.weight(1f))
+          KpiCard(
+              "${(summary.completionRate * 100).toInt()}%",
+              "Taxa de Conclusão",
+              Modifier.weight(1f),
+          )
+          KpiCard(summary.certificates.toString(), "Certificados", Modifier.weight(1f))
+          KpiCard(
+              String.format(Locale.getDefault(), "%.1f★", summary.averageTeacherRating),
+              "Avaliação Média",
+              Modifier.weight(1f),
+          )
         }
       }
       item { SectionHeader("Taxa de Conclusão por Curso") }
-      item { CourseCompletionReport() }
+      item { CourseCompletionReport(courseCompletion) }
       item { SectionHeader("Matrículas por Mês") }
-      item { EnrollmentMonthlyReport() }
+      item { EnrollmentMonthlyReport(monthly) }
     }
   }
 }
@@ -111,20 +144,10 @@ private fun KpiCard(value: String, label: String, modifier: Modifier = Modifier)
   }
 }
 
-private data class CourseCompletion(val name: String, val rate: Float)
-
 @Composable
-private fun CourseCompletionReport() {
-  val items = remember {
-    listOf(
-        CourseCompletion("Empreendedorismo", 0.91f),
-        CourseCompletion("Marketing Digital", 0.82f),
-        CourseCompletion("Design Gráfico", 0.70f),
-        CourseCompletion("Excel p/ Negócios", 0.60f),
-        CourseCompletion("Vendas e Negociação", 0.55f),
-        CourseCompletion("Finanças Pessoais", 0.45f),
-    )
-  }
+private fun CourseCompletionReport(
+    items: List<tech.datatower.sebrae.desafio.data.repository.CourseCompletionMetric>
+) {
   ElevatedCard(
       modifier = Modifier.fillMaxWidth(),
       shape = RoundedCornerShape(16.dp),
@@ -163,22 +186,11 @@ private fun CourseCompletionReport() {
   }
 }
 
-private data class MonthEnrollment(val month: String, val count: Int)
-
 @Composable
-private fun EnrollmentMonthlyReport() {
-  val items = remember {
-    listOf(
-        MonthEnrollment("Set", 85),
-        MonthEnrollment("Out", 110),
-        MonthEnrollment("Nov", 98),
-        MonthEnrollment("Dez", 72),
-        MonthEnrollment("Jan", 130),
-        MonthEnrollment("Fev", 155),
-        MonthEnrollment("Mar", 148),
-    )
-  }
-  val maxCount = items.maxOf { it.count }
+private fun EnrollmentMonthlyReport(
+    items: List<tech.datatower.sebrae.desafio.data.repository.MonthlyEnrollmentMetric>
+) {
+  val maxCount = items.maxOfOrNull { it.count } ?: 1
   ElevatedCard(
       modifier = Modifier.fillMaxWidth(),
       shape = RoundedCornerShape(16.dp),
