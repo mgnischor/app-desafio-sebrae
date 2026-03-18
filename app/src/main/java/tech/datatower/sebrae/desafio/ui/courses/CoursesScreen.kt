@@ -1,5 +1,6 @@
 package tech.datatower.sebrae.desafio.ui.courses
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,20 +42,35 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tech.datatower.sebrae.desafio.data.model.Course
+import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.EmptyState
 import tech.datatower.sebrae.desafio.ui.components.ListSearchHeader
 import tech.datatower.sebrae.desafio.ui.components.StatusChip
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
+/**
+ * Tela de listagem e consulta de cursos.
+ *
+ * Permite filtrar por título, categoria e instrutor, apresentando cartões com indicadores
+ * operacionais e taxa de conclusão.
+ *
+ * @param onBack Ação executada ao voltar para a tela anterior.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CoursesScreen(onBack: () -> Unit = {}) {
-  val allCourses = remember { sampleCourses() }
+fun CoursesScreen(
+    onBack: () -> Unit = {},
+    onOpenCourseDetail: (Int) -> Unit = {},
+) {
+  val context = LocalContext.current
+  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val allCourses by repository.observeCourses().collectAsState(initial = emptyList())
   var query by rememberSaveable { mutableStateOf("") }
   val listState = rememberLazyListState()
 
@@ -115,7 +132,7 @@ fun CoursesScreen(onBack: () -> Unit = {}) {
               key = { it.id },
               contentType = { "course" },
           ) { course ->
-            CourseCard(course = course)
+            CourseCard(course = course, onClick = { onOpenCourseDetail(course.id) })
           }
         }
       }
@@ -123,14 +140,22 @@ fun CoursesScreen(onBack: () -> Unit = {}) {
   }
 }
 
+/**
+ * Cartão de resumo de um curso.
+ *
+ * @param course Curso exibido no item da lista.
+ */
 @Composable
-private fun CourseCard(course: Course) {
+private fun CourseCard(
+    course: Course,
+    onClick: () -> Unit,
+) {
   ElevatedCard(
-      modifier = Modifier.fillMaxWidth(),
+      modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
       shape = RoundedCornerShape(16.dp),
       colors =
           CardDefaults.elevatedCardColors(
-              containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+              containerColor = MaterialTheme.colorScheme.surfaceContainerLow
           ),
       elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
   ) {
@@ -227,6 +252,11 @@ private fun CourseCard(course: Course) {
   }
 }
 
+/**
+ * Disponibiliza dados simulados para prototipação da tela de cursos.
+ *
+ * @return Lista fixa de cursos com diferentes níveis de progresso e publicação.
+ */
 private fun sampleCourses() =
     listOf(
         Course(1, "Marketing Digital", "Negócios", "Profa. Helena", 320, 40, 0.82f, true),
@@ -237,6 +267,7 @@ private fun sampleCourses() =
         Course(6, "Vendas e Negociação", "Negócios", "Prof. Sérgio", 260, 12, 0.55f, true),
     )
 
+/** Pré-visualização da tela de cursos no ambiente de design. */
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun CoursesPreview() {
