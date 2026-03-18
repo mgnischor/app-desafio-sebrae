@@ -16,19 +16,18 @@ import androidx.compose.ui.unit.dp
 fun StatusChip(
     label: String,
     containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
-    contentColor: Color  = MaterialTheme.colorScheme.onSecondaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer,
 ) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(containerColor)
-            .padding(horizontal = 10.dp, vertical = 3.dp),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = contentColor,
-        )
-    }
+  Box(
+      modifier =
+          Modifier.clip(RoundedCornerShape(50))
+              .background(containerColor)
+              .padding(horizontal = 10.dp, vertical = 3.dp),
+  ) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        color = contentColor,
+    )
+  }
 }
-
