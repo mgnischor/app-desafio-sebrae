@@ -15,8 +15,14 @@ import tech.datatower.sebrae.desafio.data.model.ParentFollowUpStatus
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringRules
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringSnapshot
 
+/**
+ * Testes unitários das regras de negócio do módulo de acompanhamento do aluno.
+ */
 class StudentMonitoringRulesTest {
 
+  /**
+   * Garante que faltas justificadas não entram na base de cálculo da frequência.
+   */
   @Test
   fun attendanceRate_ignoresJustifiedAbsenceInBase() {
     val records =
@@ -31,6 +37,9 @@ class StudentMonitoringRulesTest {
     assertEquals(0.5f, rate, 0.001f)
   }
 
+  /**
+   * Garante emissão de alerta quando a frequência consolidada cai abaixo do limite.
+   */
   @Test
   fun buildAlerts_returnsCriticalWhenAttendanceBelowThreshold() {
     val today = LocalDate.now()
@@ -91,4 +100,3 @@ class StudentMonitoringRulesTest {
     assertTrue(alerts.any { it.message.contains("Frequência") })
   }
 }
-
