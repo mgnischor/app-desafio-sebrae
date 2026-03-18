@@ -61,6 +61,11 @@
         "git.ignoreRebaseWarning": true,
         "git.ignoreWindowsGit27Warning": true,
 
+        "github.copilot.chat.commitMessageGeneration.instructions": [
+        {
+            "text": "Sempre use idioma português brasileiro nas mensagens.",
+        },],
+
         "[ignore]": {
             "editor.defaultFormatter": null,
             "editor.formatOnPaste": false,
