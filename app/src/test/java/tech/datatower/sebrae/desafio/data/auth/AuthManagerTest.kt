@@ -1,9 +1,9 @@
 package tech.datatower.sebrae.desafio.data.auth
 
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import tech.datatower.sebrae.desafio.data.model.UserRole
@@ -43,9 +43,7 @@ class AuthManagerTest {
     assertTrue("Login deve ser bem-sucedido com credenciais corretas", resultado)
   }
 
-  /**
-   * Valida falha de login com email inválido.
-   */
+  /** Valida falha de login com email inválido. */
   @Test
   fun `login com email inválido deve retornar false`() {
     // Arrange
@@ -59,9 +57,7 @@ class AuthManagerTest {
     assertFalse("Login deve falhar com email não cadastrado", resultado)
   }
 
-  /**
-   * Valida falha de login com senha incorreta.
-   */
+  /** Valida falha de login com senha incorreta. */
   @Test
   fun `login com senha incorreta deve retornar false`() {
     // Arrange
@@ -75,9 +71,7 @@ class AuthManagerTest {
     assertFalse("Login deve falhar com senha incorreta", resultado)
   }
 
-  /**
-   * Valida normalização de email (minúsculas) no login.
-   */
+  /** Valida normalização de email (minúsculas) no login. */
   @Test
   fun `login deve aceitar emails com maiúsculas`() {
     // Arrange
@@ -91,9 +85,7 @@ class AuthManagerTest {
     assertTrue("Login deve aceitar emails em maiúsculas", resultado)
   }
 
-  /**
-   * Valida login de coordenador com credenciais específicas.
-   */
+  /** Valida login de coordenador com credenciais específicas. */
   @Test
   fun `login com credenciais de coordenador deve ser bem-sucedido`() {
     // Arrange
@@ -107,9 +99,7 @@ class AuthManagerTest {
     assertTrue("Login de coordenador deve funcionar", resultado)
   }
 
-  /**
-   * Valida login de administrador com credenciais específicas.
-   */
+  /** Valida login de administrador com credenciais específicas. */
   @Test
   fun `login com credenciais de administrador deve ser bem-sucedido`() {
     // Arrange
@@ -125,9 +115,7 @@ class AuthManagerTest {
 
   // ── Testes de Sessão ──────────────────────────────────────────────────
 
-  /**
-   * Valida que o usuário é definido após login bem-sucedido.
-   */
+  /** Valida que o usuário é definido após login bem-sucedido. */
   @Test
   fun `currentUser deve conter dados do usuário após login bem-sucedido`() {
     // Arrange
@@ -144,9 +132,7 @@ class AuthManagerTest {
     assertTrue("Role deve ser PROFESSOR", usuarioAtual?.role == UserRole.PROFESSOR)
   }
 
-  /**
-   * Valida que currentUser permanece nulo sem login.
-   */
+  /** Valida que currentUser permanece nulo sem login. */
   @Test
   fun `currentUser deve ser nulo quando não autenticado`() {
     // Arrange & Act
@@ -156,9 +142,7 @@ class AuthManagerTest {
     assertNull("Usuário deve ser nulo quando não autenticado", usuarioAtual)
   }
 
-  /**
-   * Valida logout bem-sucedido.
-   */
+  /** Valida logout bem-sucedido. */
   @Test
   fun `logout deve limpar sessão do usuário`() {
     // Arrange: Login primeiro
@@ -174,15 +158,16 @@ class AuthManagerTest {
     assertNull("Usuário deve ser nulo após logout", usuarioAtual)
   }
 
-  /**
-   * Valida troca de usuário após logout e novo login.
-   */
+  /** Valida troca de usuário após logout e novo login. */
   @Test
   fun `login após logout deve funcionar com novo usuário`() {
     // Arrange: Login com professor
     AuthManager.login("professor@sebrae.edu.br", "prof123")
     var usuarioAtual = AuthManager.currentUser.value
-    assertTrue("Primeiro login deve ser bem-sucedido", usuarioAtual?.email == "professor@sebrae.edu.br")
+    assertTrue(
+        "Primeiro login deve ser bem-sucedido",
+        usuarioAtual?.email == "professor@sebrae.edu.br",
+    )
 
     // Act: Logout e login com coordenador
     AuthManager.logout()
@@ -196,9 +181,7 @@ class AuthManagerTest {
 
   // ── Testes de Segurança ───────────────────────────────────────────────
 
-  /**
-   * Valida que espaços em branco no email são trimados.
-   */
+  /** Valida que espaços em branco no email são trimados. */
   @Test
   fun `login deve remover espaços em branco do email`() {
     // Arrange
@@ -212,9 +195,7 @@ class AuthManagerTest {
     assertTrue("Login deve funcionar com email contendo espaços", resultado)
   }
 
-  /**
-   * Valida que tentativas repetidas de login com senha errada mantêm usuário desautenticado.
-   */
+  /** Valida que tentativas repetidas de login com senha errada mantêm usuário desautenticado. */
   @Test
   fun `múltiplas tentativas de login com senha errada não devem autenticar`() {
     // Arrange
@@ -229,4 +210,3 @@ class AuthManagerTest {
     }
   }
 }
-
