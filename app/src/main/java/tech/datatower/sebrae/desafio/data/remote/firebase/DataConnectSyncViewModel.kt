@@ -22,20 +22,19 @@ class DataConnectSyncViewModel(
 
   // ── Estados de Sincronização ──────────────────────────────────────
 
-  private val _syncState =
-      MutableStateFlow<SyncState>(SyncState.Idle)
+  private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
   val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
 
-  private val _coursesState =
-      MutableStateFlow<DataState<List<Course>>>(DataState.Idle)
+  private val _coursesState: MutableStateFlow<DataState<List<Course>>> =
+      MutableStateFlow(DataState.Idle)
   val coursesState: StateFlow<DataState<List<Course>>> = _coursesState.asStateFlow()
 
-  private val _studentsState =
-      MutableStateFlow<DataState<List<Student>>>(DataState.Idle)
+  private val _studentsState: MutableStateFlow<DataState<List<Student>>> =
+      MutableStateFlow(DataState.Idle)
   val studentsState: StateFlow<DataState<List<Student>>> = _studentsState.asStateFlow()
 
-  private val _teachersState =
-      MutableStateFlow<DataState<List<Teacher>>>(DataState.Idle)
+  private val _teachersState: MutableStateFlow<DataState<List<Teacher>>> =
+      MutableStateFlow(DataState.Idle)
   val teachersState: StateFlow<DataState<List<Teacher>>> = _teachersState.asStateFlow()
 
   /**
@@ -63,10 +62,8 @@ class DataConnectSyncViewModel(
       val result = service.fetchCourses()
       _coursesState.value =
           when (result) {
-            is FirebaseDataConnectService.Result.Success ->
-                DataState.Success(result.data)
-            is FirebaseDataConnectService.Result.Error ->
-                DataState.Error(result.message)
+            is FirebaseDataConnectService.Result.Success -> DataState.Success(result.data)
+            is FirebaseDataConnectService.Result.Error -> DataState.Error(result.message)
             is FirebaseDataConnectService.Result.Loading -> DataState.Loading
           }
     }
@@ -81,10 +78,8 @@ class DataConnectSyncViewModel(
       val result = service.fetchStudents()
       _studentsState.value =
           when (result) {
-            is FirebaseDataConnectService.Result.Success ->
-                DataState.Success(result.data)
-            is FirebaseDataConnectService.Result.Error ->
-                DataState.Error(result.message)
+            is FirebaseDataConnectService.Result.Success -> DataState.Success(result.data)
+            is FirebaseDataConnectService.Result.Error -> DataState.Error(result.message)
             is FirebaseDataConnectService.Result.Loading -> DataState.Loading
           }
     }
@@ -99,10 +94,8 @@ class DataConnectSyncViewModel(
       val result = service.fetchTeachers()
       _teachersState.value =
           when (result) {
-            is FirebaseDataConnectService.Result.Success ->
-                DataState.Success(result.data)
-            is FirebaseDataConnectService.Result.Error ->
-                DataState.Error(result.message)
+            is FirebaseDataConnectService.Result.Success -> DataState.Success(result.data)
+            is FirebaseDataConnectService.Result.Error -> DataState.Error(result.message)
             is FirebaseDataConnectService.Result.Loading -> DataState.Loading
           }
     }
@@ -121,11 +114,12 @@ class DataConnectSyncViewModel(
   /**
    * Estados genéricos para dados específicos.
    */
-  sealed class DataState<T> {
+  sealed class DataState<out T> {
     data object Idle : DataState<Nothing>()
     data object Loading : DataState<Nothing>()
     data class Success<T>(val data: T) : DataState<T>()
-    data class Error<T>(val message: String) : DataState<T>()
+    data class Error(val message: String) : DataState<Nothing>()
   }
 }
+
 
