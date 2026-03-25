@@ -41,10 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.util.Locale
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
@@ -87,7 +89,7 @@ fun TeachersScreen(
         }
       }
 
-  DetailScaffold(title = "Instrutores", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.teachers_title), onBack = onBack) { innerPadding, _ ->
     Scaffold(
         floatingActionButton = {
           FloatingActionButton(
@@ -95,7 +97,10 @@ fun TeachersScreen(
               containerColor = MaterialTheme.colorScheme.primary,
               contentColor = MaterialTheme.colorScheme.onPrimary,
           ) {
-            Icon(imageVector = Icons.Outlined.Add, contentDescription = "Novo instrutor")
+            Icon(
+                imageVector = Icons.Outlined.Add,
+                contentDescription = stringResource(R.string.teachers_add_content_description)
+            )
           }
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -110,15 +115,18 @@ fun TeachersScreen(
           ListSearchHeader(
               query = query,
               onQueryChange = { query = it },
-              placeholder = "Buscar instrutor ou especialidade...",
+              placeholder = stringResource(R.string.teachers_search_placeholder),
               resultCount = filtered.size,
-              resultLabel = "instrutores encontrados",
+              resultLabel = stringResource(R.string.teachers_result_label),
           )
         }
 
         if (filtered.isEmpty()) {
           item {
-            EmptyState(icon = Icons.Outlined.School, message = "Nenhum instrutor encontrado.")
+            EmptyState(
+                icon = Icons.Outlined.School,
+                message = stringResource(R.string.teachers_empty_state)
+            )
           }
         } else {
           items(
@@ -193,12 +201,12 @@ private fun TeacherCard(
         Spacer(modifier = Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
           Text(
-              text = "${teacher.activeCourses} cursos ativos",
+              text = stringResource(R.string.unit_active_courses, teacher.activeCourses),
               style = MaterialTheme.typography.labelSmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
           Text(
-              text = "${teacher.totalStudents} alunos",
+              text = "${teacher.totalStudents} ${stringResource(R.string.unit_students)}",
               style = MaterialTheme.typography.labelSmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
