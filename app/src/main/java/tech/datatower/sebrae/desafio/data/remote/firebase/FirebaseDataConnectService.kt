@@ -5,7 +5,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
-import java.security.MessageDigest
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -14,10 +13,14 @@ import kotlinx.coroutines.tasks.await
 import tech.datatower.sebrae.desafio.BuildConfig
 import tech.datatower.sebrae.desafio.data.local.AppDao
 import tech.datatower.sebrae.desafio.data.model.AppUser
+import tech.datatower.sebrae.desafio.data.model.ClassStatus
 import tech.datatower.sebrae.desafio.data.model.Course
+import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.model.Student
+import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.data.model.UserRole
+import java.security.MessageDigest
 
 /**
  * Serviço de integração com Firebase Data Connect.
@@ -32,7 +35,7 @@ class FirebaseDataConnectService(
     private val dao: AppDao,
     private val credentialStore: FirebaseSeedCredentialStore,
 ) {
-
+  /** Modelo e comportamento relacionados a managed user. */
   data class ManagedUser(
       val id: Int,
       val name: String,
@@ -48,8 +51,10 @@ class FirebaseDataConnectService(
    * operação em progresso
    */
   sealed class Result<out T> {
+    /** Modelo e comportamento relacionados a success. */
     data class Success<T>(val data: T) : Result<T>()
 
+    /** Modelo e comportamento relacionados a error. */
     data class Error(val exception: Exception, val message: String = "") : Result<Nothing>()
 
     data object Loading : Result<Nothing>()
@@ -147,7 +152,13 @@ class FirebaseDataConnectService(
       includeRestrictedCollections: Boolean = false,
   ): Result<Map<String, Int>> {
     val counters = linkedMapOf<String, Int>()
-
+    /**
+     * Executa a rotina de merge count dentro do contexto deste componente.
+     *
+     * @param collection Valor de entrada utilizado por esta opera??o.
+     * @param result Valor de entrada utilizado por esta opera??o.
+     * @return Resultado produzido pela opera??o em formato `Result<Map<String, Int>>?`.
+     */
     fun mergeCount(collection: String, result: Result<Int>): Result<Map<String, Int>>? {
       return when (result) {
         is Result.Success -> {
@@ -467,6 +478,14 @@ class FirebaseDataConnectService(
     return Result.Success(counters)
   }
 
+  /**
+   * Executa a rotina de seed collection from maps dentro do contexto deste componente.
+   *
+   * @param collectionName Valor de entrada utilizado por esta opera??o.
+   * @param items Valor de entrada utilizado por esta opera??o.
+   * @param idSelector Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Result<Int>`.
+   */
   private suspend fun seedCollectionFromMaps(
       collectionName: String,
       items: List<Map<String, Any?>>,
@@ -489,6 +508,13 @@ class FirebaseDataConnectService(
     }
   }
 
+  /**
+   * Verifica se permission denied est? em condi??o v?lida para o fluxo atual.
+   *
+   * @param exception Valor de entrada utilizado por esta opera??o.
+   * @param message Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Boolean`.
+   */
   private fun isPermissionDenied(exception: Exception, message: String): Boolean {
     val raw = (exception.message.orEmpty() + " " + message).uppercase()
     return raw.contains("PERMISSION_DENIED")
@@ -705,6 +731,13 @@ class FirebaseDataConnectService(
     }
   }
 
+  /**
+   * Executa a rotina de delete user for admin dentro do contexto deste componente.
+   *
+   * @param requester Valor de entrada utilizado por esta opera??o.
+   * @param userId Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
+   */
   suspend fun deleteUserForAdmin(requester: AppUser?, userId: Int): Result<Boolean> {
     if (requester?.role != UserRole.ADMINISTRADOR) {
       return Result.Error(
@@ -731,6 +764,12 @@ class FirebaseDataConnectService(
     }
   }
 
+  /**
+   * Observa altera??es de users realtime for admin e publica atualiza??es reativas.
+   *
+   * @param requester Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Flow<Result<List<ManagedUser>>>`.
+   */
   fun observeUsersRealtimeForAdmin(requester: AppUser?): Flow<Result<List<ManagedUser>>> =
       callbackFlow {
         if (requester?.role != UserRole.ADMINISTRADOR) {
@@ -803,7 +842,13 @@ class FirebaseDataConnectService(
                   course = doc.getString("course") ?: "",
                   enrolledClass = doc.getString("enrolledClass") ?: "",
                   progress = (doc.get("progress") as? Number)?.toFloat() ?: 0f,
-                  status = tech.datatower.sebrae.desafio.data.model.StudentStatus.Active,
+                  status =
+                      runCatching {
+                            StudentStatus.valueOf(
+                                doc.getString("status").orEmpty().ifBlank { "Active" }
+                            )
+                          }
+                          .getOrDefault(StudentStatus.Active),
               )
             } catch (e: Exception) {
               Log.w(TAG, "Erro ao converter estudante: ${doc.id}", e)
@@ -821,6 +866,49 @@ class FirebaseDataConnectService(
     } catch (e: Exception) {
       Log.e(TAG, "Erro ao buscar estudantes do Data Connect", e)
       Result.Error(e, "Falha ao buscar estudantes: ${e.message}")
+    }
+  }
+
+  /** Busca lista de turmas do Data Connect. */
+  suspend fun fetchClasses(): Result<List<SchoolClass>> {
+    return try {
+      Log.d(TAG, "Iniciando busca de turmas do Data Connect...")
+
+      val snapshot = firestore.collection(COLLECTION_CLASSES).get().await()
+      val classes =
+          snapshot.documents.mapNotNull { doc ->
+            try {
+              SchoolClass(
+                  id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null,
+                  name = doc.getString("name") ?: "",
+                  course = doc.getString("course") ?: "",
+                  instructor = doc.getString("instructor") ?: "",
+                  studentsCount = (doc.get("studentsCount") as? Number)?.toInt() ?: 0,
+                  maxCapacity = (doc.get("maxCapacity") as? Number)?.toInt() ?: 0,
+                  schedule = doc.getString("schedule") ?: "",
+                  status =
+                      runCatching {
+                            ClassStatus.valueOf(
+                                doc.getString("status").orEmpty().ifBlank { "Open" }
+                            )
+                          }
+                          .getOrDefault(ClassStatus.Open),
+              )
+            } catch (e: Exception) {
+              Log.w(TAG, "Erro ao converter turma: ${doc.id}", e)
+              null
+            }
+          }
+
+      if (classes.isNotEmpty()) {
+        dao.insertClasses(classes.map { it.toEntity() })
+        Log.d(TAG, "Sincronizadas ${classes.size} turmas para cache local")
+      }
+
+      Result.Success(classes)
+    } catch (e: Exception) {
+      Log.e(TAG, "Erro ao buscar turmas do Data Connect", e)
+      Result.Error(e, "Falha ao buscar turmas: ${e.message}")
     }
   }
 
@@ -872,11 +960,13 @@ class FirebaseDataConnectService(
 
       val coursesResult = fetchCourses()
       val studentsResult = fetchStudents()
+      val classesResult = fetchClasses()
       val teachersResult = fetchTeachers()
 
       val allSuccess =
           coursesResult is Result.Success &&
               studentsResult is Result.Success &&
+              classesResult is Result.Success &&
               teachersResult is Result.Success
 
       if (allSuccess) {
@@ -886,6 +976,7 @@ class FirebaseDataConnectService(
         val errors = buildString {
           if (coursesResult is Result.Error) append("Cursos: ${coursesResult.message}. ")
           if (studentsResult is Result.Error) append("Estudantes: ${studentsResult.message}. ")
+          if (classesResult is Result.Error) append("Turmas: ${classesResult.message}. ")
           if (teachersResult is Result.Error) append("Professores: ${teachersResult.message}. ")
         }
         Result.Error(Exception("Falha parcial"), errors)
@@ -908,7 +999,118 @@ class FirebaseDataConnectService(
     }
   }
 
+  /**
+   * Executa a rotina de upsert course dentro do contexto deste componente.
+   *
+   * @param course Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
+   */
+  suspend fun upsertCourse(course: Course): Result<Boolean> {
+    return try {
+      val payload =
+          mapOf(
+              "id" to course.id,
+              "title" to course.title,
+              "category" to course.category,
+              "instructor" to course.instructor,
+              "totalStudents" to course.totalStudents,
+              "durationHours" to course.durationHours,
+              "completionRate" to course.completionRate,
+              "isPublished" to course.isPublished,
+          )
+      firestore.collection(COLLECTION_COURSES).document(course.id.toString()).set(payload).await()
+      dao.insertCourses(listOf(course.toEntity()))
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao salvar curso: ${e.message}")
+    }
+  }
+
+  /**
+   * Executa a rotina de upsert class dentro do contexto deste componente.
+   *
+   * @param schoolClass Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
+   */
+  suspend fun upsertClass(schoolClass: SchoolClass): Result<Boolean> {
+    return try {
+      val payload =
+          mapOf(
+              "id" to schoolClass.id,
+              "name" to schoolClass.name,
+              "course" to schoolClass.course,
+              "instructor" to schoolClass.instructor,
+              "studentsCount" to schoolClass.studentsCount,
+              "maxCapacity" to schoolClass.maxCapacity,
+              "schedule" to schoolClass.schedule,
+              "status" to schoolClass.status.name,
+          )
+      firestore
+          .collection(COLLECTION_CLASSES)
+          .document(schoolClass.id.toString())
+          .set(payload)
+          .await()
+      dao.insertClasses(listOf(schoolClass.toEntity()))
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao salvar turma: ${e.message}")
+    }
+  }
+
+  /**
+   * Executa a rotina de upsert teacher dentro do contexto deste componente.
+   *
+   * @param teacher Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
+   */
+  suspend fun upsertTeacher(teacher: Teacher): Result<Boolean> {
+    return try {
+      val payload =
+          mapOf(
+              "id" to teacher.id,
+              "name" to teacher.name,
+              "email" to teacher.email,
+              "specialty" to teacher.specialty,
+              "activeCourses" to teacher.activeCourses,
+              "totalStudents" to teacher.totalStudents,
+              "rating" to teacher.rating,
+          )
+      firestore.collection(COLLECTION_TEACHERS).document(teacher.id.toString()).set(payload).await()
+      dao.insertTeachers(listOf(teacher.toEntity()))
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao salvar instrutor: ${e.message}")
+    }
+  }
+
+  /**
+   * Executa a rotina de upsert student dentro do contexto deste componente.
+   *
+   * @param student Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
+   */
+  suspend fun upsertStudent(student: Student): Result<Boolean> {
+    return try {
+      val payload =
+          mapOf(
+              "id" to student.id,
+              "name" to student.name,
+              "email" to student.email,
+              "course" to student.course,
+              "enrolledClass" to student.enrolledClass,
+              "progress" to student.progress,
+              "status" to student.status.name,
+          )
+      firestore.collection(COLLECTION_STUDENTS).document(student.id.toString()).set(payload).await()
+      dao.insertStudents(listOf(student.toEntity()))
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao salvar aluno: ${e.message}")
+    }
+  }
+
   // Conversões de modelo para entidade (para cache local)
+  /** Executa a rotina de course dentro do contexto deste componente. */
   private fun Course.toEntity() =
       tech.datatower.sebrae.desafio.data.local.CourseEntity(
           id = id,
@@ -921,6 +1123,7 @@ class FirebaseDataConnectService(
           isPublished = isPublished,
       )
 
+  /** Executa a rotina de student dentro do contexto deste componente. */
   private fun Student.toEntity() =
       tech.datatower.sebrae.desafio.data.local.StudentEntity(
           id = id,
@@ -932,6 +1135,7 @@ class FirebaseDataConnectService(
           status = status,
       )
 
+  /** Executa a rotina de teacher dentro do contexto deste componente. */
   private fun Teacher.toEntity() =
       tech.datatower.sebrae.desafio.data.local.TeacherEntity(
           id = id,
@@ -943,6 +1147,25 @@ class FirebaseDataConnectService(
           rating = rating,
       )
 
+  /** Executa a rotina de school class dentro do contexto deste componente. */
+  private fun SchoolClass.toEntity() =
+      tech.datatower.sebrae.desafio.data.local.SchoolClassEntity(
+          id = id,
+          name = name,
+          course = course,
+          instructor = instructor,
+          studentsCount = studentsCount,
+          maxCapacity = maxCapacity,
+          schedule = schedule,
+          status = status,
+      )
+
+  /**
+   * Executa a rotina de sha256 dentro do contexto deste componente.
+   *
+   * @param input Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `String`.
+   */
   private fun sha256(input: String): String {
     val digest = MessageDigest.getInstance("SHA-256")
     return digest.digest(input.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
