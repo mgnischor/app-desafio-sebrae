@@ -1,5 +1,6 @@
 package tech.datatower.sebrae.desafio.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.ManageAccounts
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Storage
@@ -40,10 +42,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.model.AppUser
+import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
@@ -57,7 +63,11 @@ import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit = {}) {
+fun SettingsScreen(
+    currentUser: AppUser? = null,
+    onBack: () -> Unit = {},
+    onOpenUserManagement: () -> Unit = {},
+) {
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
   val settings by
@@ -69,49 +79,61 @@ fun SettingsScreen(onBack: () -> Unit = {}) {
                       darkMode = false,
                       pushEnabled = true,
                       emailEnabled = false,
+                      language = "pt",
                   )
           )
 
   var darkMode by remember { mutableStateOf(settings.darkMode) }
   var pushEnabled by remember { mutableStateOf(settings.pushEnabled) }
   var emailEnabled by remember { mutableStateOf(settings.emailEnabled) }
+  var language by remember { mutableStateOf(settings.language) }
   val scope = rememberCoroutineScope()
 
   LaunchedEffect(settings) {
     darkMode = settings.darkMode
     pushEnabled = settings.pushEnabled
     emailEnabled = settings.emailEnabled
+    language = settings.language
   }
 
-  DetailScaffold(title = "Configurações", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.settings_title), onBack = onBack) { innerPadding, _
+    ->
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(innerPadding),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-      item { SettingsSectionHeader("Conta") }
+      item { SettingsSectionHeader(stringResource(R.string.settings_section_account)) }
       item {
         SettingsGroup {
           SettingsItem(
               icon = Icons.Outlined.PersonOutline,
-              title = "Perfil",
-              subtitle = "Nome, e-mail, foto",
+              title = stringResource(R.string.settings_item_profile),
+              subtitle = stringResource(R.string.settings_subtitle_profile),
           )
           SettingsItem(
               icon = Icons.Outlined.Lock,
-              title = "Segurança",
-              subtitle = "Senha e autenticação",
+              title = stringResource(R.string.settings_item_security),
+              subtitle = stringResource(R.string.settings_subtitle_security),
           )
+          if (currentUser?.role == UserRole.ADMINISTRADOR) {
+            SettingsItem(
+                icon = Icons.Outlined.ManageAccounts,
+                title = "Usuários",
+                subtitle = "Cadastro e controle de acesso",
+                onClick = onOpenUserManagement,
+            )
+          }
         }
       }
 
-      item { SettingsSectionHeader("Aparência") }
+      item { SettingsSectionHeader(stringResource(R.string.settings_section_appearance)) }
       item {
         SettingsGroup {
           SettingsToggleItem(
               icon = Icons.Outlined.DarkMode,
-              title = "Modo escuro",
-              subtitle = "Alternar tema claro/escuro",
+              title = stringResource(R.string.settings_item_dark_mode),
+              subtitle = stringResource(R.string.settings_subtitle_dark_mode),
               checked = darkMode,
               onCheckedChange = {
                 darkMode = it
@@ -120,19 +142,19 @@ fun SettingsScreen(onBack: () -> Unit = {}) {
           )
           SettingsItem(
               icon = Icons.Outlined.ColorLens,
-              title = "Tema de cores",
-              subtitle = "Azul profundo (padrão)",
+              title = stringResource(R.string.settings_item_color_theme),
+              subtitle = stringResource(R.string.settings_subtitle_color_theme),
           )
         }
       }
 
-      item { SettingsSectionHeader("Notificações") }
+      item { SettingsSectionHeader(stringResource(R.string.settings_section_notifications)) }
       item {
         SettingsGroup {
           SettingsToggleItem(
               icon = Icons.Outlined.Notifications,
-              title = "Notificações push",
-              subtitle = "Alertas em tempo real",
+              title = stringResource(R.string.settings_item_push),
+              subtitle = stringResource(R.string.settings_subtitle_push),
               checked = pushEnabled,
               onCheckedChange = {
                 pushEnabled = it
@@ -141,8 +163,8 @@ fun SettingsScreen(onBack: () -> Unit = {}) {
           )
           SettingsToggleItem(
               icon = Icons.Outlined.Notifications,
-              title = "Notificações por e-mail",
-              subtitle = "Resumo diário por e-mail",
+              title = stringResource(R.string.settings_item_email_notif),
+              subtitle = stringResource(R.string.settings_subtitle_email_notif),
               checked = emailEnabled,
               onCheckedChange = {
                 emailEnabled = it
@@ -152,28 +174,72 @@ fun SettingsScreen(onBack: () -> Unit = {}) {
         }
       }
 
-      item { SettingsSectionHeader("Sistema") }
+      item { SettingsSectionHeader(stringResource(R.string.settings_section_system)) }
       item {
         SettingsGroup {
-          SettingsItem(
-              icon = Icons.Outlined.Language,
-              title = "Idioma",
-              subtitle = "Português (Brasil)",
+          LanguageSelectionItem(
+              selectedLanguage = language,
+              onLanguageSelected = {
+                language = it
+                scope.launch { repository.updateLanguage(it) }
+              },
           )
           SettingsItem(
               icon = Icons.Outlined.Storage,
-              title = "Armazenamento",
-              subtitle = "Limpar cache e dados",
+              title = stringResource(R.string.settings_item_storage),
+              subtitle = stringResource(R.string.settings_subtitle_storage),
           )
           SettingsItem(
               icon = Icons.Outlined.Info,
-              title = "Sobre",
-              subtitle = "Versão 1.0.0 · App Desafio SEBRAE",
+              title = stringResource(R.string.settings_item_about),
+              subtitle = stringResource(R.string.settings_subtitle_about),
           )
         }
       }
 
       item { Spacer(modifier = Modifier.height(16.dp)) }
+    }
+  }
+}
+
+/** Item para seleção de idioma com opções de português, inglês e espanhol. */
+@Composable
+private fun LanguageSelectionItem(
+    selectedLanguage: String,
+    onLanguageSelected: (String) -> Unit,
+) {
+  val languages = listOf("pt", "en", "es")
+  val languageNames = listOf("Português", "English", "Español")
+
+  Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+    val selectedIndex = languages.indexOf(selectedLanguage).coerceAtLeast(0)
+    Row(
+        modifier =
+            Modifier.fillMaxWidth().clickable {
+              val nextIndex = (selectedIndex + 1) % languages.size
+              onLanguageSelected(languages[nextIndex])
+            },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Icon(
+          imageVector = Icons.Outlined.Language,
+          contentDescription = null,
+          tint = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.size(22.dp),
+      )
+      Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
+        Text(
+            text = stringResource(R.string.settings_item_language),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = languageNames[selectedIndex],
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
     }
   }
 }
@@ -226,9 +292,13 @@ private fun SettingsItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
+    onClick: (() -> Unit)? = null,
 ) {
   Row(
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+      modifier =
+          Modifier.fillMaxWidth()
+              .clickable(enabled = onClick != null) { onClick?.invoke() }
+              .padding(horizontal = 16.dp, vertical = 14.dp),
       verticalAlignment = Alignment.CenterVertically,
   ) {
     Icon(
