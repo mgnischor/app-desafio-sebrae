@@ -41,9 +41,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.ClassStatus
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
@@ -89,7 +91,7 @@ fun ClassesScreen(
         }
       }
 
-  DetailScaffold(title = "Turmas", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.classes_title), onBack = onBack) { innerPadding, _ ->
     Scaffold(
         floatingActionButton = {
           FloatingActionButton(
@@ -97,7 +99,10 @@ fun ClassesScreen(
               containerColor = MaterialTheme.colorScheme.primary,
               contentColor = MaterialTheme.colorScheme.onPrimary,
           ) {
-            Icon(imageVector = Icons.Outlined.Add, contentDescription = "Nova turma")
+            Icon(
+                imageVector = Icons.Outlined.Add,
+                contentDescription = stringResource(R.string.classes_add_content_description)
+            )
           }
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -112,14 +117,19 @@ fun ClassesScreen(
           ListSearchHeader(
               query = query,
               onQueryChange = { query = it },
-              placeholder = "Buscar turma, curso ou instrutor...",
+              placeholder = stringResource(R.string.classes_search_placeholder),
               resultCount = filtered.size,
-              resultLabel = "turmas encontradas",
+              resultLabel = stringResource(R.string.classes_result_label),
           )
         }
 
         if (filtered.isEmpty()) {
-          item { EmptyState(icon = Icons.Outlined.Group, message = "Nenhuma turma encontrada.") }
+          item {
+            EmptyState(
+                icon = Icons.Outlined.Group,
+                message = stringResource(R.string.classes_empty_state)
+            )
+          }
         } else {
           items(
               items = filtered,
@@ -168,9 +178,9 @@ private fun ClassCard(
         StatusChip(
             label =
                 when (sc.status) {
-                  ClassStatus.Open -> "Aberta"
-                  ClassStatus.InProgress -> "Em andamento"
-                  ClassStatus.Closed -> "Encerrada"
+                  ClassStatus.Open -> stringResource(R.string.class_status_open)
+                  ClassStatus.InProgress -> stringResource(R.string.class_status_in_progress)
+                  ClassStatus.Closed -> stringResource(R.string.class_status_closed)
                 },
             containerColor =
                 when (sc.status) {
@@ -205,7 +215,7 @@ private fun ClassCard(
           )
           Spacer(modifier = Modifier.width(4.dp))
           Text(
-              text = "${sc.studentsCount}/${sc.maxCapacity} alunos",
+              text = "${sc.studentsCount}/${sc.maxCapacity} ${stringResource(R.string.unit_students)}",
               style = MaterialTheme.typography.labelSmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
@@ -218,7 +228,7 @@ private fun ClassCard(
       }
       Spacer(modifier = Modifier.height(6.dp))
       Text(
-          text = "Instrutor: ${sc.instructor}",
+          text = stringResource(R.string.label_instructor, sc.instructor),
           style = MaterialTheme.typography.labelSmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
@@ -234,65 +244,6 @@ private fun ClassCard(
     }
   }
 }
-
-/**
- * Produz dados estáticos para composição e pré-visualização da tela.
- *
- * @return Lista fixa de turmas em diferentes estágios e ocupações.
- */
-private fun sampleClasses() =
-    listOf(
-        SchoolClass(
-            1,
-            "Turma A1",
-            "Marketing Digital",
-            "Profa. Helena",
-            28,
-            30,
-            "Seg/Qua 18h–20h",
-            ClassStatus.InProgress,
-        ),
-        SchoolClass(
-            2,
-            "Turma B3",
-            "Excel para Negócios",
-            "Prof. André",
-            22,
-            25,
-            "Ter/Qui 19h–21h",
-            ClassStatus.InProgress,
-        ),
-        SchoolClass(
-            3,
-            "Turma C2",
-            "Empreendedorismo",
-            "Profa. Carla",
-            18,
-            20,
-            "Sex 08h–12h",
-            ClassStatus.Open,
-        ),
-        SchoolClass(
-            4,
-            "Turma A2",
-            "Finanças Pessoais",
-            "Prof. Roberto",
-            10,
-            20,
-            "Sáb 09h–12h",
-            ClassStatus.Open,
-        ),
-        SchoolClass(
-            5,
-            "Turma D1",
-            "Design Gráfico",
-            "Profa. Bianca",
-            30,
-            30,
-            "Seg/Qua 14h–16h",
-            ClassStatus.Closed,
-        ),
-    )
 
 /** Pré-visualização da tela de turmas para validação visual. */
 @Preview(showBackground = true, showSystemUi = true)
