@@ -3,7 +3,6 @@ package tech.datatower.sebrae.desafio.data.model
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
-import java.time.LocalDate
 
 /**
  * Testes unitários de modelos de dados de professores e cursos.
@@ -14,9 +13,7 @@ import java.time.LocalDate
  */
 class CourseAndTeacherModelTest {
 
-  /**
-   * Valida criação de curso com todos os campos necessários.
-   */
+  /** Valida criação de curso com todos os campos necessários. */
   @Test
   fun `curso deve ser criado com todos os campos preenchidos`() {
     // Arrange
@@ -53,18 +50,13 @@ class CourseAndTeacherModelTest {
     assertEquals("Deve estar publicado", publicado, curso.isPublished)
   }
 
-  /**
-   * Valida que taxa de conclusão fica entre 0 e 1.
-   */
+  /** Valida que taxa de conclusão fica entre 0 e 1. */
   @Test
   fun `taxa de conclusão deve estar entre 0 porcento e 100 porcento`() {
     // Arrange
-    val cursoNaoIniciado =
-        Course(1, "Curso 1", "Cat", "Prof", 10, 20, 0f, true)
-    val cursoCompleto =
-        Course(2, "Curso 2", "Cat", "Prof", 10, 20, 1f, true)
-    val cursoMeio =
-        Course(3, "Curso 3", "Cat", "Prof", 10, 20, 0.5f, true)
+    val cursoNaoIniciado = Course(1, "Curso 1", "Cat", "Prof", 10, 20, 0f, true)
+    val cursoCompleto = Course(2, "Curso 2", "Cat", "Prof", 10, 20, 1f, true)
+    val cursoMeio = Course(3, "Curso 3", "Cat", "Prof", 10, 20, 0.5f, true)
 
     // Act & Assert
     assertEquals("Taxa 0% é válida", 0f, cursoNaoIniciado.completionRate, 0.001f)
@@ -72,9 +64,7 @@ class CourseAndTeacherModelTest {
     assertEquals("Taxa 50% é válida", 0.5f, cursoMeio.completionRate, 0.001f)
   }
 
-  /**
-   * Valida criação de professor com especialidade.
-   */
+  /** Valida criação de professor com especialidade. */
   @Test
   fun `professor deve conter nome, email e especialidade`() {
     // Arrange
@@ -108,18 +98,13 @@ class CourseAndTeacherModelTest {
     assertEquals("Avaliação deve ser 4.9", avaliacao, professor.rating, 0.001f)
   }
 
-  /**
-   * Valida que avaliação de professor fica entre 1 e 5.
-   */
+  /** Valida que avaliação de professor fica entre 1 e 5. */
   @Test
   fun `avaliação de professor deve estar entre 1 e 5 estrelas`() {
     // Arrange
-    val profRuim =
-        Teacher(1, "Prof 1", "email@test", "Especialidade", 1, 10, 1.0f)
-    val profBom =
-        Teacher(2, "Prof 2", "email@test", "Especialidade", 2, 20, 5.0f)
-    val profMedio =
-        Teacher(3, "Prof 3", "email@test", "Especialidade", 3, 30, 3.5f)
+    val profRuim = Teacher(1, "Prof 1", "email@test", "Especialidade", 1, 10, 1.0f)
+    val profBom = Teacher(2, "Prof 2", "email@test", "Especialidade", 2, 20, 5.0f)
+    val profMedio = Teacher(3, "Prof 3", "email@test", "Especialidade", 3, 30, 3.5f)
 
     // Act & Assert
     assertEquals("Avaliação mínima 1.0", 1.0f, profRuim.rating, 0.001f)
@@ -127,9 +112,7 @@ class CourseAndTeacherModelTest {
     assertEquals("Avaliação intermediária 3.5", 3.5f, profMedio.rating, 0.001f)
   }
 
-  /**
-   * Valida modelo de certificado com dados importantes.
-   */
+  /** Valida modelo de certificado com dados importantes. */
   @Test
   fun `certificado deve armazenar nome do aluno, curso e data`() {
     // Arrange
@@ -160,9 +143,7 @@ class CourseAndTeacherModelTest {
     assertEquals("Código deve corresponder", codigo, certificado.code)
   }
 
-  /**
-   * Valida relação entre múltiplos professores.
-   */
+  /** Valida relação entre múltiplos professores. */
   @Test
   fun `lista de professores deve manter dados individuais corretos`() {
     // Arrange
@@ -180,9 +161,7 @@ class CourseAndTeacherModelTest {
     assertEquals("Terceiro professor deve ter avaliação 4.2", 4.2f, professores[2].rating, 0.001f)
   }
 
-  /**
-   * Valida que certificados possuem código único.
-   */
+  /** Valida que certificados possuem código único. */
   @Test
   fun `certificados devem ter códigos únicos e bem formados`() {
     // Arrange
@@ -201,4 +180,3 @@ class CourseAndTeacherModelTest {
     assertEquals("Todos códigos devem ser únicos", true, todosUnicos)
   }
 }
-
