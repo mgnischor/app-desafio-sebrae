@@ -13,8 +13,8 @@ import tech.datatower.sebrae.desafio.data.model.Teacher
 /**
  * ViewModel para gerenciar sincronização com Firebase Data Connect.
  *
- * Fornece estados de carregamento, sucesso e erro para a camada UI.
- * Executa operações em background usando coroutines.
+ * Fornece estados de carregamento, sucesso e erro para a camada UI. Executa operações em background
+ * usando coroutines.
  */
 class DataConnectSyncViewModel(
     private val service: FirebaseDataConnectService,
@@ -37,9 +37,7 @@ class DataConnectSyncViewModel(
       MutableStateFlow(DataState.Idle)
   val teachersState: StateFlow<DataState<List<Teacher>>> = _teachersState.asStateFlow()
 
-  /**
-   * Sincroniza todos os dados do Data Connect.
-   */
+  /** Sincroniza todos os dados do Data Connect. */
   fun syncAllData() {
     viewModelScope.launch {
       _syncState.value = SyncState.Loading
@@ -53,9 +51,7 @@ class DataConnectSyncViewModel(
     }
   }
 
-  /**
-   * Busca apenas cursos do Data Connect.
-   */
+  /** Busca apenas cursos do Data Connect. */
   fun loadCourses() {
     viewModelScope.launch {
       _coursesState.value = DataState.Loading
@@ -69,9 +65,7 @@ class DataConnectSyncViewModel(
     }
   }
 
-  /**
-   * Busca apenas estudantes do Data Connect.
-   */
+  /** Busca apenas estudantes do Data Connect. */
   fun loadStudents() {
     viewModelScope.launch {
       _studentsState.value = DataState.Loading
@@ -85,9 +79,7 @@ class DataConnectSyncViewModel(
     }
   }
 
-  /**
-   * Busca apenas professores do Data Connect.
-   */
+  /** Busca apenas professores do Data Connect. */
   fun loadTeachers() {
     viewModelScope.launch {
       _teachersState.value = DataState.Loading
@@ -101,25 +93,28 @@ class DataConnectSyncViewModel(
     }
   }
 
-  /**
-   * Estados de sincronização geral.
-   */
+  /** Estados de sincronização geral. */
   sealed class SyncState {
     data object Idle : SyncState()
+
     data object Loading : SyncState()
+
     data object Success : SyncState()
+
+    /** Modelo e comportamento relacionados a error. */
     data class Error(val message: String) : SyncState()
   }
 
-  /**
-   * Estados genéricos para dados específicos.
-   */
+  /** Estados genéricos para dados específicos. */
   sealed class DataState<out T> {
     data object Idle : DataState<Nothing>()
+
     data object Loading : DataState<Nothing>()
+
+    /** Modelo e comportamento relacionados a success. */
     data class Success<T>(val data: T) : DataState<T>()
+
+    /** Modelo e comportamento relacionados a error. */
     data class Error(val message: String) : DataState<Nothing>()
   }
 }
-
-
