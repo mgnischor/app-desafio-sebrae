@@ -43,9 +43,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.Student
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
@@ -92,7 +94,7 @@ fun StudentsScreen(
         }
       }
 
-  DetailScaffold(title = "Alunos", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.students_title), onBack = onBack) { innerPadding, _ ->
     Scaffold(
         floatingActionButton = {
           FloatingActionButton(
@@ -100,7 +102,10 @@ fun StudentsScreen(
               containerColor = MaterialTheme.colorScheme.primary,
               contentColor = MaterialTheme.colorScheme.onPrimary,
           ) {
-            Icon(imageVector = Icons.Outlined.Add, contentDescription = "Novo aluno")
+            Icon(
+                imageVector = Icons.Outlined.Add,
+                contentDescription = stringResource(R.string.students_add_content_description)
+            )
           }
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -115,14 +120,19 @@ fun StudentsScreen(
           ListSearchHeader(
               query = query,
               onQueryChange = { query = it },
-              placeholder = "Buscar aluno, curso ou turma...",
+              placeholder = stringResource(R.string.students_search_placeholder),
               resultCount = filtered.size,
-              resultLabel = "alunos encontrados",
+              resultLabel = stringResource(R.string.students_result_label),
           )
         }
 
         if (filtered.isEmpty()) {
-          item { EmptyState(icon = Icons.Outlined.Person, message = "Nenhum aluno encontrado.") }
+          item {
+            EmptyState(
+                icon = Icons.Outlined.Person,
+                message = stringResource(R.string.students_empty_state)
+            )
+          }
         } else {
           items(
               items = filtered,
@@ -201,9 +211,9 @@ private fun StudentCard(
           StatusChip(
               label =
                   when (student.status) {
-                    StudentStatus.Active -> "Ativo"
-                    StudentStatus.Inactive -> "Inativo"
-                    StudentStatus.Graduated -> "Formado"
+                    StudentStatus.Active -> stringResource(R.string.status_active)
+                    StudentStatus.Inactive -> stringResource(R.string.status_inactive)
+                    StudentStatus.Graduated -> stringResource(R.string.status_graduated)
                   },
               containerColor =
                   when (student.status) {
