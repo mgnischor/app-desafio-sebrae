@@ -2,15 +2,17 @@ package tech.datatower.sebrae.desafio
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
  * Exemplo de teste instrumentado executado em dispositivo ou emulador Android.
  *
- * Valida funcionalidades que requerem contexto de aplicação real e acesso ao
- * ambiente de execução do Android.
+ * Valida funcionalidades que requerem contexto de aplicação real e acesso ao ambiente de execução
+ * do Android.
  *
  * Padrão: Arrange → Act → Assert (AAA)
  */
@@ -33,7 +35,11 @@ class ExampleInstrumentedTest {
     val actualPackageName = appContext.packageName
 
     // Assert
-    assertEquals("Nome do pacote deve corresponder ao esperado", expectedPackageName, actualPackageName)
+    assertEquals(
+        "Nome do pacote deve corresponder ao esperado",
+        expectedPackageName,
+        actualPackageName,
+    )
   }
 
   /**
