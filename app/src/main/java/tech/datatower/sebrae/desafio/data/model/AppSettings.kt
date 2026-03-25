@@ -7,4 +7,5 @@ data class AppSettings(
     val darkMode: Boolean,
     val pushEnabled: Boolean,
     val emailEnabled: Boolean,
+    val language: String = "pt", // pt, en, es
 )
