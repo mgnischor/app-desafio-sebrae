@@ -2,7 +2,6 @@ package tech.datatower.sebrae.desafio.data.remote
 
 import org.junit.Assert.assertFalse
 import org.junit.Test
-import tech.datatower.sebrae.desafio.data.remote.RemoteBootstrapper
 
 /**
  * Testes unitários do contrato de bootstrap remoto.
@@ -36,4 +35,3 @@ class RemoteBootstrapperTest {
     }
   }
 }
-
