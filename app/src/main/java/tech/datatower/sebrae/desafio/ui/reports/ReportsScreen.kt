@@ -29,10 +29,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.util.Locale
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
@@ -60,21 +62,21 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
       repository.observeCourseCompletionMetrics().collectAsState(initial = emptyList())
   val monthly by repository.observeMonthlyEnrollmentMetrics().collectAsState(initial = emptyList())
 
-  DetailScaffold(title = "Relatórios", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.reports_title), onBack = onBack) { innerPadding, _ ->
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(innerPadding),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-      item { SectionHeader("Visão Geral") }
+      item { SectionHeader(stringResource(R.string.section_overview)) }
       item {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-          KpiCard(summary.activeStudents.toString(), "Alunos Ativos", Modifier.weight(1f))
-          KpiCard(summary.activeCourses.toString(), "Cursos Ativos", Modifier.weight(1f))
-          KpiCard(summary.totalClasses.toString(), "Turmas", Modifier.weight(1f))
+          KpiCard(summary.activeStudents.toString(), stringResource(R.string.label_active_students), Modifier.weight(1f))
+          KpiCard(summary.activeCourses.toString(), stringResource(R.string.label_active_courses), Modifier.weight(1f))
+          KpiCard(summary.totalClasses.toString(), stringResource(R.string.stat_classes), Modifier.weight(1f))
         }
       }
       item {
@@ -83,21 +85,21 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
           KpiCard(
-              "${(summary.completionRate * 100).toInt()}%",
-              "Taxa de Conclusão",
+              stringResource(R.string.label_progress, (summary.completionRate * 100).toInt()),
+              stringResource(R.string.label_completion_rate),
               Modifier.weight(1f),
           )
-          KpiCard(summary.certificates.toString(), "Certificados", Modifier.weight(1f))
+          KpiCard(summary.certificates.toString(), stringResource(R.string.menu_certificates), Modifier.weight(1f))
           KpiCard(
               String.format(Locale.getDefault(), "%.1f★", summary.averageTeacherRating),
-              "Avaliação Média",
+              stringResource(R.string.label_average_rating),
               Modifier.weight(1f),
           )
         }
       }
-      item { SectionHeader("Taxa de Conclusão por Curso") }
+      item { SectionHeader(stringResource(R.string.label_completion_by_course)) }
       item { CourseCompletionReport(courseCompletion) }
-      item { SectionHeader("Matrículas por Mês") }
+      item { SectionHeader(stringResource(R.string.label_enrollments_by_month)) }
       item { EnrollmentMonthlyReport(monthly) }
     }
   }
@@ -175,10 +177,10 @@ private fun CourseCompletionReport(
           )
           Spacer(modifier = Modifier.width(6.dp))
           Text(
-              text = "${(item.rate * 100).toInt()}%",
+              text = stringResource(R.string.label_progress, (item.rate * 100).toInt()),
               style = MaterialTheme.typography.labelSmall,
               color = MaterialTheme.colorScheme.primary,
-              modifier = Modifier.width(32.dp),
+              modifier = Modifier.width(48.dp),
           )
         }
       }
