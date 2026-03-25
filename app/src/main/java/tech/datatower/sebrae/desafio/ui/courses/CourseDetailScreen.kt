@@ -20,9 +20,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.flowOf
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
@@ -42,10 +44,10 @@ fun CourseDetailScreen(
       }
   val classes by classesFlow.collectAsState(initial = emptyList())
 
-  DetailScaffold(title = "Detalhe do Curso", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.course_detail_title), onBack = onBack) { innerPadding, _ ->
     if (course == null) {
       Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(20.dp)) {
-        Text("Curso não encontrado.", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.course_not_found), style = MaterialTheme.typography.bodyLarge)
       }
       return@DetailScaffold
     }
@@ -72,23 +74,25 @@ fun CourseDetailScreen(
             )
             Text(course!!.category, style = MaterialTheme.typography.bodyMedium)
             Text(
-                "Instrutor principal: ${course!!.instructor}",
+                stringResource(R.string.label_main_instructor, course!!.instructor),
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                "Carga horária: ${course!!.durationHours}h",
+                stringResource(R.string.label_workload, course!!.durationHours),
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                "Matrículas: ${course!!.totalStudents}",
+                stringResource(R.string.label_enrollments, course!!.totalStudents),
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                "Conclusão média: ${(course!!.completionRate * 100).toInt()}%",
+                stringResource(R.string.label_average_completion, (course!!.completionRate * 100).toInt()),
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                if (course!!.isPublished) "Status: Publicado" else "Status: Rascunho",
+                stringResource(R.string.status_label, 
+                    if (course!!.isPublished) stringResource(R.string.status_published) 
+                    else stringResource(R.string.status_draft)),
                 style = MaterialTheme.typography.bodySmall,
             )
           }
@@ -97,14 +101,14 @@ fun CourseDetailScreen(
 
       item {
         Text(
-            text = "Turmas vinculadas (${classes.size})",
+            text = stringResource(R.string.label_linked_classes, classes.size),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
       }
 
       if (classes.isEmpty()) {
-        item { Text("Nenhuma turma vinculada.", style = MaterialTheme.typography.bodyMedium) }
+        item { Text(stringResource(R.string.no_linked_classes), style = MaterialTheme.typography.bodyMedium) }
       } else {
         items(classes, key = { it.id }) { schoolClass ->
           ElevatedCard(
@@ -122,13 +126,13 @@ fun CourseDetailScreen(
                   style = MaterialTheme.typography.titleSmall,
                   fontWeight = FontWeight.Medium,
               )
-              Text("Horário: ${schoolClass.schedule}", style = MaterialTheme.typography.bodySmall)
+              Text(stringResource(R.string.label_schedule, schoolClass.schedule), style = MaterialTheme.typography.bodySmall)
               Text(
-                  "Instrutor: ${schoolClass.instructor}",
+                  stringResource(R.string.label_instructor, schoolClass.instructor),
                   style = MaterialTheme.typography.bodySmall,
               )
               Text(
-                  "Alunos: ${schoolClass.studentsCount}/${schoolClass.maxCapacity}",
+                  stringResource(R.string.label_students_count, schoolClass.studentsCount, schoolClass.maxCapacity),
                   style = MaterialTheme.typography.bodySmall,
               )
             }
