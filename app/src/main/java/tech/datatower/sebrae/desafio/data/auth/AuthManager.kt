@@ -3,17 +3,15 @@ package tech.datatower.sebrae.desafio.data.auth
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import java.security.MessageDigest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.UserRole
+import java.security.MessageDigest
 
-/**
- * Gerenciador de autenticação em memória.
- */
+/** Gerenciador de autenticação em memória. */
 object AuthManager {
 
   private const val TAG = "AuthManager"
@@ -55,18 +53,19 @@ object AuthManager {
   private val firebaseAuth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
   private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
 
+  /** Modelo e comportamento relacionados a firebase login result. */
   sealed class FirebaseLoginResult {
+    /** Modelo e comportamento relacionados a success. */
     data class Success(val user: AppUser) : FirebaseLoginResult()
 
+    /** Modelo e comportamento relacionados a error. */
     data class Error(val message: String) : FirebaseLoginResult()
   }
 
   /** Fluxo reativo com o usuário atualmente autenticado, ou `null` se não houver sessão ativa. */
   val currentUser: StateFlow<AppUser?> = _currentUser.asStateFlow()
 
-  /**
-   * Login oficial do app via Firebase Auth e perfil em Firestore (collection `users`).
-   */
+  /** Login oficial do app via Firebase Auth e perfil em Firestore (collection `users`). */
   suspend fun loginWithFirebase(email: String, password: String): FirebaseLoginResult {
     val normalizedEmail = email.trim().lowercase()
     if (normalizedEmail.isBlank() || password.isBlank()) {
@@ -86,7 +85,8 @@ object AuthManager {
         _currentUser.value = null
         FirebaseLoginResult.Error(
             "Usuario autenticado, mas sem perfil na collection users. " +
-                "Cadastre o documento do usuario no Firestore.")
+                "Cadastre o documento do usuario no Firestore."
+        )
       } else {
         upsertLocalUser(profile)
         _currentUser.value = profile
@@ -94,7 +94,9 @@ object AuthManager {
       }
     } catch (e: Exception) {
       Log.w(TAG, "Falha no login Firebase", e)
-      FirebaseLoginResult.Error("Falha no login: ${e.message.orEmpty().ifBlank { "credenciais invalidas" }}")
+      FirebaseLoginResult.Error(
+          "Falha no login: ${e.message.orEmpty().ifBlank { "credenciais invalidas" }}"
+      )
     }
   }
 
@@ -118,6 +120,13 @@ object AuthManager {
     }
   }
 
+  /**
+   * Busca dados de user profile na origem configurada.
+   *
+   * @param firebaseUid Valor de entrada utilizado por esta opera??o.
+   * @param fallbackEmail Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `AppUser?`.
+   */
   private suspend fun fetchUserProfile(firebaseUid: String, fallbackEmail: String): AppUser? {
     val byDocumentId = firestore.collection(USERS_COLLECTION).document(firebaseUid).get().await()
     if (byDocumentId.exists()) return byDocumentId.toAppUser(fallbackEmail)
@@ -145,7 +154,15 @@ object AuthManager {
     return byEmail?.toAppUser(fallbackEmail)
   }
 
-  private fun com.google.firebase.firestore.DocumentSnapshot.toAppUser(fallbackEmail: String): AppUser {
+  /**
+   * Executa a rotina de com dentro do contexto deste componente.
+   *
+   * @param fallbackEmail Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `AppUser`.
+   */
+  private fun com.google.firebase.firestore.DocumentSnapshot.toAppUser(
+      fallbackEmail: String
+  ): AppUser {
     val roleRaw = getString("role").orEmpty().uppercase()
     val role = runCatching { UserRole.valueOf(roleRaw) }.getOrDefault(UserRole.PROFESSOR)
     val resolvedId =
@@ -161,6 +178,11 @@ object AuthManager {
     )
   }
 
+  /**
+   * Executa a rotina de upsert local user dentro do contexto deste componente.
+   *
+   * @param user Valor de entrada utilizado por esta opera??o.
+   */
   private fun upsertLocalUser(user: AppUser) {
     val mutable = _users.value.toMutableList()
     val index = mutable.indexOfFirst { it.id == user.id || it.email == user.email }
