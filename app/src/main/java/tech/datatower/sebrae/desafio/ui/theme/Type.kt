@@ -4,39 +4,16 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
-import tech.datatower.sebrae.desafio.R
 
-// ── Google Fonts provider ──────────────────────────────────────────────────────
-private val provider =
-    GoogleFont.Provider(
-        providerAuthority = "com.google.android.gms.fonts",
-        providerPackage = "com.google.android.gms",
-        certificates = R.array.com_google_android_gms_fonts_certs,
-    )
+// Usa fonte local para evitar dependencia do broker do Google Play Services em tempo de execucao.
+private val AppFontFamily = FontFamily.SansSerif
 
-// ── Inter font family ──────────────────────────────────────────────────────────
-private val interFont = GoogleFont("Inter")
-
-private val Inter =
-    FontFamily(
-        Font(googleFont = interFont, fontProvider = provider, weight = FontWeight.Light),
-        Font(googleFont = interFont, fontProvider = provider, weight = FontWeight.Normal),
-        Font(googleFont = interFont, fontProvider = provider, weight = FontWeight.Medium),
-        Font(googleFont = interFont, fontProvider = provider, weight = FontWeight.SemiBold),
-        Font(googleFont = interFont, fontProvider = provider, weight = FontWeight.Bold),
-    )
-
-// ── Material Design 3 – Full Type Scale ───────────────────────────────────────
 val Typography =
     Typography(
-
-        // Display
         displayLarge =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Light,
                 fontSize = 57.sp,
                 lineHeight = 64.sp,
@@ -44,7 +21,7 @@ val Typography =
             ),
         displayMedium =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Light,
                 fontSize = 45.sp,
                 lineHeight = 52.sp,
@@ -52,17 +29,15 @@ val Typography =
             ),
         displaySmall =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 36.sp,
                 lineHeight = 44.sp,
                 letterSpacing = 0.sp,
             ),
-
-        // Headline
         headlineLarge =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 32.sp,
                 lineHeight = 40.sp,
@@ -70,7 +45,7 @@ val Typography =
             ),
         headlineMedium =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 28.sp,
                 lineHeight = 36.sp,
@@ -78,17 +53,15 @@ val Typography =
             ),
         headlineSmall =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 24.sp,
                 lineHeight = 32.sp,
                 letterSpacing = 0.sp,
             ),
-
-        // Title
         titleLarge =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 22.sp,
                 lineHeight = 28.sp,
@@ -96,7 +69,7 @@ val Typography =
             ),
         titleMedium =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Medium,
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
@@ -104,17 +77,15 @@ val Typography =
             ),
         titleSmall =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 letterSpacing = 0.1.sp,
             ),
-
-        // Body
         bodyLarge =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
@@ -122,7 +93,7 @@ val Typography =
             ),
         bodyMedium =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
@@ -130,17 +101,15 @@ val Typography =
             ),
         bodySmall =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
                 letterSpacing = 0.4.sp,
             ),
-
-        // Label
         labelLarge =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
@@ -148,7 +117,7 @@ val Typography =
             ),
         labelMedium =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Medium,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
@@ -156,7 +125,7 @@ val Typography =
             ),
         labelSmall =
             TextStyle(
-                fontFamily = Inter,
+                fontFamily = AppFontFamily,
                 fontWeight = FontWeight.Medium,
                 fontSize = 11.sp,
                 lineHeight = 16.sp,
