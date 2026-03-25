@@ -37,9 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.CalendarEvent
 import tech.datatower.sebrae.desafio.data.model.EventType
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
@@ -61,7 +63,7 @@ fun CalendarScreen(onBack: () -> Unit = {}) {
   val listState = rememberLazyListState()
   val grouped = remember(events) { events.groupBy { it.date }.entries.toList() }
 
-  DetailScaffold(title = "Calendário", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.calendar_title), onBack = onBack) { innerPadding, _ ->
     Scaffold(
         floatingActionButton = {
           FloatingActionButton(
@@ -69,7 +71,10 @@ fun CalendarScreen(onBack: () -> Unit = {}) {
               containerColor = MaterialTheme.colorScheme.primary,
               contentColor = MaterialTheme.colorScheme.onPrimary,
           ) {
-            Icon(imageVector = Icons.Outlined.Add, contentDescription = "Novo evento")
+            Icon(
+                imageVector = Icons.Outlined.Add,
+                contentDescription = stringResource(R.string.calendar_add_content_description)
+            )
           }
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -167,10 +172,10 @@ private fun EventCard(event: CalendarEvent) {
       StatusChip(
           label =
               when (event.type) {
-                EventType.Class -> "Aula"
-                EventType.Exam -> "Prova"
-                EventType.Meeting -> "Reunião"
-                EventType.Other -> "Outro"
+                EventType.Class -> stringResource(R.string.event_type_class)
+                EventType.Exam -> stringResource(R.string.event_type_exam)
+                EventType.Meeting -> stringResource(R.string.event_type_meeting)
+                EventType.Other -> stringResource(R.string.event_type_other)
               },
           containerColor =
               when (event.type) {
