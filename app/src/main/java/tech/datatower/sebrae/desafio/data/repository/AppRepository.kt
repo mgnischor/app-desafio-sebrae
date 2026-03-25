@@ -7,13 +7,16 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Person
 import androidx.room.withTransaction
 import java.time.LocalDate
+import java.security.MessageDigest
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.local.AppDao
 import tech.datatower.sebrae.desafio.data.local.AppDatabase
 import tech.datatower.sebrae.desafio.data.local.AppSettingsEntity
+import tech.datatower.sebrae.desafio.data.local.AppUserEntity
 import tech.datatower.sebrae.desafio.data.local.AttendanceEntity
 import tech.datatower.sebrae.desafio.data.local.BehaviorEntity
 import tech.datatower.sebrae.desafio.data.local.CalendarEventEntity
@@ -28,6 +31,7 @@ import tech.datatower.sebrae.desafio.data.local.SchoolClassEntity
 import tech.datatower.sebrae.desafio.data.local.StudentEntity
 import tech.datatower.sebrae.desafio.data.local.TeacherEntity
 import tech.datatower.sebrae.desafio.data.model.ActivityDeliveryStatus
+import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.AppSettings
 import tech.datatower.sebrae.desafio.data.model.AttendanceRecord
 import tech.datatower.sebrae.desafio.data.model.AttendanceStatus
@@ -51,6 +55,7 @@ import tech.datatower.sebrae.desafio.data.model.Student
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringSnapshot
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.model.Teacher
+import tech.datatower.sebrae.desafio.data.model.UserRole
 
 data class ReportSummary(
     val activeStudents: Int,
@@ -74,6 +79,7 @@ data class MonthlyEnrollmentMetric(
 class AppRepository(
     private val database: AppDatabase,
     private val dao: AppDao,
+    private val dataSourceLabelResFlow: Flow<Int> = flowOf(R.string.stat_data_source),
 ) {
   fun observeCourses(): Flow<List<Course>> =
       dao.observeCourses().map { items -> items.map { it.toModel() } }
@@ -120,12 +126,13 @@ class AppRepository(
           dao.observePublishedCoursesCount(),
           dao.observeClassesCount(),
           dao.observeAverageCompletionRate(),
-      ) { activeStudents, publishedCourses, classesCount, completionRate ->
+          dataSourceLabelResFlow,
+      ) { activeStudents, publishedCourses, classesCount, completionRate, dataSourceLabelRes ->
         listOf(
             QuickStat(
                 labelRes = R.string.stat_students,
                 value = activeStudents.toString(),
-                trendLabel = "dados locais",
+                trendLabelRes = dataSourceLabelRes,
             ),
             QuickStat(labelRes = R.string.stat_courses, value = publishedCourses.toString()),
             QuickStat(labelRes = R.string.stat_classes, value = classesCount.toString()),
@@ -214,15 +221,38 @@ class AppRepository(
   fun observeSettings(): Flow<AppSettings> =
       dao.observeSettings().map {
         if (it == null) {
-          AppSettings(darkMode = false, pushEnabled = true, emailEnabled = false)
+          AppSettings(darkMode = false, pushEnabled = true, emailEnabled = false, language = "pt")
         } else {
           AppSettings(
               darkMode = it.darkMode,
               pushEnabled = it.pushEnabled,
               emailEnabled = it.emailEnabled,
+              language = it.language,
           )
         }
       }
+
+  fun observeRegisteredUsersForAdmin(requester: AppUser?): Flow<List<AppUser>> {
+    return if (requester?.role == UserRole.ADMINISTRADOR) {
+      dao.observeUsers().map { items -> items.map { it.toModel() } }
+    } else {
+      flowOf(emptyList())
+    }
+  }
+
+  suspend fun upsertRegisteredUserForAdmin(
+      requester: AppUser?,
+      user: AppUser,
+      plainPassword: String,
+  ) {
+    if (requester?.role != UserRole.ADMINISTRADOR) {
+      throw SecurityException("Apenas administrador pode cadastrar usuarios.")
+    }
+    if (plainPassword.isBlank()) {
+      throw IllegalArgumentException("Senha do usuario nao pode ser vazia.")
+    }
+    dao.upsertUser(user.toEntity(passwordHash = sha256(plainPassword)))
+  }
 
   suspend fun updateDarkMode(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
@@ -237,6 +267,11 @@ class AppRepository(
   suspend fun updateEmailEnabled(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(emailEnabled = enabled))
+  }
+
+  suspend fun updateLanguage(language: String) {
+    val current = dao.observeSettingsOnce()
+    dao.upsertSettings((current ?: defaultSettingsEntity()).copy(language = language))
   }
 
   suspend fun seedIfEmpty() {
@@ -295,6 +330,31 @@ class AppRepository(
                   12,
                   0.55f,
                   true,
+              ),
+          )
+      )
+      dao.insertUsers(
+          listOf(
+              AppUserEntity(
+                  id = 1,
+                  name = "Prof. Carlos Silva",
+                  email = "professor@sebrae.edu.br",
+                  role = UserRole.PROFESSOR,
+                  passwordHash = sha256("prof123"),
+              ),
+              AppUserEntity(
+                  id = 2,
+                  name = "Coord. Ana Santos",
+                  email = "coordenador@sebrae.edu.br",
+                  role = UserRole.COORDENADOR,
+                  passwordHash = sha256("coord123"),
+              ),
+              AppUserEntity(
+                  id = 3,
+                  name = "Admin. Joao Almeida",
+                  email = "admin@sebrae.edu.br",
+                  role = UserRole.ADMINISTRADOR,
+                  passwordHash = sha256("admin123"),
               ),
           )
       )
@@ -837,6 +897,7 @@ class AppRepository(
           darkMode = false,
           pushEnabled = true,
           emailEnabled = false,
+          language = "pt",
       )
 }
 
@@ -963,3 +1024,14 @@ private fun ParentFollowUpEntity.toModel() =
         responsible = responsible,
         notes = notes,
     )
+
+private fun AppUserEntity.toModel() = AppUser(id = id, name = name, email = email, role = role)
+
+private fun AppUser.toEntity(passwordHash: String) =
+    AppUserEntity(id = id, name = name, email = email, role = role, passwordHash = passwordHash)
+
+private fun sha256(input: String): String {
+  val digest = MessageDigest.getInstance("SHA-256")
+  return digest.digest(input.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+}
+
