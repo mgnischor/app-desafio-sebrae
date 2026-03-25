@@ -106,13 +106,13 @@ fun HomeScreen(
     onLogout: () -> Unit = {},
 ) {
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
-  val repository = AppGraph.repository(LocalContext.current.applicationContext)
+  val context = LocalContext.current
+  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
 
   val allModules = rememberModules()
   val modules = remember(allModules, user) { filterModulesByRole(allModules, user?.role) }
   val stats by repository.observeHomeQuickStats().collectAsState(initial = emptyList())
-  val recents by repository.observeRecentActivities().collectAsState(initial = emptyList())
-  val context = LocalContext.current
+  val recents = rememberRecents()
   var query by rememberSaveable { mutableStateOf("") }
 
   val filteredModules by
@@ -218,15 +218,26 @@ fun HomeScreen(
         }
       }
 
-      items(
-          count = filteredRecents.size,
-          key = { index -> filteredRecents[index].title + filteredRecents[index].timeLabel },
-          contentType = { "recent" },
-      ) { index ->
-        RecentActivityItem(
-            item = filteredRecents[index],
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-        )
+      if (filteredRecents.isEmpty()) {
+        item {
+          Text(
+              text = stringResource(R.string.recent_empty),
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.padding(20.dp)
+          )
+        }
+      } else {
+        items(
+            count = filteredRecents.size,
+            key = { index -> filteredRecents[index].title + filteredRecents[index].timeLabel },
+            contentType = { "recent" },
+        ) { index ->
+          RecentActivityItem(
+              item = filteredRecents[index],
+              modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+          )
+        }
       }
     }
   }
@@ -354,7 +365,7 @@ private fun GreetingSection(userName: String) {
       )
       Spacer(modifier = Modifier.height(2.dp))
       Text(
-          text = "Veja o resumo de hoje.",
+          text = stringResource(R.string.home_summary_description),
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
@@ -477,6 +488,14 @@ private fun StatCard(stat: QuickStat, modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.primaryContainer,
             strokeCap = StrokeCap.Round,
+        )
+      }
+      stat.trendLabelRes?.let { labelRes ->
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(labelRes),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.tertiary,
         )
       }
       stat.trendLabel?.let { label ->
@@ -745,53 +764,39 @@ private fun rememberModules(): List<MenuModule> = remember {
 }
 
 /**
- * Memoriza os indicadores de resumo exibidos no topo da Home.
- *
- * @return Lista de métricas rápidas para o dashboard.
- */
-@Composable
-private fun rememberStats(): List<QuickStat> = remember {
-  listOf(
-      QuickStat(R.string.stat_students, "1.240", trendLabel = "+12 este mês"),
-      QuickStat(R.string.stat_courses, "38"),
-      QuickStat(R.string.stat_classes, "74"),
-      QuickStat(R.string.stat_completion, "82%", progress = 0.82f),
-  )
-}
-
-/**
  * Memoriza o feed de atividades recentes da tela inicial.
  *
  * @return Lista de atividades recentes exibidas ao usuário.
  */
 @Composable
-private fun rememberRecents(): List<RecentActivity> = remember {
-  listOf(
-      RecentActivity(
-          "Novo aluno matriculado",
-          "Carlos Souza — Turma B3",
-          Icons.Outlined.Person,
-          "há 5 min",
-      ),
-      RecentActivity(
-          "Curso publicado",
-          "Excel para Negócios · Nível 2",
-          Icons.AutoMirrored.Outlined.MenuBook,
-          "há 1h",
-      ),
-      RecentActivity(
-          "Certificado emitido",
-          "Ana Lima — Marketing Digital",
-          Icons.Outlined.Bookmarks,
-          "há 3h",
-      ),
-      RecentActivity(
-          "Aula agendada",
-          "Empreendedorismo · Quinta-feira",
-          Icons.Outlined.DateRange,
-          "ontem",
-      ),
-  )
+private fun rememberRecents(): List<RecentActivity> {
+  // Call @Composable functions in composable context
+  val studentTitle = stringResource(R.string.recent_new_student_title)
+  val courseTitle = stringResource(R.string.recent_course_published_title)
+  val certificateTitle = stringResource(R.string.recent_certificate_issued_title)
+  val classTitle = stringResource(R.string.recent_class_scheduled_title)
+  
+  val time5min = stringResource(R.string.time_5min_ago)
+  val time1h = stringResource(R.string.time_1h_ago)
+  val time3h = stringResource(R.string.time_3h_ago)
+  val timeYesterday = stringResource(R.string.time_yesterday)
+  
+  val studentSubtitle = stringResource(R.string.recent_activity_subtitle_student, "Carlos Souza", "B3")
+  val courseSubtitle = stringResource(R.string.recent_activity_subtitle_course, "Excel para Negócios")
+  val certificateSubtitle = stringResource(R.string.recent_activity_subtitle_certificate, "Ana Lima", "Marketing Digital")
+  val classSubtitle = stringResource(R.string.recent_activity_subtitle_class, "Empreendedorismo")
+
+  // Pass strings to remember, not @Composable calls
+  return remember(studentTitle, courseTitle, certificateTitle, classTitle,
+                  time5min, time1h, time3h, timeYesterday,
+                  studentSubtitle, courseSubtitle, certificateSubtitle, classSubtitle) {
+    listOf(
+        RecentActivity(studentTitle, studentSubtitle, Icons.Outlined.Person, time5min),
+        RecentActivity(courseTitle, courseSubtitle, Icons.AutoMirrored.Outlined.MenuBook, time1h),
+        RecentActivity(certificateTitle, certificateSubtitle, Icons.Outlined.Bookmarks, time3h),
+        RecentActivity(classTitle, classSubtitle, Icons.Outlined.DateRange, timeYesterday),
+    )
+  }
 }
 
 // ── Preview ───────────────────────────────────────────────────────────────────
