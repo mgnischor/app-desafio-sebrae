@@ -6,11 +6,9 @@ import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Person
 import androidx.room.withTransaction
-import java.time.LocalDate
-import java.security.MessageDigest
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.local.AppDao
@@ -31,8 +29,8 @@ import tech.datatower.sebrae.desafio.data.local.SchoolClassEntity
 import tech.datatower.sebrae.desafio.data.local.StudentEntity
 import tech.datatower.sebrae.desafio.data.local.TeacherEntity
 import tech.datatower.sebrae.desafio.data.model.ActivityDeliveryStatus
-import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.AppSettings
+import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.AttendanceRecord
 import tech.datatower.sebrae.desafio.data.model.AttendanceStatus
 import tech.datatower.sebrae.desafio.data.model.BehaviorRecord
@@ -56,7 +54,10 @@ import tech.datatower.sebrae.desafio.data.model.StudentMonitoringSnapshot
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.data.model.UserRole
+import java.security.MessageDigest
+import java.time.LocalDate
 
+/** Modelo e comportamento relacionados a report summary. */
 data class ReportSummary(
     val activeStudents: Int,
     val activeCourses: Int,
@@ -66,60 +67,139 @@ data class ReportSummary(
     val averageTeacherRating: Float,
 )
 
+/** Modelo e comportamento relacionados a course completion metric. */
 data class CourseCompletionMetric(
     val name: String,
     val rate: Float,
 )
 
+/** Modelo e comportamento relacionados a monthly enrollment metric. */
 data class MonthlyEnrollmentMetric(
     val month: String,
     val count: Int,
 )
 
+/** Centraliza opera??es de dados relacionadas a app. */
 class AppRepository(
     private val database: AppDatabase,
     private val dao: AppDao,
     private val dataSourceLabelResFlow: Flow<Int> = flowOf(R.string.stat_data_source),
 ) {
+  /**
+   * Observa altera??es de courses e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<List<Course>>`.
+   */
   fun observeCourses(): Flow<List<Course>> =
       dao.observeCourses().map { items -> items.map { it.toModel() } }
 
+  /**
+   * Observa altera??es de course by id e publica atualiza??es reativas.
+   *
+   * @param courseId Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Flow<Course?>`.
+   */
   fun observeCourseById(courseId: Int): Flow<Course?> =
       dao.observeCourseById(courseId).map { it?.toModel() }
 
+  /**
+   * Observa altera??es de classes e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<List<SchoolClass>>`.
+   */
   fun observeClasses(): Flow<List<SchoolClass>> =
       dao.observeClasses().map { items -> items.map { it.toModel() } }
 
+  /**
+   * Observa altera??es de class by id e publica atualiza??es reativas.
+   *
+   * @param classId Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Flow<SchoolClass?>`.
+   */
   fun observeClassById(classId: Int): Flow<SchoolClass?> =
       dao.observeClassById(classId).map { it?.toModel() }
 
+  /**
+   * Observa altera??es de classes by course e publica atualiza??es reativas.
+   *
+   * @param courseName Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Flow<List<SchoolClass>>`.
+   */
   fun observeClassesByCourse(courseName: String): Flow<List<SchoolClass>> =
       dao.observeClassesByCourse(courseName).map { items -> items.map { it.toModel() } }
 
+  /**
+   * Observa altera??es de classes by teacher e publica atualiza??es reativas.
+   *
+   * @param teacherName Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Flow<List<SchoolClass>>`.
+   */
   fun observeClassesByTeacher(teacherName: String): Flow<List<SchoolClass>> =
       dao.observeClassesByTeacher(teacherName).map { items -> items.map { it.toModel() } }
 
+  /**
+   * Observa altera??es de teachers e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<List<Teacher>>`.
+   */
   fun observeTeachers(): Flow<List<Teacher>> =
       dao.observeTeachers().map { items -> items.map { it.toModel() } }
 
+  /**
+   * Observa altera??es de teacher by id e publica atualiza??es reativas.
+   *
+   * @param teacherId Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Flow<Teacher?>`.
+   */
   fun observeTeacherById(teacherId: Int): Flow<Teacher?> =
       dao.observeTeacherById(teacherId).map { it?.toModel() }
 
+  /**
+   * Observa altera??es de students e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<List<Student>>`.
+   */
   fun observeStudents(): Flow<List<Student>> =
       dao.observeStudents().map { items -> items.map { it.toModel() } }
 
+  /**
+   * Observa altera??es de students by class e publica atualiza??es reativas.
+   *
+   * @param className Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Flow<List<Student>>`.
+   */
   fun observeStudentsByClass(className: String): Flow<List<Student>> =
       dao.observeStudentsByClass(className).map { items -> items.map { it.toModel() } }
 
+  /**
+   * Observa altera??es de certificates e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<List<Certificate>>`.
+   */
   fun observeCertificates(): Flow<List<Certificate>> =
       dao.observeCertificates().map { items -> items.map { it.toModel() } }
 
+  /**
+   * Observa altera??es de calendar events e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<List<CalendarEvent>>`.
+   */
   fun observeCalendarEvents(): Flow<List<CalendarEvent>> =
       dao.observeCalendarEvents().map { items -> items.map { it.toModel() } }
 
+  /**
+   * Observa altera??es de recent activities e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<List<RecentActivity>>`.
+   */
   fun observeRecentActivities(): Flow<List<RecentActivity>> =
       dao.observeRecentActivities().map { items -> items.map { it.toModel() } }
 
+  /**
+   * Observa altera??es de home quick stats e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<List<QuickStat>>`.
+   */
   fun observeHomeQuickStats(): Flow<List<QuickStat>> =
       combine(
           dao.observeStudentsByStatusCount(StudentStatus.Active),
@@ -144,6 +224,11 @@ class AppRepository(
         )
       }
 
+  /**
+   * Observa altera??es de report summary e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<ReportSummary>`.
+   */
   fun observeReportSummary(): Flow<ReportSummary> =
       combine(
           combine(
@@ -175,6 +260,11 @@ class AppRepository(
         )
       }
 
+  /**
+   * Observa altera??es de course completion metrics e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<List<CourseCompletionMetric>>`.
+   */
   fun observeCourseCompletionMetrics(): Flow<List<CourseCompletionMetric>> =
       dao.observeCourses().map { courses ->
         courses
@@ -182,11 +272,22 @@ class AppRepository(
             .sortedByDescending { it.rate }
       }
 
+  /**
+   * Observa altera??es de monthly enrollment metrics e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<List<MonthlyEnrollmentMetric>>`.
+   */
   fun observeMonthlyEnrollmentMetrics(): Flow<List<MonthlyEnrollmentMetric>> =
       dao.observeMonthlyEnrollments().map { items ->
         items.map { MonthlyEnrollmentMetric(month = it.month, count = it.count) }
       }
 
+  /**
+   * Observa altera??es de student monitoring snapshot e publica atualiza??es reativas.
+   *
+   * @param studentId Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Flow<StudentMonitoringSnapshot?>`.
+   */
   fun observeStudentMonitoringSnapshot(studentId: Int): Flow<StudentMonitoringSnapshot?> =
       combine(
           dao.observeStudentById(studentId),
@@ -218,6 +319,11 @@ class AppRepository(
         }
       }
 
+  /**
+   * Observa altera??es de settings e publica atualiza??es reativas.
+   *
+   * @return Resultado produzido pela opera??o em formato `Flow<AppSettings>`.
+   */
   fun observeSettings(): Flow<AppSettings> =
       dao.observeSettings().map {
         if (it == null) {
@@ -232,6 +338,12 @@ class AppRepository(
         }
       }
 
+  /**
+   * Observa altera??es de registered users for admin e publica atualiza??es reativas.
+   *
+   * @param requester Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `Flow<List<AppUser>>`.
+   */
   fun observeRegisteredUsersForAdmin(requester: AppUser?): Flow<List<AppUser>> {
     return if (requester?.role == UserRole.ADMINISTRADOR) {
       dao.observeUsers().map { items -> items.map { it.toModel() } }
@@ -240,6 +352,13 @@ class AppRepository(
     }
   }
 
+  /**
+   * Executa a rotina de upsert registered user for admin dentro do contexto deste componente.
+   *
+   * @param requester Valor de entrada utilizado por esta opera??o.
+   * @param user Valor de entrada utilizado por esta opera??o.
+   * @param plainPassword Valor de entrada utilizado por esta opera??o.
+   */
   suspend fun upsertRegisteredUserForAdmin(
       requester: AppUser?,
       user: AppUser,
@@ -254,26 +373,47 @@ class AppRepository(
     dao.upsertUser(user.toEntity(passwordHash = sha256(plainPassword)))
   }
 
+  /**
+   * Executa a rotina de update dark mode dentro do contexto deste componente.
+   *
+   * @param enabled Valor de entrada utilizado por esta opera??o.
+   */
   suspend fun updateDarkMode(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(darkMode = enabled))
   }
 
+  /**
+   * Executa a rotina de update push enabled dentro do contexto deste componente.
+   *
+   * @param enabled Valor de entrada utilizado por esta opera??o.
+   */
   suspend fun updatePushEnabled(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(pushEnabled = enabled))
   }
 
+  /**
+   * Executa a rotina de update email enabled dentro do contexto deste componente.
+   *
+   * @param enabled Valor de entrada utilizado por esta opera??o.
+   */
   suspend fun updateEmailEnabled(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(emailEnabled = enabled))
   }
 
+  /**
+   * Executa a rotina de update language dentro do contexto deste componente.
+   *
+   * @param language Valor de entrada utilizado por esta opera??o.
+   */
   suspend fun updateLanguage(language: String) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(language = language))
   }
 
+  /** Executa a rotina de seed if empty dentro do contexto deste componente. */
   suspend fun seedIfEmpty() {
     if (dao.countCourses() > 0) return
 
@@ -891,6 +1031,7 @@ class AppRepository(
     }
   }
 
+  /** Executa a rotina de default settings entity dentro do contexto deste componente. */
   private fun defaultSettingsEntity() =
       AppSettingsEntity(
           id = 1,
@@ -901,6 +1042,7 @@ class AppRepository(
       )
 }
 
+/** Executa a rotina de course entity dentro do contexto deste componente. */
 private fun CourseEntity.toModel() =
     Course(
         id = id,
@@ -913,6 +1055,7 @@ private fun CourseEntity.toModel() =
         isPublished = isPublished,
     )
 
+/** Executa a rotina de school class entity dentro do contexto deste componente. */
 private fun SchoolClassEntity.toModel() =
     SchoolClass(
         id = id,
@@ -925,6 +1068,7 @@ private fun SchoolClassEntity.toModel() =
         status = status,
     )
 
+/** Executa a rotina de teacher entity dentro do contexto deste componente. */
 private fun TeacherEntity.toModel() =
     Teacher(
         id = id,
@@ -936,6 +1080,7 @@ private fun TeacherEntity.toModel() =
         rating = rating,
     )
 
+/** Executa a rotina de student entity dentro do contexto deste componente. */
 private fun StudentEntity.toModel() =
     Student(
         id = id,
@@ -947,6 +1092,7 @@ private fun StudentEntity.toModel() =
         status = status,
     )
 
+/** Executa a rotina de certificate entity dentro do contexto deste componente. */
 private fun CertificateEntity.toModel() =
     Certificate(
         id = id,
@@ -957,6 +1103,7 @@ private fun CertificateEntity.toModel() =
         code = code,
     )
 
+/** Executa a rotina de calendar event entity dentro do contexto deste componente. */
 private fun CalendarEventEntity.toModel() =
     CalendarEvent(
         id = id,
@@ -968,6 +1115,7 @@ private fun CalendarEventEntity.toModel() =
         type = type,
     )
 
+/** Executa a rotina de recent activity entity dentro do contexto deste componente. */
 private fun RecentActivityEntity.toModel() =
     RecentActivity(
         title = title,
@@ -982,6 +1130,7 @@ private fun RecentActivityEntity.toModel() =
         timeLabel = timeLabel,
     )
 
+/** Executa a rotina de attendance entity dentro do contexto deste componente. */
 private fun AttendanceEntity.toModel() =
     AttendanceRecord(
         date = date,
@@ -990,6 +1139,7 @@ private fun AttendanceEntity.toModel() =
         justification = justification,
     )
 
+/** Executa a rotina de behavior entity dentro do contexto deste componente. */
 private fun BehaviorEntity.toModel() =
     BehaviorRecord(
         date = date,
@@ -1000,6 +1150,7 @@ private fun BehaviorEntity.toModel() =
         note = note,
     )
 
+/** Executa a rotina de pedagogical need entity dentro do contexto deste componente. */
 private fun PedagogicalNeedEntity.toModel() =
     PedagogicalNeed(
         type = type,
@@ -1008,6 +1159,7 @@ private fun PedagogicalNeedEntity.toModel() =
         accommodations = accommodations,
     )
 
+/** Executa a rotina de psychological need entity dentro do contexto deste componente. */
 private fun PsychologicalNeedEntity.toModel() =
     PsychologicalNeed(
         summary = summary,
@@ -1016,6 +1168,7 @@ private fun PsychologicalNeedEntity.toModel() =
         reviewAt = reviewAt,
     )
 
+/** Executa a rotina de parent follow up entity dentro do contexto deste componente. */
 private fun ParentFollowUpEntity.toModel() =
     ParentFollowUp(
         date = date,
@@ -1025,13 +1178,24 @@ private fun ParentFollowUpEntity.toModel() =
         notes = notes,
     )
 
+/** Executa a rotina de app user entity dentro do contexto deste componente. */
 private fun AppUserEntity.toModel() = AppUser(id = id, name = name, email = email, role = role)
 
+/**
+ * Executa a rotina de app user dentro do contexto deste componente.
+ *
+ * @param passwordHash Valor de entrada utilizado por esta opera??o.
+ */
 private fun AppUser.toEntity(passwordHash: String) =
     AppUserEntity(id = id, name = name, email = email, role = role, passwordHash = passwordHash)
 
+/**
+ * Executa a rotina de sha256 dentro do contexto deste componente.
+ *
+ * @param input Valor de entrada utilizado por esta opera??o.
+ * @return Resultado produzido pela opera??o em formato `String`.
+ */
 private fun sha256(input: String): String {
   val digest = MessageDigest.getInstance("SHA-256")
   return digest.digest(input.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
 }
-
