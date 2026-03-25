@@ -13,7 +13,11 @@ import tech.datatower.sebrae.desafio.data.remote.RemoteBootstrapper
 class FirebaseRemoteBootstrapper(
     private val dao: AppDao,
 ) : RemoteBootstrapper {
-
+  /**
+   * Executa a rotina de bootstrap into local cache dentro do contexto deste componente.
+   *
+   * @return Resultado produzido pela opera??o em formato `Boolean`.
+   */
   override suspend fun bootstrapIntoLocalCache(): Boolean {
     val localHasData = dao.countCourses() > 0
     val shouldHydrateFromRemote = !localHasData
@@ -24,6 +28,13 @@ class FirebaseRemoteBootstrapper(
   }
 
   companion object {
+    /**
+     * Cria um novo recurso para seguindo as regras de dom?nio.
+     *
+     * @param _context Valor de entrada utilizado por esta opera??o.
+     * @param dao Valor de entrada utilizado por esta opera??o.
+     * @return Resultado produzido pela opera??o em formato `RemoteBootstrapper`.
+     */
     @Suppress("UNUSED_PARAMETER")
     fun create(_context: Context, dao: AppDao): RemoteBootstrapper {
       return FirebaseRemoteBootstrapper(dao = dao)
