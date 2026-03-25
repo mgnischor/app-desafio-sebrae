@@ -7,6 +7,10 @@
     <string name="unit_hours">h</string>
     <string name="label_instructor">Instructor: %s</string>
     <string name="label_completion">%d%% conclusión</string>
+    <string name="status_label">Estado: %s</string>
+    <string name="label_course">Curso: %s</string>
+    <string name="label_email">Correo electrónico: %s</string>
+    <string name="label_progress">Progreso: %d%%</string>
 
     <!-- Home / Menu -->
     <string name="home_greeting_morning">Buenos días</string>
@@ -17,7 +21,7 @@
     <string name="home_summary_description">Vea el resumen de hoy.</string>
 
     <!-- Quick Stats -->
-    <string name="stat_students">Alumnos</string>
+    <string name="stat_students">Alunos</string>
     <string name="stat_courses">Cursos</string>
     <string name="stat_classes">Grupos</string>
     <string name="stat_completion">Conclusión</string>
@@ -89,6 +93,18 @@
     <string name="status_published">Publicado</string>
     <string name="status_draft">Borrador</string>
 
+    <!-- Course Detail Screen -->
+    <string name="course_detail_title">Detalle del Curso</string>
+    <string name="course_not_found">Curso no encontrado.</string>
+    <string name="label_main_instructor">Instructor principal: %s</string>
+    <string name="label_workload">Carga horaria: %dh</string>
+    <string name="label_enrollments">Matrículas: %d</string>
+    <string name="label_average_completion">Promedio de finalización: %d%%</string>
+    <string name="label_linked_classes">Grupos vinculados (%d)</string>
+    <string name="no_linked_classes">Ningún grupo vinculado.</string>
+    <string name="label_schedule">Horario: %s</string>
+    <string name="label_students_count">Alumnos: %d/%d</string>
+
     <!-- Students Screen -->
     <string name="students_title">Alumnos</string>
     <string name="students_add_content_description">Nuevo alumno</string>
@@ -108,6 +124,13 @@
     <string name="class_status_open">Abierto</string>
     <string name="class_status_in_progress">En curso</string>
     <string name="class_status_closed">Cerrado</string>
+
+    <!-- Class Detail Screen -->
+    <string name="class_detail_title">Detalle del Grupo</string>
+    <string name="class_not_found">Grupo no encontrado.</string>
+    <string name="label_occupation">Ocupación: %d/%d</string>
+    <string name="label_class_students">Alumnos del grupo (%d)</string>
+    <string name="no_class_students">Ningún alumno vinculado.</string>
 
     <!-- Monitoring Screen -->
     <string name="monitoring_title">Seguimiento</string>
@@ -177,4 +200,102 @@
     <string name="follow_up_waiting">Esperando respuesta</string>
     <string name="follow_up_completed">Completado</string>
     <string name="follow_up_no_show">No asistió</string>
+
+    <!-- Calendar Screen -->
+    <string name="calendar_title">Calendario</string>
+    <string name="calendar_add_content_description">Nuevo evento</string>
+    <string name="event_type_class">Clase</string>
+    <string name="event_type_exam">Examen</string>
+    <string name="event_type_meeting">Reunión</string>
+    <string name="event_type_other">Otro</string>
+
+    <!-- Certificates Screen -->
+    <string name="certificates_title">Certificados</string>
+    <string name="certificates_search_placeholder">Buscar por alumno, curso o código...</string>
+    <string name="certificates_result_label">certificados encontrados</string>
+    <string name="certificates_empty_state">No se encontró ningún certificado.</string>
+
+    <!-- Teachers Screen -->
+    <string name="teachers_title">Instructores</string>
+    <string name="teachers_add_content_description">Nuevo instructor</string>
+    <string name="teachers_search_placeholder">Buscar instructor o especialidad...</string>
+    <string name="teachers_result_label">instructores encontrados</string>
+    <string name="teachers_empty_state">No se encontró ningún instructor.</string>
+    <string name="unit_active_courses">%d cursos activos</string>
+
+    <!-- Teacher Detail Screen -->
+    <string name="teacher_detail_title">Detalle del Instrutor</string>
+    <string name="teacher_not_found">Instructor no encontrado.</string>
+    <string name="label_active_courses_count">Cursos activos: %d</string>
+    <string name="label_total_students_count">Total de alumnos: %d</string>
+    <string name="label_rating_value">Evaluación: %.1f</string>
+    <string name="label_taught_classes">Grupos impartidos (%d)</string>
+
+    <!-- Reports Screen -->
+    <string name="reports_title">Informes</string>
+    <string name="label_active_students">Alumnos Activos</string>
+    <string name="label_active_courses">Cursos Activos</string>
+    <string name="label_completion_rate">Tasa de Finalización</string>
+    <string name="label_average_rating">Evaluación Promedio</string>
+    <string name="label_completion_by_course">Tasa de Finalización por Curso</string>
+    <string name="label_enrollments_by_month">Matrículas por Mes</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Configuración</string>
+    <string name="settings_section_account">Cuenta</string>
+    <string name="settings_item_profile">Perfil</string>
+    <string name="settings_subtitle_profile">Nombre, correo electrónico, foto</string>
+    <string name="settings_item_security">Seguridad</string>
+    <string name="settings_subtitle_security">Contraseña y autenticación</string>
+    <string name="settings_section_appearance">Apariencia</string>
+    <string name="settings_item_dark_mode">Modo oscuro</string>
+    <string name="settings_subtitle_dark_mode">Alternar tema claro/oscuro</string>
+    <string name="settings_item_color_theme">Tema de colores</string>
+    <string name="settings_subtitle_color_theme">Azul profundo (predeterminado)</string>
+    <string name="settings_section_notifications">Notificaciones</string>
+    <string name="settings_item_push">Notificaciones push</string>
+    <string name="settings_subtitle_push">Alertas en tiempo real</string>
+    <string name="settings_item_email_notif">Notificaciones por correo</string>
+    <string name="settings_subtitle_email_notif">Resumen diario por correo</string>
+    <string name="settings_section_system">Sistema</string>
+    <string name="settings_item_language">Idioma</string>
+    <string name="settings_subtitle_language">Español</string>
+    <string name="settings_item_storage">Almacenamiento</string>
+    <string name="settings_subtitle_storage">Limpiar caché y datos</string>
+    <string name="settings_item_about">Acerca de</string>
+    <string name="settings_subtitle_about">Versión 1.0.0 · App Desafío SEBRAE</string>
+    <string name="settings_item_user_management">Usuarios</string>
+    <string name="settings_subtitle_user_management">Registro y control de acceso</string>
+
+    <string name="user_management_title">Gestión de Usuarios</string>
+    <string name="user_management_access_denied">Solo los administradores pueden acceder a esta pantalla.</string>
+    <string name="user_management_new_user">Nuevo usuario</string>
+    <string name="user_management_name">Nombre</string>
+    <string name="user_management_email">Correo electrónico</string>
+    <string name="user_management_password">Contraseña</string>
+    <string name="user_management_role">Rol de acceso</string>
+    <string name="user_management_save">Guardar usuario</string>
+    <string name="user_management_existing_users">Usuarios registrados</string>
+    <string name="user_management_invalid_data">Complete nombre y correo válidos.</string>
+    <string name="user_management_created_success">Usuario creado con éxito.</string>
+    <string name="user_management_created_error">No se pudo crear el usuario.</string>
+    <string name="user_management_removed_success">Usuario eliminado con éxito.</string>
+    <string name="user_management_removed_error">No se pudo eliminar el usuario.</string>
+
+    <!-- Missing strings for translations -->
+    <string name="label_delay">Retraso</string>
+    <string name="label_minutes">min</string>
+    <string name="separator_bullet">•</string>
+    <string name="recent_activity_subtitle_student">%s — Grupo %s</string>
+    <string name="recent_activity_subtitle_course">%s · Nivel 2</string>
+    <string name="recent_activity_subtitle_certificate">%s — %s</string>
+    <string name="recent_activity_subtitle_class">%s — Jueves</string>
+    <string name="status_open_state">Abierto</string>
+    <string name="status_in_progress_state">En curso</string>
+    <string name="status_closed_state">Cerrado</string>
+    <string name="status_active_student">Activo</string>
+    <string name="status_inactive_student">Inactivo</string>
+    <string name="status_graduated_student">Graduado</string>
+    <string name="stat_data_source">datos locales</string>
+    <string name="stat_data_source_cloud">datos sincronizados</string>
 </resources>
