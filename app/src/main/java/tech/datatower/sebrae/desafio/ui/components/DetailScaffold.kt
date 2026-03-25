@@ -16,6 +16,8 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
+import tech.datatower.sebrae.desafio.R
 
 /**
  * Estrutura base para telas internas com barra superior e ação de retorno.
@@ -52,7 +54,7 @@ fun DetailScaffold(
               IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Voltar",
+                    contentDescription = stringResource(R.string.back),
                 )
               }
             },
