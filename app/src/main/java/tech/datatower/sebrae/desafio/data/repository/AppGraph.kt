@@ -12,17 +12,23 @@ import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.local.AppDao
 import tech.datatower.sebrae.desafio.data.local.AppDatabase
-import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
-import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseSeedCredentialStore
 import tech.datatower.sebrae.desafio.data.remote.NoOpRemoteBootstrapper
+import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseRemoteBootstrapper
+import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseSeedCredentialStore
 
+/** Objeto singleton que concentra responsabilidades de app graph. */
 object AppGraph {
   private const val TAG = "AppGraph"
   private const val FIREBASE_REMOTE_BOOTSTRAP_ENABLED = true
   private const val FIREBASE_AUTO_SEED_ALL_COLLECTIONS_FROM_LOCAL = true
   private val graphScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
+  /**
+   * Executa a rotina de repository dentro do contexto deste componente.
+   *
+   * @param context Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `AppRepository`.
+   */
   @Volatile private var repository: AppRepository? = null
   @Volatile private var dataConnectService: FirebaseDataConnectService? = null
   @Volatile private var seedCredentialStore: FirebaseSeedCredentialStore? = null
@@ -52,19 +58,27 @@ object AppGraph {
 
           dataConnectService
               ?: FirebaseDataConnectService(
-                  firestore = FirebaseFirestore.getInstance(),
-                  dao = dao,
-                  credentialStore = secureStore,
-              )
+                      firestore = FirebaseFirestore.getInstance(),
+                      dao = dao,
+                      credentialStore = secureStore,
+                  )
                   .also { dataConnectService = it }
         }
   }
 
+  /**
+   * Executa a rotina de data connect service dentro do contexto deste componente.
+   *
+   * @param context Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `FirebaseDataConnectService`.
+   */
   fun dataConnectService(context: Context): FirebaseDataConnectService {
-    val dao = appDaoRef ?: run {
-      repository(context)
-      appDaoRef
-    }
+    val dao =
+        appDaoRef
+            ?: run {
+              repository(context)
+              appDaoRef
+            }
     checkNotNull(dao) { "AppDao indisponivel para inicializar FirebaseDataConnectService." }
     return dataConnectService(context, dao)
   }
@@ -74,6 +88,12 @@ object AppGraph {
     graphScope.launch { repository(context) }
   }
 
+  /**
+   * Executa a rotina de build repository dentro do contexto deste componente.
+   *
+   * @param context Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `AppRepository`.
+   */
   private fun buildRepository(context: Context): AppRepository {
     val database =
         Room.databaseBuilder(context, AppDatabase::class.java, "sebrae_local.db")
@@ -103,7 +123,8 @@ object AppGraph {
       if (FIREBASE_AUTO_SEED_ALL_COLLECTIONS_FROM_LOCAL) {
         when (
             val seedResult =
-                dataConnectService(context = context, dao = dao).seedAllCollectionsFromLocalCache()) {
+                dataConnectService(context = context, dao = dao).seedAllCollectionsFromLocalCache()
+        ) {
           is FirebaseDataConnectService.Result.Success ->
               Log.d(TAG, "Seed automatico de collections concluido: ${seedResult.data}")
           is FirebaseDataConnectService.Result.Error ->
