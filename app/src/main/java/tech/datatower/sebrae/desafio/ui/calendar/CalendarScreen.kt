@@ -63,7 +63,8 @@ fun CalendarScreen(onBack: () -> Unit = {}) {
   val listState = rememberLazyListState()
   val grouped = remember(events) { events.groupBy { it.date }.entries.toList() }
 
-  DetailScaffold(title = stringResource(R.string.calendar_title), onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.calendar_title), onBack = onBack) { innerPadding, _
+    ->
     Scaffold(
         floatingActionButton = {
           FloatingActionButton(
@@ -73,7 +74,7 @@ fun CalendarScreen(onBack: () -> Unit = {}) {
           ) {
             Icon(
                 imageVector = Icons.Outlined.Add,
-                contentDescription = stringResource(R.string.calendar_add_content_description)
+                contentDescription = stringResource(R.string.calendar_add_content_description),
             )
           }
         },
