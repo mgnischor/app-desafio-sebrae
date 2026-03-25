@@ -43,9 +43,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.Course
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
@@ -90,7 +92,7 @@ fun CoursesScreen(
         }
       }
 
-  DetailScaffold(title = "Cursos", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.courses_title), onBack = onBack) { innerPadding, _ ->
     Scaffold(
         floatingActionButton = {
           FloatingActionButton(
@@ -98,7 +100,10 @@ fun CoursesScreen(
               containerColor = MaterialTheme.colorScheme.primary,
               contentColor = MaterialTheme.colorScheme.onPrimary,
           ) {
-            Icon(imageVector = Icons.Outlined.Add, contentDescription = "Novo curso")
+            Icon(
+                imageVector = Icons.Outlined.Add,
+                contentDescription = stringResource(R.string.courses_add_content_description)
+            )
           }
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -113,9 +118,9 @@ fun CoursesScreen(
           ListSearchHeader(
               query = query,
               onQueryChange = { query = it },
-              placeholder = "Buscar curso, categoria ou instrutor...",
+              placeholder = stringResource(R.string.courses_search_placeholder),
               resultCount = filtered.size,
-              resultLabel = "cursos encontrados",
+              resultLabel = stringResource(R.string.courses_result_label),
           )
         }
 
@@ -123,7 +128,7 @@ fun CoursesScreen(
           item {
             EmptyState(
                 icon = Icons.AutoMirrored.Outlined.MenuBook,
-                message = "Nenhum curso encontrado.",
+                message = stringResource(R.string.courses_empty_state),
             )
           }
         } else {
@@ -180,7 +185,7 @@ private fun CourseCard(
         }
         Spacer(modifier = Modifier.width(8.dp))
         StatusChip(
-            label = if (course.isPublished) "Publicado" else "Rascunho",
+            label = stringResource(if (course.isPublished) R.string.status_published else R.string.status_draft),
             containerColor =
                 if (course.isPublished) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -205,7 +210,7 @@ private fun CourseCard(
           )
           Spacer(modifier = Modifier.width(4.dp))
           Text(
-              text = "${course.totalStudents} alunos",
+              text = "${course.totalStudents} ${stringResource(R.string.unit_students)}",
               style = MaterialTheme.typography.labelSmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
@@ -219,13 +224,13 @@ private fun CourseCard(
           )
           Spacer(modifier = Modifier.width(4.dp))
           Text(
-              text = "${course.durationHours}h",
+              text = "${course.durationHours}${stringResource(R.string.unit_hours)}",
               style = MaterialTheme.typography.labelSmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
         Text(
-            text = "Instrutor: ${course.instructor}",
+            text = stringResource(R.string.label_instructor, course.instructor),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -243,7 +248,7 @@ private fun CourseCard(
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "${(course.completionRate * 100).toInt()}% conclusão",
+            text = stringResource(R.string.label_completion, (course.completionRate * 100).toInt()),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.tertiary,
         )
@@ -251,21 +256,6 @@ private fun CourseCard(
     }
   }
 }
-
-/**
- * Disponibiliza dados simulados para prototipação da tela de cursos.
- *
- * @return Lista fixa de cursos com diferentes níveis de progresso e publicação.
- */
-private fun sampleCourses() =
-    listOf(
-        Course(1, "Marketing Digital", "Negócios", "Profa. Helena", 320, 40, 0.82f, true),
-        Course(2, "Excel para Negócios", "Tecnologia", "Prof. André", 210, 20, 0.60f, true),
-        Course(3, "Empreendedorismo", "Gestão", "Profa. Carla", 180, 30, 0.91f, true),
-        Course(4, "Finanças Pessoais", "Finanças", "Prof. Roberto", 95, 16, 0.45f, false),
-        Course(5, "Design Gráfico", "Criatividade", "Profa. Bianca", 140, 24, 0.70f, true),
-        Course(6, "Vendas e Negociação", "Negócios", "Prof. Sérgio", 260, 12, 0.55f, true),
-    )
 
 /** Pré-visualização da tela de cursos no ambiente de design. */
 @Preview(showBackground = true, showSystemUi = true)
