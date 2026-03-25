@@ -20,9 +20,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.flowOf
+import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.model.ClassStatus
+import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
@@ -42,10 +46,10 @@ fun ClassDetailScreen(
       }
   val students by studentsFlow.collectAsState(initial = emptyList())
 
-  DetailScaffold(title = "Detalhe da Turma", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.class_detail_title), onBack = onBack) { innerPadding, _ ->
     if (schoolClass == null) {
       Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(20.dp)) {
-        Text("Turma não encontrada.", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.class_not_found), style = MaterialTheme.typography.bodyLarge)
       }
       return@DetailScaffold
     }
@@ -70,31 +74,31 @@ fun ClassDetailScreen(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text("Curso: ${schoolClass!!.course}", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.label_course, schoolClass!!.course), style = MaterialTheme.typography.bodyMedium)
             Text(
-                "Instrutor: ${schoolClass!!.instructor}",
+                stringResource(R.string.label_instructor, schoolClass!!.instructor),
                 style = MaterialTheme.typography.bodySmall,
             )
-            Text("Horário: ${schoolClass!!.schedule}", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.label_schedule, schoolClass!!.schedule), style = MaterialTheme.typography.bodySmall)
             Text(
-                "Ocupação: ${schoolClass!!.studentsCount}/${schoolClass!!.maxCapacity}",
+                stringResource(R.string.label_occupation, schoolClass!!.studentsCount, schoolClass!!.maxCapacity),
                 style = MaterialTheme.typography.bodySmall,
             )
-            Text("Status: ${schoolClass!!.status}", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.status_label, classStatusLabel(schoolClass!!.status)), style = MaterialTheme.typography.bodySmall)
           }
         }
       }
 
       item {
         Text(
-            text = "Alunos da turma (${students.size})",
+            text = stringResource(R.string.label_class_students, students.size),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
       }
 
       if (students.isEmpty()) {
-        item { Text("Nenhum aluno vinculado.", style = MaterialTheme.typography.bodyMedium) }
+        item { Text(stringResource(R.string.no_class_students), style = MaterialTheme.typography.bodyMedium) }
       } else {
         items(students, key = { it.id }) { student ->
           ElevatedCard(
@@ -114,10 +118,10 @@ fun ClassDetailScreen(
               )
               Text(student.email, style = MaterialTheme.typography.bodySmall)
               Text(
-                  "Progresso: ${(student.progress * 100).toInt()}%",
+                  stringResource(R.string.label_progress, (student.progress * 100).toInt()),
                   style = MaterialTheme.typography.bodySmall,
               )
-              Text("Status: ${student.status}", style = MaterialTheme.typography.bodySmall)
+              Text(stringResource(R.string.status_label, studentStatusLabel(student.status)), style = MaterialTheme.typography.bodySmall)
             }
           }
         }
@@ -125,3 +129,20 @@ fun ClassDetailScreen(
     }
   }
 }
+
+@Composable
+private fun classStatusLabel(status: ClassStatus): String =
+    when (status) {
+      ClassStatus.Open -> stringResource(R.string.class_status_open)
+      ClassStatus.InProgress -> stringResource(R.string.class_status_in_progress)
+      ClassStatus.Closed -> stringResource(R.string.class_status_closed)
+    }
+
+@Composable
+private fun studentStatusLabel(status: StudentStatus): String =
+    when (status) {
+      StudentStatus.Active -> stringResource(R.string.status_active)
+      StudentStatus.Inactive -> stringResource(R.string.status_inactive)
+      StudentStatus.Graduated -> stringResource(R.string.status_graduated)
+    }
+
