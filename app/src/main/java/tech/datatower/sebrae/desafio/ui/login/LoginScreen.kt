@@ -82,13 +82,15 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
   val errorMessage = stringResource(R.string.login_error_invalid_credentials)
 
   fun attemptLogin() {
-    isLoading = true
-    val success = AuthManager.login(email, password)
-    isLoading = false
-    if (success) {
-      onLoginSuccess()
-    } else {
-      scope.launch { snackbarHostState.showSnackbar(errorMessage) }
+    scope.launch {
+      isLoading = true
+      when (val result = AuthManager.loginWithFirebase(email, password)) {
+        is AuthManager.FirebaseLoginResult.Success -> onLoginSuccess()
+        is AuthManager.FirebaseLoginResult.Error -> {
+          snackbarHostState.showSnackbar(result.message.ifBlank { errorMessage })
+        }
+      }
+      isLoading = false
     }
   }
 
