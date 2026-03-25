@@ -35,9 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.Certificate
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
@@ -77,7 +79,7 @@ fun CertificatesScreen(onBack: () -> Unit = {}) {
         }
       }
 
-  DetailScaffold(title = "Certificados", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.certificates_title), onBack = onBack) { innerPadding, _ ->
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(innerPadding),
         state = listState,
@@ -88,15 +90,18 @@ fun CertificatesScreen(onBack: () -> Unit = {}) {
         ListSearchHeader(
             query = query,
             onQueryChange = { query = it },
-            placeholder = "Buscar por aluno, curso ou codigo...",
+            placeholder = stringResource(R.string.certificates_search_placeholder),
             resultCount = filtered.size,
-            resultLabel = "certificados encontrados",
+            resultLabel = stringResource(R.string.certificates_result_label),
         )
       }
 
       if (filtered.isEmpty()) {
         item {
-          EmptyState(icon = Icons.Outlined.Bookmarks, message = "Nenhum certificado encontrado.")
+          EmptyState(
+              icon = Icons.Outlined.Bookmarks,
+              message = stringResource(R.string.certificates_empty_state)
+          )
         }
       } else {
         items(
@@ -158,7 +163,7 @@ private fun CertificateCard(cert: Certificate) {
               color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
           Text(
-              text = "${cert.hours}h",
+              text = "${cert.hours}${stringResource(R.string.unit_hours)}",
               style = MaterialTheme.typography.labelSmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
