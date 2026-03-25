@@ -23,14 +23,15 @@ import tech.datatower.sebrae.desafio.ui.students.StudentMonitoringScreen
 import tech.datatower.sebrae.desafio.ui.students.StudentsScreen
 import tech.datatower.sebrae.desafio.ui.teachers.TeacherDetailScreen
 import tech.datatower.sebrae.desafio.ui.teachers.TeachersScreen
+import tech.datatower.sebrae.desafio.ui.users.UserManagementScreen
 
 /**
  * Declara o grafo de navegação principal da aplicação.
  *
- * Define a tela inicial (login) e mapeia cada rota de `AppRoutes` para sua respectiva tela
- * Compose, centralizando a orquestração de navegação. A rota de início é a tela de login; após
- * autenticação bem-sucedida, o usuário é direcionado para a Home sem possibilidade de voltar para
- * o login via botão "back".
+ * Define a tela inicial (login) e mapeia cada rota de `AppRoutes` para sua respectiva tela Compose,
+ * centralizando a orquestração de navegação. A rota de início é a tela de login; após autenticação
+ * bem-sucedida, o usuário é direcionado para a Home sem possibilidade de voltar para o login via
+ * botão "back".
  *
  * @param navController Controlador responsável por navegar entre destinos e gerenciar o back stack.
  */
@@ -43,9 +44,7 @@ fun AppNavHost(navController: NavHostController) {
     composable(AppRoutes.LOGIN) {
       LoginScreen(
           onLoginSuccess = {
-            navController.navigate(AppRoutes.HOME) {
-              popUpTo(AppRoutes.LOGIN) { inclusive = true }
-            }
+            navController.navigate(AppRoutes.HOME) { popUpTo(AppRoutes.LOGIN) { inclusive = true } }
           }
       )
     }
@@ -56,9 +55,7 @@ fun AppNavHost(navController: NavHostController) {
           onModuleClick = { route -> navController.navigate(route) },
           onLogout = {
             AuthManager.logout()
-            navController.navigate(AppRoutes.LOGIN) {
-              popUpTo(AppRoutes.HOME) { inclusive = true }
-            }
+            navController.navigate(AppRoutes.LOGIN) { popUpTo(AppRoutes.HOME) { inclusive = true } }
           },
       )
     }
@@ -127,6 +124,20 @@ fun AppNavHost(navController: NavHostController) {
       CertificatesScreen(onBack = { navController.popBackStack() })
     }
     composable(AppRoutes.CALENDAR) { CalendarScreen(onBack = { navController.popBackStack() }) }
-    composable(AppRoutes.SETTINGS) { SettingsScreen(onBack = { navController.popBackStack() }) }
+    composable(AppRoutes.SETTINGS) {
+      val currentUser by AuthManager.currentUser.collectAsState()
+      SettingsScreen(
+          currentUser = currentUser,
+          onBack = { navController.popBackStack() },
+          onOpenUserManagement = { navController.navigate(AppRoutes.USERS_MANAGEMENT) },
+      )
+    }
+    composable(AppRoutes.USERS_MANAGEMENT) {
+      val currentUser by AuthManager.currentUser.collectAsState()
+      UserManagementScreen(
+          currentUser = currentUser,
+          onBack = { navController.popBackStack() },
+      )
+    }
   }
 }
