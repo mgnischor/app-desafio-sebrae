@@ -5,6 +5,7 @@ import tech.datatower.sebrae.desafio.data.repository.AppGraph
 
 /** Application entrypoint used to pre-warm app dependencies before first UI frame. */
 class SebraeApplication : Application() {
+  /** Trata o evento de create no contexto da tela atual. */
   override fun onCreate() {
     super.onCreate()
     AppGraph.warmUp(this)
