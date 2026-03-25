@@ -20,9 +20,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.flowOf
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
@@ -43,10 +45,10 @@ fun TeacherDetailScreen(
       }
   val classes by classesFlow.collectAsState(initial = emptyList())
 
-  DetailScaffold(title = "Detalhe do Instrutor", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.teacher_detail_title), onBack = onBack) { innerPadding, _ ->
     if (teacher == null) {
       Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(20.dp)) {
-        Text("Instrutor não encontrado.", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.teacher_not_found), style = MaterialTheme.typography.bodyLarge)
       }
       return@DetailScaffold
     }
@@ -72,17 +74,17 @@ fun TeacherDetailScreen(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(teacher!!.specialty, style = MaterialTheme.typography.bodyMedium)
-            Text("E-mail: ${teacher!!.email}", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.label_email, teacher!!.email), style = MaterialTheme.typography.bodySmall)
             Text(
-                "Cursos ativos: ${teacher!!.activeCourses}",
+                stringResource(R.string.label_active_courses_count, teacher!!.activeCourses),
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                "Total de alunos: ${teacher!!.totalStudents}",
+                stringResource(R.string.label_total_students_count, teacher!!.totalStudents),
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                "Avaliação: ${"%.1f".format(teacher!!.rating)}",
+                stringResource(R.string.label_rating_value, teacher!!.rating),
                 style = MaterialTheme.typography.bodySmall,
             )
           }
@@ -91,14 +93,14 @@ fun TeacherDetailScreen(
 
       item {
         Text(
-            text = "Turmas ministradas (${classes.size})",
+            text = stringResource(R.string.label_taught_classes, classes.size),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
       }
 
       if (classes.isEmpty()) {
-        item { Text("Nenhuma turma vinculada.", style = MaterialTheme.typography.bodyMedium) }
+        item { Text(stringResource(R.string.no_linked_classes), style = MaterialTheme.typography.bodyMedium) }
       } else {
         items(classes, key = { it.id }) { schoolClass ->
           ElevatedCard(
@@ -116,10 +118,10 @@ fun TeacherDetailScreen(
                   style = MaterialTheme.typography.titleSmall,
                   fontWeight = FontWeight.Medium,
               )
-              Text("Curso: ${schoolClass.course}", style = MaterialTheme.typography.bodySmall)
-              Text("Horário: ${schoolClass.schedule}", style = MaterialTheme.typography.bodySmall)
+              Text(stringResource(R.string.label_course, schoolClass.course), style = MaterialTheme.typography.bodySmall)
+              Text(stringResource(R.string.label_schedule, schoolClass.schedule), style = MaterialTheme.typography.bodySmall)
               Text(
-                  "Alunos: ${schoolClass.studentsCount}/${schoolClass.maxCapacity}",
+                  stringResource(R.string.label_students_count, schoolClass.studentsCount, schoolClass.maxCapacity),
                   style = MaterialTheme.typography.bodySmall,
               )
             }
