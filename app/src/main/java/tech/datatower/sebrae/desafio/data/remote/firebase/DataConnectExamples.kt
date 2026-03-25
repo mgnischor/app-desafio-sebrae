@@ -31,18 +31,14 @@ import tech.datatower.sebrae.desafio.data.model.Course
  * - Sincronizar com LaunchedEffect
  */
 
-/**
- * Exemplo 1: Tela de Cursos com sincronização automática.
- */
+/** Exemplo 1: Tela de Cursos com sincronização automática. */
 @Composable
 fun CursosScreenExample(
     viewModel: DataConnectSyncViewModel,
 ) {
   val coursesState by viewModel.coursesState.collectAsState()
 
-  LaunchedEffect(Unit) {
-    viewModel.loadCourses()
-  }
+  LaunchedEffect(Unit) { viewModel.loadCourses() }
 
   Scaffold { innerPadding ->
     Box(
@@ -54,34 +50,24 @@ fun CursosScreenExample(
           CircularProgressIndicator()
         }
         is DataConnectSyncViewModel.DataState.Success -> {
-          LazyColumn {
-            items(state.data) { curso ->
-              CursoCard(curso)
-            }
-          }
+          LazyColumn { items(state.data) { curso -> CursoCard(curso) } }
         }
         is DataConnectSyncViewModel.DataState.Error -> {
           Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Erro ao carregar cursos", color = MaterialTheme.colorScheme.error)
             Text(state.message, modifier = Modifier.padding(top = 8.dp))
-            Button(onClick = { viewModel.loadCourses() }) {
-              Text("Tentar Novamente")
-            }
+            Button(onClick = { viewModel.loadCourses() }) { Text("Tentar Novamente") }
           }
         }
         is DataConnectSyncViewModel.DataState.Idle -> {
-          Button(onClick = { viewModel.loadCourses() }) {
-            Text("Carregar Cursos")
-          }
+          Button(onClick = { viewModel.loadCourses() }) { Text("Carregar Cursos") }
         }
       }
     }
   }
 }
 
-/**
- * Exemplo 2: Tela de Sincronização Geral.
- */
+/** Exemplo 2: Tela de Sincronização Geral. */
 @Composable
 fun SyncStatusScreen(
     viewModel: DataConnectSyncViewModel,
@@ -96,9 +82,7 @@ fun SyncStatusScreen(
 
     when (syncState) {
       is DataConnectSyncViewModel.SyncState.Idle -> {
-        Button(onClick = { viewModel.syncAllData() }) {
-          Text("Iniciar Sincronização")
-        }
+        Button(onClick = { viewModel.syncAllData() }) { Text("Iniciar Sincronização") }
       }
       is DataConnectSyncViewModel.SyncState.Loading -> {
         CircularProgressIndicator()
@@ -106,31 +90,23 @@ fun SyncStatusScreen(
       }
       is DataConnectSyncViewModel.SyncState.Success -> {
         Text("✅ Sincronização concluída com sucesso!", color = MaterialTheme.colorScheme.primary)
-        Button(onClick = { viewModel.syncAllData() }) {
-          Text("Sincronizar Novamente")
-        }
+        Button(onClick = { viewModel.syncAllData() }) { Text("Sincronizar Novamente") }
       }
       is DataConnectSyncViewModel.SyncState.Error -> {
         val error = syncState as DataConnectSyncViewModel.SyncState.Error
         Text("❌ Erro na sincronização", color = MaterialTheme.colorScheme.error)
         Text(error.message, modifier = Modifier.padding(top = 8.dp))
-        Button(onClick = { viewModel.syncAllData() }) {
-          Text("Tentar Novamente")
-        }
+        Button(onClick = { viewModel.syncAllData() }) { Text("Tentar Novamente") }
       }
     }
   }
 }
 
-/**
- * Exemplo 3: Card de Curso para exibição em lista.
- */
+/** Exemplo 3: Card de Curso para exibição em lista. */
 @Composable
 private fun CursoCard(curso: Course) {
   Surface(
-      modifier =
-          Modifier.fillMaxSize()
-              .padding(8.dp), // Simples - usar em LazyColumn
+      modifier = Modifier.fillMaxSize().padding(8.dp), // Simples - usar em LazyColumn
       shape = MaterialTheme.shapes.medium,
       color = MaterialTheme.colorScheme.surface,
   ) {
@@ -151,10 +127,9 @@ private fun CursoCard(curso: Course) {
  *
  * Adicione esta lógica quando precisar sincronizar na inicialização:
  *
- *   override fun onCreate(savedInstanceState: Bundle?) {
- *       super.onCreate(savedInstanceState)
- *       enableEdgeToEdge()
- *       
+ * override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState)
+ * enableEdgeToEdge()
+ *
  *       // Sincronizar dados do Firebase na inicialização
  *       lifecycleScope.launch {
  *           val repository = AppGraph.repository(this@MainActivity)
@@ -170,7 +145,6 @@ private fun CursoCard(curso: Course) {
  *               else -> {}
  *           }
  *       }
- *       
  *       setContent { /* ... */ }
  *   }
  */
@@ -208,35 +182,37 @@ fun RobustDataConnectScreen(
       Text("Dados do Firebase Data Connect", style = MaterialTheme.typography.headlineMedium)
 
       // Seção de Cursos
-      Text("Cursos", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 16.dp))
-      RenderDataState(coursesState) { cursos ->
-        LazyColumn {
-          items(cursos) { Text(it.title) }
-        }
-      }
+      Text(
+          "Cursos",
+          style = MaterialTheme.typography.headlineSmall,
+          modifier = Modifier.padding(top = 16.dp),
+      )
+      RenderDataState(coursesState) { cursos -> LazyColumn { items(cursos) { Text(it.title) } } }
 
       // Seção de Estudantes
-      Text("Estudantes", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 16.dp))
+      Text(
+          "Estudantes",
+          style = MaterialTheme.typography.headlineSmall,
+          modifier = Modifier.padding(top = 16.dp),
+      )
       RenderDataState(studentsState) { estudantes ->
-        LazyColumn {
-          items(estudantes) { Text(it.name) }
-        }
+        LazyColumn { items(estudantes) { Text(it.name) } }
       }
 
       // Seção de Professores
-      Text("Professores", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 16.dp))
+      Text(
+          "Professores",
+          style = MaterialTheme.typography.headlineSmall,
+          modifier = Modifier.padding(top = 16.dp),
+      )
       RenderDataState(teachersState) { professores ->
-        LazyColumn {
-          items(professores) { Text(it.name) }
-        }
+        LazyColumn { items(professores) { Text(it.name) } }
       }
     }
   }
 }
 
-/**
- * Composable auxiliar para renderizar qualquer DataState<T>.
- */
+/** Composable auxiliar para renderizar qualquer DataState<T>. */
 @Composable
 private inline fun <T> RenderDataState(
     state: DataConnectSyncViewModel.DataState<T>,
@@ -257,4 +233,3 @@ private inline fun <T> RenderDataState(
     }
   }
 }
-
