@@ -1,0 +1,180 @@
+<resources>
+    <string name="app_name">SEBRAE Challenge App</string>
+
+    <!-- General -->
+    <string name="back">Back</string>
+    <string name="unit_students">students</string>
+    <string name="unit_hours">h</string>
+    <string name="label_instructor">Instructor: %s</string>
+    <string name="label_completion">%d%% completion</string>
+
+    <!-- Home / Menu -->
+    <string name="home_greeting_morning">Good morning</string>
+    <string name="home_greeting_afternoon">Good afternoon</string>
+    <string name="home_greeting_evening">Good evening</string>
+    <string name="home_subtitle">Educational Management</string>
+    <string name="home_search_placeholder">Search courses, students or classes…</string>
+    <string name="home_summary_description">See today\'s summary.</string>
+
+    <!-- Quick Stats -->
+    <string name="stat_students">Students</string>
+    <string name="stat_courses">Courses</string>
+    <string name="stat_classes">Classes</string>
+    <string name="stat_completion">Completion</string>
+
+    <!-- Menu Items -->
+    <string name="menu_students">Students</string>
+    <string name="menu_students_desc">Registration and monitoring</string>
+    <string name="menu_courses">Courses</string>
+    <string name="menu_courses_desc">Content and tracks</string>
+    <string name="menu_classes">Classes</string>
+    <string name="menu_classes_desc">Group organization</string>
+    <string name="menu_teachers">Instructors</string>
+    <string name="menu_teachers_desc">Teaching staff</string>
+    <string name="menu_reports">Reports</string>
+    <string name="menu_reports_desc">Performance and metrics</string>
+    <string name="menu_certificates">Certificates</string>
+    <string name="menu_certificates_desc">Issuance and history</string>
+    <string name="menu_calendar">Calendar</string>
+    <string name="menu_calendar_desc">Class schedule and events</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_settings_desc">System preferences</string>
+
+    <!-- Section titles -->
+    <string name="section_overview">Overview</string>
+    <string name="section_modules">Modules</string>
+    <string name="section_recent">Recent Activity</string>
+
+    <!-- Recent activity -->
+    <string name="recent_empty">No recent activity.</string>
+    <string name="see_all">See all</string>
+    <string name="recent_new_student_title">New student enrolled</string>
+    <string name="recent_course_published_title">Course published</string>
+    <string name="recent_certificate_issued_title">Certificate issued</string>
+    <string name="recent_class_scheduled_title">Class scheduled</string>
+
+    <!-- Time labels -->
+    <string name="time_5min_ago">5 min ago</string>
+    <string name="time_1h_ago">1h ago</string>
+    <string name="time_3h_ago">3h ago</string>
+    <string name="time_yesterday">yesterday</string>
+
+    <!-- Notifications -->
+    <string name="notifications">Notifications</string>
+    <string name="logout">Log out</string>
+
+    <!-- Login -->
+    <string name="login_title">Welcome back</string>
+    <string name="login_subtitle">Log in to access the system</string>
+    <string name="login_label_email">Email</string>
+    <string name="login_label_password">Password</string>
+    <string name="login_button">Sign In</string>
+    <string name="login_loading">Signing in…</string>
+    <string name="login_error_invalid_credentials">Invalid email or password. Try again.</string>
+    <string name="login_show_password">Show password</string>
+    <string name="login_hide_password">Hide password</string>
+    <string name="login_hint_title">Access credentials</string>
+
+    <!-- User roles -->
+    <string name="role_professor">Teacher</string>
+    <string name="role_coordenador">Coordinator</string>
+    <string name="role_administrador">Administrator</string>
+
+    <!-- Courses Screen -->
+    <string name="courses_title">Courses</string>
+    <string name="courses_add_content_description">New course</string>
+    <string name="courses_search_placeholder">Search course, category or instructor...</string>
+    <string name="courses_result_label">courses found</string>
+    <string name="courses_empty_state">No courses found.</string>
+    <string name="status_published">Published</string>
+    <string name="status_draft">Draft</string>
+
+    <!-- Students Screen -->
+    <string name="students_title">Students</string>
+    <string name="students_add_content_description">New student</string>
+    <string name="students_search_placeholder">Search student, course or class...</string>
+    <string name="students_result_label">students found</string>
+    <string name="students_empty_state">No students found.</string>
+    <string name="status_active">Active</string>
+    <string name="status_inactive">Inactive</string>
+    <string name="status_graduated">Graduated</string>
+
+    <!-- Classes Screen -->
+    <string name="classes_title">Classes</string>
+    <string name="classes_add_content_description">New class</string>
+    <string name="classes_search_placeholder">Search class, course or instructor...</string>
+    <string name="classes_result_label">classes found</string>
+    <string name="classes_empty_state">No classes found.</string>
+    <string name="class_status_open">Open</string>
+    <string name="class_status_in_progress">In progress</string>
+    <string name="class_status_closed">Closed</string>
+
+    <!-- Monitoring Screen -->
+    <string name="monitoring_title">Monitoring</string>
+    <string name="monitoring_student_not_found">Student not found.</string>
+    <string name="monitoring_alerts_title">Automated alerts</string>
+    <string name="tab_attendance">Attendance</string>
+    <string name="tab_behavior">Behavior</string>
+    <string name="tab_pedagogical">Pedagogical</string>
+    <string name="tab_psychological">Psychological</string>
+    <string name="tab_parents">Parents</string>
+
+    <string name="label_attendance_rate">Attendance %d%%</string>
+    <string name="label_average_grade">Average %.1f</string>
+
+    <string name="attendance_section_title">Attendance registration</string>
+    <string name="attendance_rule_1">Status by day/class: Present, Absent, Justified Absence, Late.</string>
+    <string name="attendance_rule_2">Justified absence must record reason and protocol.</string>
+    <string name="attendance_rule_3">Late records minutes for recurring triggers.</string>
+    <string name="label_justification">Justification: %s</string>
+    <string name="attendance_status_present">Present</string>
+    <string name="attendance_status_absent">Absent</string>
+    <string name="attendance_status_justified">Justified absence</string>
+    <string name="attendance_status_late">Late %d min</string>
+
+    <string name="behavior_section_title">Behavior registration</string>
+    <string name="behavior_rule_1">Participation on a scale of 1 to 5.</string>
+    <string name="behavior_rule_2">Activity delivery: on time, late, not delivered.</string>
+    <string name="behavior_rule_3">Valid grades between 0 and 10.</string>
+    <string name="label_participation">Participation %d/5</string>
+    <string name="label_delivery">Delivery %s</string>
+    <string name="label_grade">Grade: %s</string>
+    <string name="delivery_on_time">on time</string>
+    <string name="delivery_late">late</string>
+    <string name="delivery_missing">not delivered</string>
+
+    <string name="pedagogical_section_title">Pedagogical needs</string>
+    <string name="pedagogical_rule_1">Allowed types: report, certificate and special need.</string>
+    <string name="pedagogical_rule_2">Documents with validity generate expiration alert.</string>
+    <string name="pedagogical_rule_3">Record pedagogical adaptations applied to the student.</string>
+    <string name="pedagogical_type_report">Report</string>
+    <string name="pedagogical_type_medical">Medical Certificate</string>
+    <string name="pedagogical_type_special">Special need</string>
+    <string name="label_validity">Validity: %s</string>
+    <string name="label_not_applicable">N/A</string>
+    <string name="label_accommodations">Adaptations: %s</string>
+
+    <string name="psychological_section_title">Psychological needs</string>
+    <string name="psychological_rule_1">Define secrecy level per record.</string>
+    <string name="psychological_rule_2">Record evolution and next monitoring step.</string>
+    <string name="psychological_rule_3">Mandatory periodic review by technical manager.</string>
+    <string name="label_confidentiality">Secrecy: %s</string>
+    <string name="label_next_step">Next step: %s</string>
+    <string name="label_review_at">Review on %s</string>
+    <string name="confidentiality_restricted">Restricted</string>
+    <string name="confidentiality_shared">Shared summary</string>
+
+    <string name="parents_section_title">Parental monitoring</string>
+    <string name="parents_rule_1">Record contact channel and person responsible for the record.</string>
+    <string name="parents_rule_2">Status: pending, waiting for response, completed and no-show.</string>
+    <string name="parents_rule_3">Automatic escalation after contacts with no return.</string>
+    <string name="label_responsible">Responsible: %s</string>
+    <string name="channel_meeting">Meeting</string>
+    <string name="channel_phone">Phone</string>
+    <string name="channel_message">Message</string>
+    <string name="channel_email">Email</string>
+    <string name="follow_up_pending">Pending</string>
+    <string name="follow_up_waiting">Waiting for response</string>
+    <string name="follow_up_completed">Completed</string>
+    <string name="follow_up_no_show">No-show</string>
+</resources>

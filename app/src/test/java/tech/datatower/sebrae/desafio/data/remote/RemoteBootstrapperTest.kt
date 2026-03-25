@@ -1,0 +1,39 @@
+package tech.datatower.sebrae.desafio.data.remote
+
+import org.junit.Assert.assertFalse
+import org.junit.Test
+import tech.datatower.sebrae.desafio.data.remote.RemoteBootstrapper
+
+/**
+ * Testes unitários do contrato de bootstrap remoto.
+ *
+ * Valida comportamento padrão e fallback de estratégias de carregamento remoto.
+ *
+ * Padrão: Arrange → Act → Assert (AAA)
+ */
+class RemoteBootstrapperTest {
+
+  /**
+   * Valida que o bootstrapper no-op sempre retorna false.
+   *
+   * Regra: Fallback seguro para quando nenhuma fonte remota está disponível.
+   */
+  @Test
+  fun `NoOpRemoteBootstrapper deve sempre retornar false`() {
+    // Arrange
+    val bootstrapper: RemoteBootstrapper = NoOpRemoteBootstrapper
+
+    // Act
+    val resultado = runBlocking { bootstrapper.bootstrapIntoLocalCache() }
+
+    // Assert
+    assertFalse("NoOp bootstrapper deve sempre retornar false", resultado)
+  }
+
+  companion object {
+    private fun runBlocking(block: suspend () -> Unit) {
+      kotlinx.coroutines.runBlocking { block() }
+    }
+  }
+}
+
