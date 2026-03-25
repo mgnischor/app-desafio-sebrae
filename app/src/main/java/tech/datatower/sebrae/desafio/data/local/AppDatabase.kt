@@ -22,6 +22,7 @@ import tech.datatower.sebrae.desafio.data.model.ParentContactChannel
 import tech.datatower.sebrae.desafio.data.model.ParentFollowUpStatus
 import tech.datatower.sebrae.desafio.data.model.PedagogicalNeedType
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
+import tech.datatower.sebrae.desafio.data.model.UserRole
 
 @Entity(tableName = "courses")
 data class CourseEntity(
@@ -164,6 +165,16 @@ data class AppSettingsEntity(
     val darkMode: Boolean,
     val pushEnabled: Boolean,
     val emailEnabled: Boolean,
+    val language: String = "pt",
+)
+
+@Entity(tableName = "app_users")
+data class AppUserEntity(
+    @PrimaryKey val id: Int,
+    val name: String,
+    val email: String,
+    val role: UserRole,
+    val passwordHash: String,
 )
 
 class AppConverters {
@@ -299,6 +310,54 @@ interface AppDao {
   suspend fun observeSettingsOnce(): AppSettingsEntity?
 
   @Upsert suspend fun upsertSettings(settings: AppSettingsEntity)
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertUsers(items: List<AppUserEntity>)
+
+  @Upsert
+  suspend fun upsertUser(item: AppUserEntity)
+
+  @Query("SELECT * FROM app_users ORDER BY name")
+  fun observeUsers(): Flow<List<AppUserEntity>>
+
+  @Query("SELECT * FROM app_users ORDER BY name")
+  suspend fun getUsersOnce(): List<AppUserEntity>
+
+  @Query("SELECT * FROM school_classes ORDER BY id")
+  suspend fun getClassesOnce(): List<SchoolClassEntity>
+
+  @Query("SELECT * FROM teachers ORDER BY id")
+  suspend fun getTeachersOnce(): List<TeacherEntity>
+
+  @Query("SELECT * FROM students ORDER BY id")
+  suspend fun getStudentsOnce(): List<StudentEntity>
+
+  @Query("SELECT * FROM certificates ORDER BY id")
+  suspend fun getCertificatesOnce(): List<CertificateEntity>
+
+  @Query("SELECT * FROM calendar_events ORDER BY id")
+  suspend fun getCalendarEventsOnce(): List<CalendarEventEntity>
+
+  @Query("SELECT * FROM recent_activities ORDER BY id")
+  suspend fun getRecentActivitiesOnce(): List<RecentActivityEntity>
+
+  @Query("SELECT * FROM monthly_enrollments ORDER BY rowid")
+  suspend fun getMonthlyEnrollmentsOnce(): List<MonthlyEnrollmentEntity>
+
+  @Query("SELECT * FROM attendance_records ORDER BY id")
+  suspend fun getAttendanceOnce(): List<AttendanceEntity>
+
+  @Query("SELECT * FROM behavior_records ORDER BY id")
+  suspend fun getBehaviorsOnce(): List<BehaviorEntity>
+
+  @Query("SELECT * FROM pedagogical_needs ORDER BY id")
+  suspend fun getPedagogicalNeedsOnce(): List<PedagogicalNeedEntity>
+
+  @Query("SELECT * FROM psychological_needs ORDER BY id")
+  suspend fun getPsychologicalNeedsOnce(): List<PsychologicalNeedEntity>
+
+  @Query("SELECT * FROM parent_follow_ups ORDER BY id")
+  suspend fun getParentFollowUpsOnce(): List<ParentFollowUpEntity>
 }
 
 @Database(
@@ -318,8 +377,9 @@ interface AppDao {
             PsychologicalNeedEntity::class,
             ParentFollowUpEntity::class,
             AppSettingsEntity::class,
+            AppUserEntity::class,
         ],
-    version = 1,
+    version = 4,
     exportSchema = false,
 )
 @TypeConverters(AppConverters::class)
