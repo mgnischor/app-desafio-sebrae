@@ -19,10 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import tech.datatower.sebrae.desafio.data.model.Course
-import tech.datatower.sebrae.desafio.data.model.Student
-import tech.datatower.sebrae.desafio.data.model.Teacher
 
 /**
  * Exemplo de como usar FirebaseDataConnectService com Composable.
@@ -39,12 +36,7 @@ import tech.datatower.sebrae.desafio.data.model.Teacher
  */
 @Composable
 fun CursosScreenExample(
-    viewModel: DataConnectSyncViewModel = viewModel(
-        factory = DataConnectSyncViewModelFactory(
-            // Obter service do AppGraph ou injetar
-            // service = AppGraph.dataConnectService(dao)
-        )
-    ),
+    viewModel: DataConnectSyncViewModel,
 ) {
   val coursesState by viewModel.coursesState.collectAsState()
 
@@ -92,7 +84,7 @@ fun CursosScreenExample(
  */
 @Composable
 fun SyncStatusScreen(
-    viewModel: DataConnectSyncViewModel = viewModel(),
+    viewModel: DataConnectSyncViewModel,
 ) {
   val syncState by viewModel.syncState.collectAsState()
 
@@ -197,7 +189,7 @@ private fun CursoCard(curso: Course) {
  */
 @Composable
 fun RobustDataConnectScreen(
-    viewModel: DataConnectSyncViewModel = viewModel(),
+    viewModel: DataConnectSyncViewModel,
 ) {
   val coursesState by viewModel.coursesState.collectAsState()
   val studentsState by viewModel.studentsState.collectAsState()
