@@ -28,23 +28,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import java.time.LocalDate
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.ActivityDeliveryStatus
 import tech.datatower.sebrae.desafio.data.model.AttendanceRecord
 import tech.datatower.sebrae.desafio.data.model.AttendanceStatus
-import tech.datatower.sebrae.desafio.data.model.BehaviorRecord
 import tech.datatower.sebrae.desafio.data.model.ConfidentialityLevel
 import tech.datatower.sebrae.desafio.data.model.MonitoringAlert
 import tech.datatower.sebrae.desafio.data.model.MonitoringAlertLevel
 import tech.datatower.sebrae.desafio.data.model.ParentContactChannel
-import tech.datatower.sebrae.desafio.data.model.ParentFollowUp
 import tech.datatower.sebrae.desafio.data.model.ParentFollowUpStatus
-import tech.datatower.sebrae.desafio.data.model.PedagogicalNeed
 import tech.datatower.sebrae.desafio.data.model.PedagogicalNeedType
-import tech.datatower.sebrae.desafio.data.model.PsychologicalNeed
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringRules
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringSnapshot
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
@@ -72,9 +69,9 @@ fun StudentMonitoringScreen(
   val snapshot by
       repository.observeStudentMonitoringSnapshot(studentId).collectAsState(initial = null)
   if (snapshot == null) {
-    DetailScaffold(title = "Acompanhamento", onBack = onBack) { innerPadding, _ ->
+    DetailScaffold(title = stringResource(R.string.monitoring_title), onBack = onBack) { innerPadding, _ ->
       Column(modifier = Modifier.padding(innerPadding).padding(20.dp)) {
-        Text("Aluno não encontrado.")
+        Text(stringResource(R.string.monitoring_student_not_found))
       }
     }
     return
@@ -87,9 +84,15 @@ fun StudentMonitoringScreen(
   val averageGrade = remember(data) { StudentMonitoringRules.averageGrade(data.behaviorRecords) }
 
   var selectedTab by remember { mutableIntStateOf(0) }
-  val tabs = listOf("Frequência", "Comportamentos", "Pedagógico", "Psicológico", "Pais")
+  val tabs = listOf(
+      stringResource(R.string.tab_attendance),
+      stringResource(R.string.tab_behavior),
+      stringResource(R.string.tab_pedagogical),
+      stringResource(R.string.tab_psychological),
+      stringResource(R.string.tab_parents)
+  )
 
-  DetailScaffold(title = "Acompanhamento", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.monitoring_title), onBack = onBack) { innerPadding, _ ->
     LazyColumn(
         modifier = Modifier.padding(innerPadding),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
@@ -120,14 +123,13 @@ fun StudentMonitoringScreen(
         }
       }
 
-      item {
-        when (selectedTab) {
-          0 -> AttendanceSection(data)
-          1 -> BehaviorSection(data)
-          2 -> PedagogicalSection(data)
-          3 -> PsychologicalSection(data)
-          else -> ParentSection(data)
-        }
+      // Lazy render tab content to avoid rebuilding off-screen sections
+      when (selectedTab) {
+        0 -> item { AttendanceSection(data) }
+        1 -> item { BehaviorSection(data) }
+        2 -> item { PedagogicalSection(data) }
+        3 -> item { PsychologicalSection(data) }
+        else -> item { ParentSection(data) }
       }
     }
   }
@@ -169,12 +171,12 @@ private fun StudentHeader(
       )
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatusChip(
-            label = "Frequência ${(attendanceRate * 100).toInt()}%",
+            label = stringResource(R.string.label_attendance_rate, (attendanceRate * 100).toInt()),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         )
         StatusChip(
-            label = "Média ${"%.1f".format(averageGrade)}",
+            label = stringResource(R.string.label_average_grade, averageGrade),
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
         )
@@ -200,7 +202,7 @@ private fun AlertsCard(alerts: List<MonitoringAlert>) {
   ) {
     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
       Text(
-          text = "Alertas automáticos",
+          text = stringResource(R.string.monitoring_alerts_title),
           style = MaterialTheme.typography.titleSmall,
           fontWeight = FontWeight.SemiBold,
       )
@@ -234,12 +236,12 @@ private fun AlertsCard(alerts: List<MonitoringAlert>) {
 @Composable
 private fun AttendanceSection(snapshot: StudentMonitoringSnapshot) {
   DomainSectionCard(
-      title = "Cadastro de frequência",
+      title = stringResource(R.string.attendance_section_title),
       options =
           listOf(
-              "Status por dia/aula: Presente, Falta, Falta Justificada, Atraso.",
-              "Falta justificada deve registrar motivo e protocolo.",
-              "Atraso registra minutos para gatilhos recorrentes.",
+              stringResource(R.string.attendance_rule_1),
+              stringResource(R.string.attendance_rule_2),
+              stringResource(R.string.attendance_rule_3),
           ),
   )
 
@@ -263,7 +265,7 @@ private fun AttendanceSection(snapshot: StudentMonitoringSnapshot) {
           Text(record.date.toString(), style = MaterialTheme.typography.labelMedium)
           if (!record.justification.isNullOrBlank()) {
             Text(
-                "Justificativa: ${record.justification}",
+                stringResource(R.string.label_justification, record.justification),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -287,12 +289,12 @@ private fun AttendanceSection(snapshot: StudentMonitoringSnapshot) {
 @Composable
 private fun BehaviorSection(snapshot: StudentMonitoringSnapshot) {
   DomainSectionCard(
-      title = "Cadastro de comportamento",
+      title = stringResource(R.string.behavior_section_title),
       options =
           listOf(
-              "Participação em escala de 1 a 5.",
-              "Entrega de atividade: no prazo, atrasada, não entregue.",
-              "Notas válidas entre 0 e 10.",
+              stringResource(R.string.behavior_rule_1),
+              stringResource(R.string.behavior_rule_2),
+              stringResource(R.string.behavior_rule_3),
           ),
   )
 
@@ -311,12 +313,11 @@ private fun BehaviorSection(snapshot: StudentMonitoringSnapshot) {
       Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = record.date.toString(), style = MaterialTheme.typography.labelMedium)
         Text(
-            text =
-                "Participação ${record.participationScore}/5 · Entrega ${deliveryLabel(record.activityDelivery)} · Atraso ${record.delayMinutes} min",
+            text = "${stringResource(R.string.label_participation, record.participationScore)} · ${stringResource(R.string.label_delivery, deliveryLabel(record.activityDelivery))} · ${stringResource(R.string.label_delay)} ${record.delayMinutes} ${stringResource(R.string.label_minutes)}",
             style = MaterialTheme.typography.bodySmall,
         )
         Text(
-            text = "Nota: ${record.grade ?: "-"} · ${record.note}",
+            text = stringResource(R.string.label_grade, record.grade?.toString() ?: "-") + " · ${record.note}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -340,12 +341,12 @@ private fun BehaviorSection(snapshot: StudentMonitoringSnapshot) {
 @Composable
 private fun PedagogicalSection(snapshot: StudentMonitoringSnapshot) {
   DomainSectionCard(
-      title = "Necessidades pedagógicas",
+      title = stringResource(R.string.pedagogical_section_title),
       options =
           listOf(
-              "Tipos permitidos: laudo, atestado e necessidade especial.",
-              "Documentos com validade geram alerta de vencimento.",
-              "Registrar adaptações pedagógicas aplicadas ao aluno.",
+              stringResource(R.string.pedagogical_rule_1),
+              stringResource(R.string.pedagogical_rule_2),
+              stringResource(R.string.pedagogical_rule_3),
           ),
   )
 
@@ -364,8 +365,8 @@ private fun PedagogicalSection(snapshot: StudentMonitoringSnapshot) {
         Text(text = pedagogicalTypeLabel(need.type), style = MaterialTheme.typography.titleSmall)
         Text(text = need.description, style = MaterialTheme.typography.bodySmall)
         Text(
-            text =
-                "Validade: ${need.expiresAt?.toString() ?: "Não se aplica"} · Adaptações: ${need.accommodations.joinToString()}",
+            text = stringResource(R.string.label_validity, need.expiresAt?.toString() ?: stringResource(R.string.label_not_applicable)) + 
+                   " · " + stringResource(R.string.label_accommodations, need.accommodations.joinToString()),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -382,12 +383,12 @@ private fun PedagogicalSection(snapshot: StudentMonitoringSnapshot) {
 @Composable
 private fun PsychologicalSection(snapshot: StudentMonitoringSnapshot) {
   DomainSectionCard(
-      title = "Necessidades psicológicas",
+      title = stringResource(R.string.psychological_section_title),
       options =
           listOf(
-              "Definir nível de sigilo por registro.",
-              "Registrar evolução e próximo passo do acompanhamento.",
-              "Revisão periódica obrigatória por responsável técnico.",
+              stringResource(R.string.psychological_rule_1),
+              stringResource(R.string.psychological_rule_2),
+              stringResource(R.string.psychological_rule_3),
           ),
   )
 
@@ -405,13 +406,13 @@ private fun PsychologicalSection(snapshot: StudentMonitoringSnapshot) {
       Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = need.summary, style = MaterialTheme.typography.bodyMedium)
         Text(
-            text =
-                "Sigilo: ${confidentialityLabel(need.confidentiality)} · Próximo passo: ${need.nextStep}",
+            text = stringResource(R.string.label_confidentiality, confidentialityLabel(need.confidentiality)) + 
+                   " · " + stringResource(R.string.label_next_step, need.nextStep),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "Revisão em ${need.reviewAt}",
+            text = stringResource(R.string.label_review_at, need.reviewAt.toString()),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -428,12 +429,12 @@ private fun PsychologicalSection(snapshot: StudentMonitoringSnapshot) {
 @Composable
 private fun ParentSection(snapshot: StudentMonitoringSnapshot) {
   DomainSectionCard(
-      title = "Acompanhamento dos pais",
+      title = stringResource(R.string.parents_section_title),
       options =
           listOf(
-              "Registrar canal de contato e responsável pelo registro.",
-              "Status: pendente, aguardando resposta, concluído e não compareceu.",
-              "Escalonamento automático após contatos sem retorno.",
+              stringResource(R.string.parents_rule_1),
+              stringResource(R.string.parents_rule_2),
+              stringResource(R.string.parents_rule_3),
           ),
   )
 
@@ -454,7 +455,7 @@ private fun ParentSection(snapshot: StudentMonitoringSnapshot) {
             style = MaterialTheme.typography.labelMedium,
         )
         Text(
-            text = "Responsável: ${followUp.responsible}",
+            text = stringResource(R.string.label_responsible, followUp.responsible),
             style = MaterialTheme.typography.bodySmall,
         )
         Text(
@@ -495,7 +496,7 @@ private fun DomainSectionCard(title: String, options: List<String>) {
           fontWeight = FontWeight.SemiBold,
       )
       options.forEach { option ->
-        Text(text = "• $option", style = MaterialTheme.typography.bodySmall)
+        Text(text = "${stringResource(R.string.separator_bullet)} $option", style = MaterialTheme.typography.bodySmall)
       }
     }
   }
@@ -507,12 +508,13 @@ private fun DomainSectionCard(title: String, options: List<String>) {
  * @param record Registro de frequência analisado.
  * @return Texto amigável para o status da frequência.
  */
+@Composable
 private fun attendanceStatusLabel(record: AttendanceRecord): String =
     when (record.status) {
-      AttendanceStatus.Present -> "Presente"
-      AttendanceStatus.Absent -> "Falta"
-      AttendanceStatus.JustifiedAbsence -> "Falta justificada"
-      AttendanceStatus.Late -> "Atraso ${record.minutesLate} min"
+      AttendanceStatus.Present -> stringResource(R.string.attendance_status_present)
+      AttendanceStatus.Absent -> stringResource(R.string.attendance_status_absent)
+      AttendanceStatus.JustifiedAbsence -> stringResource(R.string.attendance_status_justified)
+      AttendanceStatus.Late -> stringResource(R.string.attendance_status_late, record.minutesLate)
     }
 
 /**
@@ -521,11 +523,12 @@ private fun attendanceStatusLabel(record: AttendanceRecord): String =
  * @param status Situação da entrega cadastrada.
  * @return Texto amigável para a UI.
  */
+@Composable
 private fun deliveryLabel(status: ActivityDeliveryStatus): String =
     when (status) {
-      ActivityDeliveryStatus.OnTime -> "no prazo"
-      ActivityDeliveryStatus.Late -> "com atraso"
-      ActivityDeliveryStatus.Missing -> "não entregue"
+      ActivityDeliveryStatus.OnTime -> stringResource(R.string.delivery_on_time)
+      ActivityDeliveryStatus.Late -> stringResource(R.string.delivery_late)
+      ActivityDeliveryStatus.Missing -> stringResource(R.string.delivery_missing)
     }
 
 /**
@@ -534,11 +537,12 @@ private fun deliveryLabel(status: ActivityDeliveryStatus): String =
  * @param type Tipo cadastrado da necessidade.
  * @return Texto amigável para a UI.
  */
+@Composable
 private fun pedagogicalTypeLabel(type: PedagogicalNeedType): String =
     when (type) {
-      PedagogicalNeedType.Report -> "Laudo"
-      PedagogicalNeedType.MedicalCertificate -> "Atestado"
-      PedagogicalNeedType.SpecialNeed -> "Necessidade especial"
+      PedagogicalNeedType.Report -> stringResource(R.string.pedagogical_type_report)
+      PedagogicalNeedType.MedicalCertificate -> stringResource(R.string.pedagogical_type_medical)
+      PedagogicalNeedType.SpecialNeed -> stringResource(R.string.pedagogical_type_special)
     }
 
 /**
@@ -547,10 +551,11 @@ private fun pedagogicalTypeLabel(type: PedagogicalNeedType): String =
  * @param level Nível de confidencialidade do registro.
  * @return Texto amigável para a UI.
  */
+@Composable
 private fun confidentialityLabel(level: ConfidentialityLevel): String =
     when (level) {
-      ConfidentialityLevel.Restricted -> "Restrito"
-      ConfidentialityLevel.SharedSummary -> "Resumo compartilhado"
+      ConfidentialityLevel.Restricted -> stringResource(R.string.confidentiality_restricted)
+      ConfidentialityLevel.SharedSummary -> stringResource(R.string.confidentiality_shared)
     }
 
 /**
@@ -559,12 +564,13 @@ private fun confidentialityLabel(level: ConfidentialityLevel): String =
  * @param channel Canal utilizado no contato.
  * @return Texto amigável para a UI.
  */
+@Composable
 private fun channelLabel(channel: ParentContactChannel): String =
     when (channel) {
-      ParentContactChannel.Meeting -> "Reunião"
-      ParentContactChannel.Phone -> "Telefone"
-      ParentContactChannel.Message -> "Mensagem"
-      ParentContactChannel.Email -> "E-mail"
+      ParentContactChannel.Meeting -> stringResource(R.string.channel_meeting)
+      ParentContactChannel.Phone -> stringResource(R.string.channel_phone)
+      ParentContactChannel.Message -> stringResource(R.string.channel_message)
+      ParentContactChannel.Email -> stringResource(R.string.channel_email)
     }
 
 /**
@@ -573,114 +579,14 @@ private fun channelLabel(channel: ParentContactChannel): String =
  * @param status Situação atual do contato com os responsáveis.
  * @return Texto amigável para a UI.
  */
+@Composable
 private fun followUpStatusLabel(status: ParentFollowUpStatus): String =
     when (status) {
-      ParentFollowUpStatus.Pending -> "Pendente"
-      ParentFollowUpStatus.WaitingResponse -> "Aguardando resposta"
-      ParentFollowUpStatus.Completed -> "Concluído"
-      ParentFollowUpStatus.NoShow -> "Não compareceu"
+      ParentFollowUpStatus.Pending -> stringResource(R.string.follow_up_pending)
+      ParentFollowUpStatus.WaitingResponse -> stringResource(R.string.follow_up_waiting)
+      ParentFollowUpStatus.Completed -> stringResource(R.string.follow_up_completed)
+      ParentFollowUpStatus.NoShow -> stringResource(R.string.follow_up_no_show)
     }
-
-/**
- * Gera dados de exemplo para prototipação da tela de acompanhamento.
- *
- * @param studentId Identificador do aluno solicitado.
- * @return Snapshot completo com dados mockados por domínio.
- */
-private fun sampleMonitoringSnapshot(studentId: Int): StudentMonitoringSnapshot {
-  val base = LocalDate.now()
-  return StudentMonitoringSnapshot(
-      studentId = studentId,
-      studentName =
-          when (studentId) {
-            1 -> "Ana Lima"
-            2 -> "Carlos Souza"
-            3 -> "Fernanda Costa"
-            else -> "Aluno #$studentId"
-          },
-      enrolledClass = "Turma A1",
-      attendanceRecords =
-          listOf(
-              AttendanceRecord(base.minusDays(5), AttendanceStatus.Present),
-              AttendanceRecord(base.minusDays(4), AttendanceStatus.Late, minutesLate = 12),
-              AttendanceRecord(base.minusDays(3), AttendanceStatus.Absent),
-              AttendanceRecord(
-                  base.minusDays(2),
-                  AttendanceStatus.JustifiedAbsence,
-                  justification = "Atestado médico",
-              ),
-              AttendanceRecord(base.minusDays(1), AttendanceStatus.Late, minutesLate = 16),
-          ),
-      behaviorRecords =
-          listOf(
-              BehaviorRecord(
-                  date = base.minusDays(5),
-                  participationScore = 3,
-                  activityDelivery = ActivityDeliveryStatus.OnTime,
-                  delayMinutes = 0,
-                  grade = 8.5f,
-                  note = "Boa participação.",
-              ),
-              BehaviorRecord(
-                  date = base.minusDays(3),
-                  participationScore = 2,
-                  activityDelivery = ActivityDeliveryStatus.Missing,
-                  delayMinutes = 14,
-                  grade = 6.0f,
-                  note = "Não entregou atividade de revisão.",
-              ),
-              BehaviorRecord(
-                  date = base.minusDays(1),
-                  participationScore = 2,
-                  activityDelivery = ActivityDeliveryStatus.Late,
-                  delayMinutes = 15,
-                  grade = 5.5f,
-                  note = "Atrasos repetidos no início da aula.",
-              ),
-          ),
-      pedagogicalNeeds =
-          listOf(
-              PedagogicalNeed(
-                  type = PedagogicalNeedType.Report,
-                  description = "Laudo de dislexia com orientações de leitura assistida.",
-                  expiresAt = base.plusMonths(8),
-                  accommodations = listOf("Tempo extra", "Fonte ampliada"),
-              ),
-              PedagogicalNeed(
-                  type = PedagogicalNeedType.SpecialNeed,
-                  description = "Plano adaptado para avaliações em etapas.",
-                  expiresAt = null,
-                  accommodations = listOf("Prova segmentada", "Apoio individual"),
-              ),
-          ),
-      psychologicalNeeds =
-          listOf(
-              PsychologicalNeed(
-                  summary = "Ansiedade em avaliações presenciais.",
-                  confidentiality = ConfidentialityLevel.Restricted,
-                  nextStep = "Sessão de acolhimento quinzenal",
-                  reviewAt = base.plusWeeks(2),
-              )
-          ),
-      parentFollowUps =
-          listOf(
-              ParentFollowUp(
-                  date = base.minusDays(6),
-                  channel = ParentContactChannel.Phone,
-                  outcome = ParentFollowUpStatus.WaitingResponse,
-                  responsible = "Prof. Marta",
-                  notes = "Solicitado retorno sobre rotina de estudos em casa.",
-              ),
-              ParentFollowUp(
-                  date = base.minusDays(2),
-                  channel = ParentContactChannel.Message,
-                  outcome = ParentFollowUpStatus.Pending,
-                  responsible = "Coord. João",
-                  notes = "Convite para reunião de alinhamento pedagógico.",
-              ),
-          ),
-  )
-}
 
 /** Pré-visualização da tela de acompanhamento de aluno. */
 @Preview(showBackground = true, showSystemUi = true)
