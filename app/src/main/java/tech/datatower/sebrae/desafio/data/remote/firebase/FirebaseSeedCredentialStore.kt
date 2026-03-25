@@ -21,20 +21,44 @@ class FirebaseSeedCredentialStore(context: Context) {
   private val prefs: SharedPreferences =
       context.applicationContext.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
 
+  /**
+   * Executa a rotina de has credentials dentro do contexto deste componente.
+   *
+   * @return Resultado produzido pela opera??o em formato `Boolean`.
+   */
   fun hasCredentials(): Boolean =
       decrypt(KEY_EMAIL_DATA, KEY_EMAIL_IV).isNotBlank() &&
           decrypt(KEY_PASSWORD_DATA, KEY_PASSWORD_IV).isNotBlank()
 
+  /**
+   * Obt?m dados necess?rios para email de forma consistente.
+   *
+   * @param ) Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `String`.
+   */
   fun getEmail(): String = decrypt(KEY_EMAIL_DATA, KEY_EMAIL_IV)
 
+  /**
+   * Obt?m dados necess?rios para password de forma consistente.
+   *
+   * @param ) Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `String`.
+   */
   fun getPassword(): String = decrypt(KEY_PASSWORD_DATA, KEY_PASSWORD_IV)
 
+  /**
+   * Executa a rotina de save credentials dentro do contexto deste componente.
+   *
+   * @param email Valor de entrada utilizado por esta opera??o.
+   * @param password Valor de entrada utilizado por esta opera??o.
+   */
   fun saveCredentials(email: String, password: String) {
     if (email.isBlank() || password.isBlank()) return
     encryptAndSave(email, KEY_EMAIL_DATA, KEY_EMAIL_IV)
     encryptAndSave(password, KEY_PASSWORD_DATA, KEY_PASSWORD_IV)
   }
 
+  /** Executa a rotina de clear credentials dentro do contexto deste componente. */
   fun clearCredentials() {
     prefs
         .edit()
@@ -45,6 +69,13 @@ class FirebaseSeedCredentialStore(context: Context) {
         .apply()
   }
 
+  /**
+   * Executa a rotina de encrypt and save dentro do contexto deste componente.
+   *
+   * @param value Valor de entrada utilizado por esta opera??o.
+   * @param dataKey Valor de entrada utilizado por esta opera??o.
+   * @param ivKey Valor de entrada utilizado por esta opera??o.
+   */
   private fun encryptAndSave(value: String, dataKey: String, ivKey: String) {
     val cipher = Cipher.getInstance(TRANSFORMATION)
     cipher.init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey())
@@ -54,6 +85,13 @@ class FirebaseSeedCredentialStore(context: Context) {
     prefs.edit().putString(dataKey, encryptedBase64).putString(ivKey, ivBase64).apply()
   }
 
+  /**
+   * Executa a rotina de decrypt dentro do contexto deste componente.
+   *
+   * @param dataKey Valor de entrada utilizado por esta opera??o.
+   * @param ivKey Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `String`.
+   */
   private fun decrypt(dataKey: String, ivKey: String): String {
     val encryptedBase64 = prefs.getString(dataKey, null) ?: return ""
     val ivBase64 = prefs.getString(ivKey, null) ?: return ""
@@ -68,6 +106,11 @@ class FirebaseSeedCredentialStore(context: Context) {
         .getOrDefault("")
   }
 
+  /**
+   * Obt?m dados necess?rios para or create secret key de forma consistente.
+   *
+   * @return Resultado produzido pela opera??o em formato `SecretKey`.
+   */
   private fun getOrCreateSecretKey(): SecretKey {
     val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
     val existingKey = keyStore.getKey(KEY_ALIAS, null) as? SecretKey
