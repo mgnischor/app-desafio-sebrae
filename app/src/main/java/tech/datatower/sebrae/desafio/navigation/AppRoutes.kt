@@ -21,20 +21,24 @@ object AppRoutes {
 
   /** Rota da tela de gestão de alunos. */
   const val STUDENTS = "students"
+  const val STUDENT_CREATE = "students/new"
 
   /** Rota da tela de acompanhamento individual de alunos. */
   const val STUDENT_MONITORING = "students/{$STUDENT_ID_ARG}/monitoring"
 
   /** Rota da tela de gestão de cursos. */
   const val COURSES = "courses"
+  const val COURSE_CREATE = "courses/new"
   const val COURSE_DETAIL = "courses/{$COURSE_ID_ARG}"
 
   /** Rota da tela de gestão de turmas. */
   const val CLASSES = "classes"
+  const val CLASS_CREATE = "classes/new"
   const val CLASS_DETAIL = "classes/{$CLASS_ID_ARG}"
 
   /** Rota da tela de gestão de instrutores. */
   const val TEACHERS = "teachers"
+  const val TEACHER_CREATE = "teachers/new"
   const val TEACHER_DETAIL = "teachers/{$TEACHER_ID_ARG}"
 
   /** Rota da tela de relatórios e indicadores. */
@@ -60,9 +64,27 @@ object AppRoutes {
    */
   fun studentMonitoring(studentId: Int): String = "students/$studentId/monitoring"
 
+  /**
+   * Executa a rotina de course detail dentro do contexto deste componente.
+   *
+   * @param courseId Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `String`.
+   */
   fun courseDetail(courseId: Int): String = "courses/$courseId"
 
+  /**
+   * Executa a rotina de class detail dentro do contexto deste componente.
+   *
+   * @param classId Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `String`.
+   */
   fun classDetail(classId: Int): String = "classes/$classId"
 
+  /**
+   * Executa a rotina de teacher detail dentro do contexto deste componente.
+   *
+   * @param teacherId Valor de entrada utilizado por esta opera??o.
+   * @return Resultado produzido pela opera??o em formato `String`.
+   */
   fun teacherDetail(teacherId: Int): String = "teachers/$teacherId"
 }
