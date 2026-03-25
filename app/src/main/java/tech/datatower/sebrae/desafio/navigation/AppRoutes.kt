@@ -49,6 +49,9 @@ object AppRoutes {
   /** Rota da tela de configurações da aplicação. */
   const val SETTINGS = "settings"
 
+  /** Rota da tela dedicada de gestão de usuários (admin-only). */
+  const val USERS_MANAGEMENT = "users-management"
+
   /**
    * Monta a rota de acompanhamento do aluno substituindo o argumento dinâmico.
    *
