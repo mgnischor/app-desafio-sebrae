@@ -138,11 +138,6 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             passwordFocusRequester = passwordFocusRequester,
             onLoginClick = ::attemptLogin,
         )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // ── Credential hints ──────────────────────────────────────
-        CredentialHints()
       }
     }
   }
@@ -301,45 +296,6 @@ private fun LoginFormCard(
             style = MaterialTheme.typography.titleSmall,
         )
       }
-    }
-  }
-}
-
-// ── Credential hints ──────────────────────────────────────────────────────────
-
-/** Exibe as credenciais de acesso pré-cadastradas como referência para o usuário. */
-@Composable
-private fun CredentialHints() {
-  Card(
-      shape = RoundedCornerShape(16.dp),
-      colors =
-          CardDefaults.cardColors(
-              containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-          ),
-      modifier = Modifier.fillMaxWidth(),
-  ) {
-    Column(modifier = Modifier.padding(16.dp)) {
-      Text(
-          text = stringResource(R.string.login_hint_title),
-          style = MaterialTheme.typography.labelLarge,
-          fontWeight = FontWeight.SemiBold,
-          color = MaterialTheme.colorScheme.onSecondaryContainer,
-      )
-      Spacer(modifier = Modifier.height(10.dp))
-      CredentialRow(
-          role = stringResource(R.string.role_professor),
-          email = "professor@sebrae.edu.br",
-      )
-      Spacer(modifier = Modifier.height(6.dp))
-      CredentialRow(
-          role = stringResource(R.string.role_coordenador),
-          email = "coordenador@sebrae.edu.br",
-      )
-      Spacer(modifier = Modifier.height(6.dp))
-      CredentialRow(
-          role = stringResource(R.string.role_administrador),
-          email = "admin@sebrae.edu.br",
-      )
     }
   }
 }
