@@ -1,10 +1,10 @@
 package tech.datatower.sebrae.desafio.data.model
 
-import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 /**
  * Testes unitários de modelos de dados de estudantes.

@@ -79,7 +79,9 @@ fun CertificatesScreen(onBack: () -> Unit = {}) {
         }
       }
 
-  DetailScaffold(title = stringResource(R.string.certificates_title), onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.certificates_title), onBack = onBack) {
+      innerPadding,
+      _ ->
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(innerPadding),
         state = listState,
@@ -100,7 +102,7 @@ fun CertificatesScreen(onBack: () -> Unit = {}) {
         item {
           EmptyState(
               icon = Icons.Outlined.Bookmarks,
-              message = stringResource(R.string.certificates_empty_state)
+              message = stringResource(R.string.certificates_empty_state),
           )
         }
       } else {

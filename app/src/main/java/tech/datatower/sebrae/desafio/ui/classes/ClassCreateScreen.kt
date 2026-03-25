@@ -26,14 +26,21 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.ClassStatus
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
+/**
+ * Executa a rotina de class create screen dentro do contexto deste componente.
+ *
+ * @param onBack Valor de entrada utilizado por esta opera??o.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClassCreateScreen(onBack: () -> Unit) {
@@ -52,8 +59,14 @@ fun ClassCreateScreen(onBack: () -> Unit) {
   var maxCapacity by rememberSaveable { mutableStateOf("0") }
   var schedule by rememberSaveable { mutableStateOf("") }
   var status by rememberSaveable { mutableStateOf(ClassStatus.Open) }
+  val requiredFieldsMessage = stringResource(R.string.class_create_error_required)
+  val invalidCapacityMessage = stringResource(R.string.class_create_error_capacity)
+  val saveSuccessMessage = stringResource(R.string.class_create_success)
+  val saveErrorMessage = stringResource(R.string.class_create_error_save)
 
-  DetailScaffold(title = "Nova turma", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.class_create_title), onBack = onBack) {
+      innerPadding,
+      _ ->
     Column(
         modifier =
             Modifier.fillMaxSize()
@@ -67,53 +80,66 @@ fun ClassCreateScreen(onBack: () -> Unit) {
       OutlinedTextField(
           value = name,
           onValueChange = { name = it },
-          label = { Text("Nome da turma") },
+          label = { Text(stringResource(R.string.class_create_name)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = course,
           onValueChange = { course = it },
-          label = { Text("Curso") },
+          label = { Text(stringResource(R.string.class_create_course)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = instructor,
           onValueChange = { instructor = it },
-          label = { Text("Instrutor") },
+          label = { Text(stringResource(R.string.class_create_instructor)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = studentsCount,
           onValueChange = { studentsCount = it.filter(Char::isDigit) },
-          label = { Text("Alunos matriculados") },
+          label = { Text(stringResource(R.string.class_create_students_count)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = maxCapacity,
           onValueChange = { maxCapacity = it.filter(Char::isDigit) },
-          label = { Text("Capacidade maxima") },
+          label = { Text(stringResource(R.string.class_create_capacity)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = schedule,
           onValueChange = { schedule = it },
-          label = { Text("Horario") },
+          label = { Text(stringResource(R.string.class_create_schedule)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
 
-      Text(text = "Status", style = MaterialTheme.typography.labelLarge)
+      Text(
+          text = stringResource(R.string.class_create_status),
+          style = MaterialTheme.typography.labelLarge,
+      )
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         ClassStatus.entries.forEach { item ->
           FilterChip(
               selected = status == item,
               onClick = { status = item },
-              label = { Text(item.name) },
+              label = {
+                Text(
+                    stringResource(
+                        when (item) {
+                          ClassStatus.Open -> R.string.class_status_open
+                          ClassStatus.InProgress -> R.string.class_status_in_progress
+                          ClassStatus.Closed -> R.string.class_status_closed
+                        }
+                    )
+                )
+              },
           )
         }
       }
@@ -123,11 +149,11 @@ fun ClassCreateScreen(onBack: () -> Unit) {
             val enrolled = studentsCount.toIntOrNull()
             val capacity = maxCapacity.toIntOrNull()
             if (name.isBlank() || course.isBlank() || instructor.isBlank() || schedule.isBlank()) {
-              scope.launch { snackbarHostState.showSnackbar("Preencha os campos obrigatorios.") }
+              scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
               return@Button
             }
             if (enrolled == null || capacity == null || capacity <= 0 || enrolled > capacity) {
-              scope.launch { snackbarHostState.showSnackbar("Revise alunos e capacidade da turma.") }
+              scope.launch { snackbarHostState.showSnackbar(invalidCapacityMessage) }
               return@Button
             }
 
@@ -146,19 +172,22 @@ fun ClassCreateScreen(onBack: () -> Unit) {
                               schedule = schedule.trim(),
                               status = status,
                           )
-                      )) {
-                is FirebaseDataConnectService.Result.Success -> onBack()
+                      )
+              ) {
+                is FirebaseDataConnectService.Result.Success -> {
+                  snackbarHostState.showSnackbar(saveSuccessMessage)
+                  onBack()
+                }
                 is FirebaseDataConnectService.Result.Error ->
-                    snackbarHostState.showSnackbar(result.message.ifBlank { "Falha ao salvar turma." })
+                    snackbarHostState.showSnackbar(result.message.ifBlank { saveErrorMessage })
                 FirebaseDataConnectService.Result.Loading -> Unit
               }
             }
           },
           modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       ) {
-        Text("Salvar turma")
+        Text(stringResource(R.string.class_create_save))
       }
     }
   }
 }
-

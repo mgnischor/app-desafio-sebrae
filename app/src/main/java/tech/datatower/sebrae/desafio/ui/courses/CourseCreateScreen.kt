@@ -25,12 +25,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.Course
+import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
+/**
+ * Executa a rotina de course create screen dentro do contexto deste componente.
+ *
+ * @param onBack Valor de entrada utilizado por esta opera??o.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseCreateScreen(onBack: () -> Unit) {
@@ -49,8 +57,14 @@ fun CourseCreateScreen(onBack: () -> Unit) {
   var durationHours by rememberSaveable { mutableStateOf("0") }
   var completionRatePercent by rememberSaveable { mutableStateOf("0") }
   var isPublished by rememberSaveable { mutableStateOf(true) }
+  val requiredFieldsMessage = stringResource(R.string.course_create_error_required)
+  val invalidNumericMessage = stringResource(R.string.course_create_error_numeric)
+  val saveSuccessMessage = stringResource(R.string.course_create_success)
+  val saveErrorMessage = stringResource(R.string.course_create_error_save)
 
-  DetailScaffold(title = "Novo curso", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.course_create_title), onBack = onBack) {
+      innerPadding,
+      _ ->
     Column(
         modifier =
             Modifier.fillMaxSize()
@@ -65,48 +79,59 @@ fun CourseCreateScreen(onBack: () -> Unit) {
           value = title,
           onValueChange = { title = it },
           modifier = Modifier.fillMaxWidth(),
-          label = { Text("Titulo") },
+          label = { Text(stringResource(R.string.course_create_title_label)) },
           singleLine = true,
       )
       OutlinedTextField(
           value = category,
           onValueChange = { category = it },
           modifier = Modifier.fillMaxWidth(),
-          label = { Text("Categoria") },
+          label = { Text(stringResource(R.string.course_create_category)) },
           singleLine = true,
       )
       OutlinedTextField(
           value = instructor,
           onValueChange = { instructor = it },
           modifier = Modifier.fillMaxWidth(),
-          label = { Text("Instrutor") },
+          label = { Text(stringResource(R.string.course_create_instructor)) },
           singleLine = true,
       )
       OutlinedTextField(
           value = totalStudents,
           onValueChange = { totalStudents = it.filter(Char::isDigit) },
           modifier = Modifier.fillMaxWidth(),
-          label = { Text("Qtd. alunos") },
+          label = { Text(stringResource(R.string.course_create_students)) },
           singleLine = true,
       )
       OutlinedTextField(
           value = durationHours,
           onValueChange = { durationHours = it.filter(Char::isDigit) },
           modifier = Modifier.fillMaxWidth(),
-          label = { Text("Carga horaria (h)") },
+          label = { Text(stringResource(R.string.course_create_duration)) },
           singleLine = true,
       )
       OutlinedTextField(
           value = completionRatePercent,
           onValueChange = { completionRatePercent = it.filter(Char::isDigit) },
           modifier = Modifier.fillMaxWidth(),
-          label = { Text("Taxa de conclusao (%)") },
+          label = { Text(stringResource(R.string.course_create_completion)) },
           singleLine = true,
       )
 
-      Text(text = "Publicado", style = MaterialTheme.typography.labelLarge)
-      FilterChip(selected = isPublished, onClick = { isPublished = true }, label = { Text("Sim") })
-      FilterChip(selected = !isPublished, onClick = { isPublished = false }, label = { Text("Nao") })
+      Text(
+          text = stringResource(R.string.course_create_published),
+          style = MaterialTheme.typography.labelLarge,
+      )
+      FilterChip(
+          selected = isPublished,
+          onClick = { isPublished = true },
+          label = { Text(stringResource(R.string.course_create_yes)) },
+      )
+      FilterChip(
+          selected = !isPublished,
+          onClick = { isPublished = false },
+          label = { Text(stringResource(R.string.course_create_no)) },
+      )
 
       Button(
           onClick = {
@@ -115,11 +140,11 @@ fun CourseCreateScreen(onBack: () -> Unit) {
             val completion = completionRatePercent.toIntOrNull()
 
             if (title.isBlank() || category.isBlank() || instructor.isBlank()) {
-              scope.launch { snackbarHostState.showSnackbar("Preencha titulo, categoria e instrutor.") }
+              scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
               return@Button
             }
             if (students == null || hours == null || completion == null || completion !in 0..100) {
-              scope.launch { snackbarHostState.showSnackbar("Revise os campos numericos.") }
+              scope.launch { snackbarHostState.showSnackbar(invalidNumericMessage) }
               return@Button
             }
 
@@ -138,18 +163,18 @@ fun CourseCreateScreen(onBack: () -> Unit) {
                           isPublished = isPublished,
                       )
                   )
-              if (result is tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Success) {
+              if (result is FirebaseDataConnectService.Result.Success) {
+                snackbarHostState.showSnackbar(saveSuccessMessage)
                 onBack()
-              } else if (result is tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error) {
-                snackbarHostState.showSnackbar(result.message.ifBlank { "Falha ao salvar curso." })
+              } else if (result is FirebaseDataConnectService.Result.Error) {
+                snackbarHostState.showSnackbar(result.message.ifBlank { saveErrorMessage })
               }
             }
           },
           modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       ) {
-        Text("Salvar curso")
+        Text(stringResource(R.string.course_create_save))
       }
     }
   }
 }
-

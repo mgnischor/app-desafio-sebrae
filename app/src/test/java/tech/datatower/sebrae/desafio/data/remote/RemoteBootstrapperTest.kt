@@ -30,8 +30,14 @@ class RemoteBootstrapperTest {
   }
 
   companion object {
-    private fun runBlocking(block: suspend () -> Unit) {
-      kotlinx.coroutines.runBlocking { block() }
+    /**
+     * Executa a rotina de run blocking dentro do contexto deste componente.
+     *
+     * @param block Valor de entrada utilizado por esta operação.
+     * @return Resultado produzido pela operação em formato `Boolean`.
+     */
+    private fun runBlocking(block: suspend () -> Boolean): Boolean {
+      return kotlinx.coroutines.runBlocking { block() }
     }
   }
 }

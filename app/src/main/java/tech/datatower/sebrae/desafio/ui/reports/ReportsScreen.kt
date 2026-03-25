@@ -33,12 +33,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import java.util.Locale
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
+import java.util.Locale
 
+/**
+ * Executa a rotina de reports screen dentro do contexto deste componente.
+ *
+ * @param onBack Valor de entrada utilizado por esta opera??o.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportsScreen(onBack: () -> Unit = {}) {
@@ -62,7 +67,8 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
       repository.observeCourseCompletionMetrics().collectAsState(initial = emptyList())
   val monthly by repository.observeMonthlyEnrollmentMetrics().collectAsState(initial = emptyList())
 
-  DetailScaffold(title = stringResource(R.string.reports_title), onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.reports_title), onBack = onBack) { innerPadding, _
+    ->
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(innerPadding),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
@@ -74,9 +80,21 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-          KpiCard(summary.activeStudents.toString(), stringResource(R.string.label_active_students), Modifier.weight(1f))
-          KpiCard(summary.activeCourses.toString(), stringResource(R.string.label_active_courses), Modifier.weight(1f))
-          KpiCard(summary.totalClasses.toString(), stringResource(R.string.stat_classes), Modifier.weight(1f))
+          KpiCard(
+              summary.activeStudents.toString(),
+              stringResource(R.string.label_active_students),
+              Modifier.weight(1f),
+          )
+          KpiCard(
+              summary.activeCourses.toString(),
+              stringResource(R.string.label_active_courses),
+              Modifier.weight(1f),
+          )
+          KpiCard(
+              summary.totalClasses.toString(),
+              stringResource(R.string.stat_classes),
+              Modifier.weight(1f),
+          )
         }
       }
       item {
@@ -89,7 +107,11 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
               stringResource(R.string.label_completion_rate),
               Modifier.weight(1f),
           )
-          KpiCard(summary.certificates.toString(), stringResource(R.string.menu_certificates), Modifier.weight(1f))
+          KpiCard(
+              summary.certificates.toString(),
+              stringResource(R.string.menu_certificates),
+              Modifier.weight(1f),
+          )
           KpiCard(
               String.format(Locale.getDefault(), "%.1f★", summary.averageTeacherRating),
               stringResource(R.string.label_average_rating),
@@ -105,6 +127,11 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
   }
 }
 
+/**
+ * Executa a rotina de section header dentro do contexto deste componente.
+ *
+ * @param text Valor de entrada utilizado por esta opera??o.
+ */
 @Composable
 private fun SectionHeader(text: String) {
   Text(
@@ -115,6 +142,13 @@ private fun SectionHeader(text: String) {
   )
 }
 
+/**
+ * Executa a rotina de kpi card dentro do contexto deste componente.
+ *
+ * @param value Valor de entrada utilizado por esta opera??o.
+ * @param label Valor de entrada utilizado por esta opera??o.
+ * @param modifier Valor de entrada utilizado por esta opera??o.
+ */
 @Composable
 private fun KpiCard(value: String, label: String, modifier: Modifier = Modifier) {
   ElevatedCard(
@@ -146,6 +180,11 @@ private fun KpiCard(value: String, label: String, modifier: Modifier = Modifier)
   }
 }
 
+/**
+ * Executa a rotina de course completion report dentro do contexto deste componente.
+ *
+ * @param items Valor de entrada utilizado por esta opera??o.
+ */
 @Composable
 private fun CourseCompletionReport(
     items: List<tech.datatower.sebrae.desafio.data.repository.CourseCompletionMetric>
@@ -188,6 +227,11 @@ private fun CourseCompletionReport(
   }
 }
 
+/**
+ * Executa a rotina de enrollment monthly report dentro do contexto deste componente.
+ *
+ * @param items Valor de entrada utilizado por esta opera??o.
+ */
 @Composable
 private fun EnrollmentMonthlyReport(
     items: List<tech.datatower.sebrae.desafio.data.repository.MonthlyEnrollmentMetric>
@@ -238,6 +282,7 @@ private fun EnrollmentMonthlyReport(
   }
 }
 
+/** Executa a rotina de reports preview dentro do contexto deste componente. */
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun ReportsPreview() {

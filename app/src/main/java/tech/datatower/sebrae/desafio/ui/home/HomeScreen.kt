@@ -70,16 +70,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import java.util.Calendar
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.MenuModule
-import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.data.model.QuickStat
 import tech.datatower.sebrae.desafio.data.model.RecentActivity
+import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.navigation.AppRoutes
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
+import java.util.Calendar
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -224,7 +224,7 @@ fun HomeScreen(
               text = stringResource(R.string.recent_empty),
               style = MaterialTheme.typography.bodyMedium,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
-              modifier = Modifier.padding(20.dp)
+              modifier = Modifier.padding(20.dp),
           )
         }
       } else {
@@ -686,8 +686,7 @@ private fun RecentActivityItem(item: RecentActivity, modifier: Modifier = Modifi
 private fun filterModulesByRole(allModules: List<MenuModule>, role: UserRole?): List<MenuModule> {
   val allowedRoutes =
       when (role) {
-        UserRole.PROFESSOR ->
-            setOf(AppRoutes.STUDENTS, AppRoutes.CALENDAR, AppRoutes.CERTIFICATES)
+        UserRole.PROFESSOR -> setOf(AppRoutes.STUDENTS, AppRoutes.CALENDAR, AppRoutes.CERTIFICATES)
         UserRole.COORDENADOR ->
             setOf(
                 AppRoutes.STUDENTS,
@@ -698,7 +697,8 @@ private fun filterModulesByRole(allModules: List<MenuModule>, role: UserRole?): 
                 AppRoutes.CERTIFICATES,
                 AppRoutes.REPORTS,
             )
-        UserRole.ADMINISTRADOR, null -> null // null = all routes visible
+        UserRole.ADMINISTRADOR,
+        null -> null // null = all routes visible
       }
   return if (allowedRoutes == null) allModules else allModules.filter { it.route in allowedRoutes }
 }
@@ -775,21 +775,35 @@ private fun rememberRecents(): List<RecentActivity> {
   val courseTitle = stringResource(R.string.recent_course_published_title)
   val certificateTitle = stringResource(R.string.recent_certificate_issued_title)
   val classTitle = stringResource(R.string.recent_class_scheduled_title)
-  
+
   val time5min = stringResource(R.string.time_5min_ago)
   val time1h = stringResource(R.string.time_1h_ago)
   val time3h = stringResource(R.string.time_3h_ago)
   val timeYesterday = stringResource(R.string.time_yesterday)
-  
-  val studentSubtitle = stringResource(R.string.recent_activity_subtitle_student, "Carlos Souza", "B3")
-  val courseSubtitle = stringResource(R.string.recent_activity_subtitle_course, "Excel para Negócios")
-  val certificateSubtitle = stringResource(R.string.recent_activity_subtitle_certificate, "Ana Lima", "Marketing Digital")
+
+  val studentSubtitle =
+      stringResource(R.string.recent_activity_subtitle_student, "Carlos Souza", "B3")
+  val courseSubtitle =
+      stringResource(R.string.recent_activity_subtitle_course, "Excel para Negócios")
+  val certificateSubtitle =
+      stringResource(R.string.recent_activity_subtitle_certificate, "Ana Lima", "Marketing Digital")
   val classSubtitle = stringResource(R.string.recent_activity_subtitle_class, "Empreendedorismo")
 
   // Pass strings to remember, not @Composable calls
-  return remember(studentTitle, courseTitle, certificateTitle, classTitle,
-                  time5min, time1h, time3h, timeYesterday,
-                  studentSubtitle, courseSubtitle, certificateSubtitle, classSubtitle) {
+  return remember(
+      studentTitle,
+      courseTitle,
+      certificateTitle,
+      classTitle,
+      time5min,
+      time1h,
+      time3h,
+      timeYesterday,
+      studentSubtitle,
+      courseSubtitle,
+      certificateSubtitle,
+      classSubtitle,
+  ) {
     listOf(
         RecentActivity(studentTitle, studentSubtitle, Icons.Outlined.Person, time5min),
         RecentActivity(courseTitle, courseSubtitle, Icons.AutoMirrored.Outlined.MenuBook, time1h),

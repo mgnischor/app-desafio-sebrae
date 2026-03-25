@@ -231,6 +231,63 @@
     <string name="teachers_empty_state">Nenhum instrutor encontrado.</string>
     <string name="unit_active_courses">%d cursos ativos</string>
 
+    <!-- Create Screens -->
+    <string name="student_create_title">Novo aluno</string>
+    <string name="student_create_name">Nome</string>
+    <string name="student_create_email">E-mail</string>
+    <string name="student_create_course">Curso</string>
+    <string name="student_create_class">Turma</string>
+    <string name="student_create_progress">Progresso (%%)</string>
+    <string name="student_create_status">Status</string>
+    <string name="student_create_save">Salvar aluno</string>
+    <string name="student_create_error_required">Preencha os campos obrigatórios.</string>
+    <string name="student_create_error_progress">Progresso deve estar entre 0 e 100.</string>
+    <string name="student_create_success">Aluno salvo com sucesso.</string>
+    <string name="student_create_error_save">Falha ao salvar aluno.</string>
+
+    <string name="class_create_title">Nova turma</string>
+    <string name="class_create_name">Nome da turma</string>
+    <string name="class_create_course">Curso</string>
+    <string name="class_create_instructor">Instrutor</string>
+    <string name="class_create_students_count">Alunos matriculados</string>
+    <string name="class_create_capacity">Capacidade máxima</string>
+    <string name="class_create_schedule">Horário</string>
+    <string name="class_create_status">Status</string>
+    <string name="class_create_save">Salvar turma</string>
+    <string name="class_create_error_required">Preencha os campos obrigatórios.</string>
+    <string name="class_create_error_capacity">Revise alunos e capacidade da turma.</string>
+    <string name="class_create_success">Turma salva com sucesso.</string>
+    <string name="class_create_error_save">Falha ao salvar turma.</string>
+
+    <string name="teacher_create_title">Novo instrutor</string>
+    <string name="teacher_create_name">Nome</string>
+    <string name="teacher_create_email">E-mail</string>
+    <string name="teacher_create_specialty">Especialidade</string>
+    <string name="teacher_create_active_courses">Cursos ativos</string>
+    <string name="teacher_create_total_students">Total de alunos</string>
+    <string name="teacher_create_rating">Avaliação (0.0 a 5.0)</string>
+    <string name="teacher_create_save">Salvar instrutor</string>
+    <string name="teacher_create_error_required">Preencha os campos obrigatórios.</string>
+    <string name="teacher_create_error_numeric">Revise os campos numéricos.</string>
+    <string name="teacher_create_success">Instrutor salvo com sucesso.</string>
+    <string name="teacher_create_error_save">Falha ao salvar instrutor.</string>
+
+    <string name="course_create_title">Novo curso</string>
+    <string name="course_create_title_label">Título</string>
+    <string name="course_create_category">Categoria</string>
+    <string name="course_create_instructor">Instrutor</string>
+    <string name="course_create_students">Qtd. alunos</string>
+    <string name="course_create_duration">Carga horária (h)</string>
+    <string name="course_create_completion">Taxa de conclusão (%%)</string>
+    <string name="course_create_published">Publicado</string>
+    <string name="course_create_yes">Sim</string>
+    <string name="course_create_no">Não</string>
+    <string name="course_create_save">Salvar curso</string>
+    <string name="course_create_error_required">Preencha título, categoria e instrutor.</string>
+    <string name="course_create_error_numeric">Revise os campos numéricos.</string>
+    <string name="course_create_success">Curso salvo com sucesso.</string>
+    <string name="course_create_error_save">Falha ao salvar curso.</string>
+
     <!-- Reports Screen -->
     <string name="reports_title">Relatórios</string>
     <string name="label_active_students">Alunos Ativos</string>

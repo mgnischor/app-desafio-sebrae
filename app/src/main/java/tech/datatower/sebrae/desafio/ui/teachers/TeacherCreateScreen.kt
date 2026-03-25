@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -22,13 +23,21 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
+/**
+ * Executa a rotina de teacher create screen dentro do contexto deste componente.
+ *
+ * @param onBack Valor de entrada utilizado por esta opera??o.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeacherCreateScreen(onBack: () -> Unit) {
   val context = LocalContext.current
@@ -45,8 +54,14 @@ fun TeacherCreateScreen(onBack: () -> Unit) {
   var activeCourses by rememberSaveable { mutableStateOf("0") }
   var totalStudents by rememberSaveable { mutableStateOf("0") }
   var rating by rememberSaveable { mutableStateOf("0.0") }
+  val requiredFieldsMessage = stringResource(R.string.teacher_create_error_required)
+  val invalidNumericMessage = stringResource(R.string.teacher_create_error_numeric)
+  val saveSuccessMessage = stringResource(R.string.teacher_create_success)
+  val saveErrorMessage = stringResource(R.string.teacher_create_error_save)
 
-  DetailScaffold(title = "Novo instrutor", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.teacher_create_title), onBack = onBack) {
+      innerPadding,
+      _ ->
     Column(
         modifier =
             Modifier.fillMaxSize()
@@ -60,42 +75,42 @@ fun TeacherCreateScreen(onBack: () -> Unit) {
       OutlinedTextField(
           value = name,
           onValueChange = { name = it },
-          label = { Text("Nome") },
+          label = { Text(stringResource(R.string.teacher_create_name)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = email,
           onValueChange = { email = it },
-          label = { Text("E-mail") },
+          label = { Text(stringResource(R.string.teacher_create_email)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = specialty,
           onValueChange = { specialty = it },
-          label = { Text("Especialidade") },
+          label = { Text(stringResource(R.string.teacher_create_specialty)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = activeCourses,
           onValueChange = { activeCourses = it.filter(Char::isDigit) },
-          label = { Text("Cursos ativos") },
+          label = { Text(stringResource(R.string.teacher_create_active_courses)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = totalStudents,
           onValueChange = { totalStudents = it.filter(Char::isDigit) },
-          label = { Text("Total de alunos") },
+          label = { Text(stringResource(R.string.teacher_create_total_students)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = rating,
           onValueChange = { rating = it.filter { ch -> ch.isDigit() || ch == '.' } },
-          label = { Text("Avaliacao (0.0 a 5.0)") },
+          label = { Text(stringResource(R.string.teacher_create_rating)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
@@ -107,11 +122,11 @@ fun TeacherCreateScreen(onBack: () -> Unit) {
             val score = rating.toFloatOrNull()
 
             if (name.isBlank() || email.isBlank() || specialty.isBlank()) {
-              scope.launch { snackbarHostState.showSnackbar("Preencha os campos obrigatorios.") }
+              scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
               return@Button
             }
             if (active == null || students == null || score == null || score !in 0f..5f) {
-              scope.launch { snackbarHostState.showSnackbar("Revise os campos numericos.") }
+              scope.launch { snackbarHostState.showSnackbar(invalidNumericMessage) }
               return@Button
             }
 
@@ -129,19 +144,22 @@ fun TeacherCreateScreen(onBack: () -> Unit) {
                               totalStudents = students,
                               rating = score,
                           )
-                      )) {
-                is FirebaseDataConnectService.Result.Success -> onBack()
+                      )
+              ) {
+                is FirebaseDataConnectService.Result.Success -> {
+                  snackbarHostState.showSnackbar(saveSuccessMessage)
+                  onBack()
+                }
                 is FirebaseDataConnectService.Result.Error ->
-                    snackbarHostState.showSnackbar(result.message.ifBlank { "Falha ao salvar instrutor." })
+                    snackbarHostState.showSnackbar(result.message.ifBlank { saveErrorMessage })
                 FirebaseDataConnectService.Result.Loading -> Unit
               }
             }
           },
           modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       ) {
-        Text("Salvar instrutor")
+        Text(stringResource(R.string.teacher_create_save))
       }
     }
   }
 }
-

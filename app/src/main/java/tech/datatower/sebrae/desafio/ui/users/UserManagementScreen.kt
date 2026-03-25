@@ -43,6 +43,12 @@ import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
+/**
+ * Executa a rotina de user management screen dentro do contexto deste componente.
+ *
+ * @param currentUser Valor de entrada utilizado por esta opera??o.
+ * @param onBack Valor de entrada utilizado por esta opera??o.
+ */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun UserManagementScreen(
@@ -217,8 +223,7 @@ fun UserManagementScreen(
                 IconButton(
                     onClick = {
                       scope.launch {
-                        val result = service.deleteUserForAdmin(currentUser, user.id)
-                        when (result) {
+                        when (val result = service.deleteUserForAdmin(currentUser, user.id)) {
                           is FirebaseDataConnectService.Result.Success -> {
                             AuthManager.removeUserById(user.id)
                             snackbarHostState.showSnackbar("Usuario removido com sucesso.")
@@ -245,6 +250,12 @@ fun UserManagementScreen(
   }
 }
 
+/**
+ * Executa a rotina de role label dentro do contexto deste componente.
+ *
+ * @param role Valor de entrada utilizado por esta opera??o.
+ * @return Resultado produzido pela opera??o em formato `String`.
+ */
 private fun roleLabel(role: UserRole): String {
   return when (role) {
     UserRole.PROFESSOR -> "Professor"
@@ -253,6 +264,7 @@ private fun roleLabel(role: UserRole): String {
   }
 }
 
+/** Executa a rotina de user management screen preview dentro do contexto deste componente. */
 @Preview(showBackground = true)
 @Composable
 private fun UserManagementScreenPreview() {

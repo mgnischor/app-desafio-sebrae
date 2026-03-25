@@ -16,7 +16,7 @@ import tech.datatower.sebrae.desafio.data.model.UserRole
  * Padrão: Arrange → Act → Assert (AAA)
  */
 class AuthManagerTest {
-
+  /** Atualiza o estado de up com os valores informados. */
   @Before
   fun setUp() {
     // Limpar estado do AuthManager antes de cada teste

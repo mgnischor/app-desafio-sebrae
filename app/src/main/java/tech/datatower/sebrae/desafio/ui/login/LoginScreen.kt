@@ -80,7 +80,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
   val passwordFocusRequester = remember { FocusRequester() }
 
   val errorMessage = stringResource(R.string.login_error_invalid_credentials)
-
+  /** Executa a rotina de attempt login dentro do contexto deste componente. */
   fun attemptLogin() {
     scope.launch {
       isLoading = true
@@ -149,7 +149,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 }
 
 // ── Logo section ──────────────────────────────────────────────────────────────
-
+/** Executa a rotina de logo section dentro do contexto deste componente. */
 @Composable
 private fun LogoSection() {
   Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -186,7 +186,12 @@ private fun LogoSection() {
 }
 
 // ── Login form card ───────────────────────────────────────────────────────────
-
+/**
+ * Executa a rotina de login form card dentro do contexto deste componente.
+ *
+ * @param email Valor de entrada utilizado por esta opera??o.
+ * @param onEmailChange Valor de entrada utilizado por esta opera??o.
+ */
 @Composable
 private fun LoginFormCard(
     email: String,
@@ -238,8 +243,7 @@ private fun LoginFormCard(
                   keyboardType = KeyboardType.Email,
                   imeAction = ImeAction.Next,
               ),
-          keyboardActions =
-              KeyboardActions(onNext = { passwordFocusRequester.requestFocus() }),
+          keyboardActions = KeyboardActions(onNext = { passwordFocusRequester.requestFocus() }),
           shape = RoundedCornerShape(14.dp),
           modifier = Modifier.fillMaxWidth(),
       )
@@ -265,8 +269,7 @@ private fun LoginFormCard(
             }
           },
           visualTransformation =
-              if (passwordVisible) VisualTransformation.None
-              else PasswordVisualTransformation(),
+              if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
           singleLine = true,
           keyboardOptions =
               KeyboardOptions(
@@ -341,6 +344,12 @@ private fun CredentialHints() {
   }
 }
 
+/**
+ * Executa a rotina de credential row dentro do contexto deste componente.
+ *
+ * @param role Valor de entrada utilizado por esta opera??o.
+ * @param email Valor de entrada utilizado por esta opera??o.
+ */
 @Composable
 private fun CredentialRow(role: String, email: String) {
   Row(
@@ -365,7 +374,7 @@ private fun CredentialRow(role: String, email: String) {
 }
 
 // ── Preview ───────────────────────────────────────────────────────────────────
-
+/** Executa a rotina de login screen preview dentro do contexto deste componente. */
 @Preview(showBackground = true)
 @Composable
 private fun LoginScreenPreview() {

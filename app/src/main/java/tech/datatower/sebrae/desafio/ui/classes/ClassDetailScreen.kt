@@ -30,6 +30,12 @@ import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
+/**
+ * Executa a rotina de class detail screen dentro do contexto deste componente.
+ *
+ * @param classId Valor de entrada utilizado por esta opera??o.
+ * @param onBack Valor de entrada utilizado por esta opera??o.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClassDetailScreen(
@@ -46,7 +52,9 @@ fun ClassDetailScreen(
       }
   val students by studentsFlow.collectAsState(initial = emptyList())
 
-  DetailScaffold(title = stringResource(R.string.class_detail_title), onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.class_detail_title), onBack = onBack) {
+      innerPadding,
+      _ ->
     if (schoolClass == null) {
       Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(20.dp)) {
         Text(stringResource(R.string.class_not_found), style = MaterialTheme.typography.bodyLarge)
@@ -74,17 +82,30 @@ fun ClassDetailScreen(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(stringResource(R.string.label_course, schoolClass!!.course), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                stringResource(R.string.label_course, schoolClass!!.course),
+                style = MaterialTheme.typography.bodyMedium,
+            )
             Text(
                 stringResource(R.string.label_instructor, schoolClass!!.instructor),
                 style = MaterialTheme.typography.bodySmall,
             )
-            Text(stringResource(R.string.label_schedule, schoolClass!!.schedule), style = MaterialTheme.typography.bodySmall)
             Text(
-                stringResource(R.string.label_occupation, schoolClass!!.studentsCount, schoolClass!!.maxCapacity),
+                stringResource(R.string.label_schedule, schoolClass!!.schedule),
                 style = MaterialTheme.typography.bodySmall,
             )
-            Text(stringResource(R.string.status_label, classStatusLabel(schoolClass!!.status)), style = MaterialTheme.typography.bodySmall)
+            Text(
+                stringResource(
+                    R.string.label_occupation,
+                    schoolClass!!.studentsCount,
+                    schoolClass!!.maxCapacity,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                stringResource(R.string.status_label, classStatusLabel(schoolClass!!.status)),
+                style = MaterialTheme.typography.bodySmall,
+            )
           }
         }
       }
@@ -98,7 +119,12 @@ fun ClassDetailScreen(
       }
 
       if (students.isEmpty()) {
-        item { Text(stringResource(R.string.no_class_students), style = MaterialTheme.typography.bodyMedium) }
+        item {
+          Text(
+              stringResource(R.string.no_class_students),
+              style = MaterialTheme.typography.bodyMedium,
+          )
+        }
       } else {
         items(students, key = { it.id }) { student ->
           ElevatedCard(
@@ -121,7 +147,10 @@ fun ClassDetailScreen(
                   stringResource(R.string.label_progress, (student.progress * 100).toInt()),
                   style = MaterialTheme.typography.bodySmall,
               )
-              Text(stringResource(R.string.status_label, studentStatusLabel(student.status)), style = MaterialTheme.typography.bodySmall)
+              Text(
+                  stringResource(R.string.status_label, studentStatusLabel(student.status)),
+                  style = MaterialTheme.typography.bodySmall,
+              )
             }
           }
         }
@@ -130,6 +159,12 @@ fun ClassDetailScreen(
   }
 }
 
+/**
+ * Executa a rotina de class status label dentro do contexto deste componente.
+ *
+ * @param status Valor de entrada utilizado por esta opera??o.
+ * @return Resultado produzido pela opera??o em formato `String`.
+ */
 @Composable
 private fun classStatusLabel(status: ClassStatus): String =
     when (status) {
@@ -138,6 +173,12 @@ private fun classStatusLabel(status: ClassStatus): String =
       ClassStatus.Closed -> stringResource(R.string.class_status_closed)
     }
 
+/**
+ * Executa a rotina de student status label dentro do contexto deste componente.
+ *
+ * @param status Valor de entrada utilizado por esta opera??o.
+ * @return Resultado produzido pela opera??o em formato `String`.
+ */
 @Composable
 private fun studentStatusLabel(status: StudentStatus): String =
     when (status) {
@@ -145,4 +186,3 @@ private fun studentStatusLabel(status: StudentStatus): String =
       StudentStatus.Inactive -> stringResource(R.string.status_inactive)
       StudentStatus.Graduated -> stringResource(R.string.status_graduated)
     }
-

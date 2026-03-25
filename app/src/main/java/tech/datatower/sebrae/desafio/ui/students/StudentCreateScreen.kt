@@ -26,14 +26,21 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.Student
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
+/**
+ * Executa a rotina de student create screen dentro do contexto deste componente.
+ *
+ * @param onBack Valor de entrada utilizado por esta opera??o.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentCreateScreen(onBack: () -> Unit) {
@@ -51,8 +58,14 @@ fun StudentCreateScreen(onBack: () -> Unit) {
   var enrolledClass by rememberSaveable { mutableStateOf("") }
   var progressPercent by rememberSaveable { mutableStateOf("0") }
   var status by rememberSaveable { mutableStateOf(StudentStatus.Active) }
+  val requiredFieldsMessage = stringResource(R.string.student_create_error_required)
+  val invalidProgressMessage = stringResource(R.string.student_create_error_progress)
+  val saveSuccessMessage = stringResource(R.string.student_create_success)
+  val saveErrorMessage = stringResource(R.string.student_create_error_save)
 
-  DetailScaffold(title = "Novo aluno", onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.student_create_title), onBack = onBack) {
+      innerPadding,
+      _ ->
     Column(
         modifier =
             Modifier.fillMaxSize()
@@ -66,46 +79,59 @@ fun StudentCreateScreen(onBack: () -> Unit) {
       OutlinedTextField(
           value = name,
           onValueChange = { name = it },
-          label = { Text("Nome") },
+          label = { Text(stringResource(R.string.student_create_name)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = email,
           onValueChange = { email = it },
-          label = { Text("E-mail") },
+          label = { Text(stringResource(R.string.student_create_email)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = course,
           onValueChange = { course = it },
-          label = { Text("Curso") },
+          label = { Text(stringResource(R.string.student_create_course)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = enrolledClass,
           onValueChange = { enrolledClass = it },
-          label = { Text("Turma") },
+          label = { Text(stringResource(R.string.student_create_class)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
       OutlinedTextField(
           value = progressPercent,
           onValueChange = { progressPercent = it.filter(Char::isDigit) },
-          label = { Text("Progresso (%)") },
+          label = { Text(stringResource(R.string.student_create_progress)) },
           modifier = Modifier.fillMaxWidth(),
           singleLine = true,
       )
 
-      Text(text = "Status", style = MaterialTheme.typography.labelLarge)
+      Text(
+          text = stringResource(R.string.student_create_status),
+          style = MaterialTheme.typography.labelLarge,
+      )
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StudentStatus.entries.forEach { item ->
           FilterChip(
               selected = status == item,
               onClick = { status = item },
-              label = { Text(item.name) },
+              label = {
+                Text(
+                    stringResource(
+                        when (item) {
+                          StudentStatus.Active -> R.string.status_active
+                          StudentStatus.Inactive -> R.string.status_inactive
+                          StudentStatus.Graduated -> R.string.status_graduated
+                        }
+                    )
+                )
+              },
           )
         }
       }
@@ -114,11 +140,11 @@ fun StudentCreateScreen(onBack: () -> Unit) {
           onClick = {
             val progress = progressPercent.toIntOrNull()
             if (name.isBlank() || email.isBlank() || course.isBlank() || enrolledClass.isBlank()) {
-              scope.launch { snackbarHostState.showSnackbar("Preencha os campos obrigatorios.") }
+              scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
               return@Button
             }
             if (progress == null || progress !in 0..100) {
-              scope.launch { snackbarHostState.showSnackbar("Progresso deve estar entre 0 e 100.") }
+              scope.launch { snackbarHostState.showSnackbar(invalidProgressMessage) }
               return@Button
             }
 
@@ -136,19 +162,22 @@ fun StudentCreateScreen(onBack: () -> Unit) {
                               progress = progress / 100f,
                               status = status,
                           )
-                      )) {
-                is FirebaseDataConnectService.Result.Success -> onBack()
+                      )
+              ) {
+                is FirebaseDataConnectService.Result.Success -> {
+                  snackbarHostState.showSnackbar(saveSuccessMessage)
+                  onBack()
+                }
                 is FirebaseDataConnectService.Result.Error ->
-                    snackbarHostState.showSnackbar(result.message.ifBlank { "Falha ao salvar aluno." })
+                    snackbarHostState.showSnackbar(result.message.ifBlank { saveErrorMessage })
                 FirebaseDataConnectService.Result.Loading -> Unit
               }
             }
           },
           modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       ) {
-        Text("Salvar aluno")
+        Text(stringResource(R.string.student_create_save))
       }
     }
   }
 }
-

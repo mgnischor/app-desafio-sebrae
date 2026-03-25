@@ -28,6 +28,12 @@ import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
+/**
+ * Executa a rotina de teacher detail screen dentro do contexto deste componente.
+ *
+ * @param teacherId Valor de entrada utilizado por esta opera??o.
+ * @param onBack Valor de entrada utilizado por esta opera??o.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeacherDetailScreen(
@@ -45,7 +51,9 @@ fun TeacherDetailScreen(
       }
   val classes by classesFlow.collectAsState(initial = emptyList())
 
-  DetailScaffold(title = stringResource(R.string.teacher_detail_title), onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.teacher_detail_title), onBack = onBack) {
+      innerPadding,
+      _ ->
     if (teacher == null) {
       Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(20.dp)) {
         Text(stringResource(R.string.teacher_not_found), style = MaterialTheme.typography.bodyLarge)
@@ -74,7 +82,10 @@ fun TeacherDetailScreen(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(teacher!!.specialty, style = MaterialTheme.typography.bodyMedium)
-            Text(stringResource(R.string.label_email, teacher!!.email), style = MaterialTheme.typography.bodySmall)
+            Text(
+                stringResource(R.string.label_email, teacher!!.email),
+                style = MaterialTheme.typography.bodySmall,
+            )
             Text(
                 stringResource(R.string.label_active_courses_count, teacher!!.activeCourses),
                 style = MaterialTheme.typography.bodySmall,
@@ -100,7 +111,12 @@ fun TeacherDetailScreen(
       }
 
       if (classes.isEmpty()) {
-        item { Text(stringResource(R.string.no_linked_classes), style = MaterialTheme.typography.bodyMedium) }
+        item {
+          Text(
+              stringResource(R.string.no_linked_classes),
+              style = MaterialTheme.typography.bodyMedium,
+          )
+        }
       } else {
         items(classes, key = { it.id }) { schoolClass ->
           ElevatedCard(
@@ -118,10 +134,20 @@ fun TeacherDetailScreen(
                   style = MaterialTheme.typography.titleSmall,
                   fontWeight = FontWeight.Medium,
               )
-              Text(stringResource(R.string.label_course, schoolClass.course), style = MaterialTheme.typography.bodySmall)
-              Text(stringResource(R.string.label_schedule, schoolClass.schedule), style = MaterialTheme.typography.bodySmall)
               Text(
-                  stringResource(R.string.label_students_count, schoolClass.studentsCount, schoolClass.maxCapacity),
+                  stringResource(R.string.label_course, schoolClass.course),
+                  style = MaterialTheme.typography.bodySmall,
+              )
+              Text(
+                  stringResource(R.string.label_schedule, schoolClass.schedule),
+                  style = MaterialTheme.typography.bodySmall,
+              )
+              Text(
+                  stringResource(
+                      R.string.label_students_count,
+                      schoolClass.studentsCount,
+                      schoolClass.maxCapacity,
+                  ),
                   style = MaterialTheme.typography.bodySmall,
               )
             }

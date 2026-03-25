@@ -1,6 +1,5 @@
 package tech.datatower.sebrae.desafio
 
-import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -16,6 +15,7 @@ import tech.datatower.sebrae.desafio.data.model.ParentFollowUp
 import tech.datatower.sebrae.desafio.data.model.ParentFollowUpStatus
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringRules
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringSnapshot
+import java.time.LocalDate
 
 /**
  * Testes unitários das regras de negócio do módulo de acompanhamento do aluno.
@@ -29,6 +29,7 @@ class StudentMonitoringRulesTest {
 
   private lateinit var hoje: LocalDate
 
+  /** Atualiza o estado de up com os valores informados. */
   @Before
   fun setUp() {
     hoje = LocalDate.now()

@@ -69,7 +69,9 @@ fun StudentMonitoringScreen(
   val snapshot by
       repository.observeStudentMonitoringSnapshot(studentId).collectAsState(initial = null)
   if (snapshot == null) {
-    DetailScaffold(title = stringResource(R.string.monitoring_title), onBack = onBack) { innerPadding, _ ->
+    DetailScaffold(title = stringResource(R.string.monitoring_title), onBack = onBack) {
+        innerPadding,
+        _ ->
       Column(modifier = Modifier.padding(innerPadding).padding(20.dp)) {
         Text(stringResource(R.string.monitoring_student_not_found))
       }
@@ -84,15 +86,18 @@ fun StudentMonitoringScreen(
   val averageGrade = remember(data) { StudentMonitoringRules.averageGrade(data.behaviorRecords) }
 
   var selectedTab by remember { mutableIntStateOf(0) }
-  val tabs = listOf(
-      stringResource(R.string.tab_attendance),
-      stringResource(R.string.tab_behavior),
-      stringResource(R.string.tab_pedagogical),
-      stringResource(R.string.tab_psychological),
-      stringResource(R.string.tab_parents)
-  )
+  val tabs =
+      listOf(
+          stringResource(R.string.tab_attendance),
+          stringResource(R.string.tab_behavior),
+          stringResource(R.string.tab_pedagogical),
+          stringResource(R.string.tab_psychological),
+          stringResource(R.string.tab_parents),
+      )
 
-  DetailScaffold(title = stringResource(R.string.monitoring_title), onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.monitoring_title), onBack = onBack) {
+      innerPadding,
+      _ ->
     LazyColumn(
         modifier = Modifier.padding(innerPadding),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
@@ -313,11 +318,14 @@ private fun BehaviorSection(snapshot: StudentMonitoringSnapshot) {
       Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = record.date.toString(), style = MaterialTheme.typography.labelMedium)
         Text(
-            text = "${stringResource(R.string.label_participation, record.participationScore)} · ${stringResource(R.string.label_delivery, deliveryLabel(record.activityDelivery))} · ${stringResource(R.string.label_delay)} ${record.delayMinutes} ${stringResource(R.string.label_minutes)}",
+            text =
+                "${stringResource(R.string.label_participation, record.participationScore)} · ${stringResource(R.string.label_delivery, deliveryLabel(record.activityDelivery))} · ${stringResource(R.string.label_delay)} ${record.delayMinutes} ${stringResource(R.string.label_minutes)}",
             style = MaterialTheme.typography.bodySmall,
         )
         Text(
-            text = stringResource(R.string.label_grade, record.grade?.toString() ?: "-") + " · ${record.note}",
+            text =
+                stringResource(R.string.label_grade, record.grade?.toString() ?: "-") +
+                    " · ${record.note}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -365,8 +373,16 @@ private fun PedagogicalSection(snapshot: StudentMonitoringSnapshot) {
         Text(text = pedagogicalTypeLabel(need.type), style = MaterialTheme.typography.titleSmall)
         Text(text = need.description, style = MaterialTheme.typography.bodySmall)
         Text(
-            text = stringResource(R.string.label_validity, need.expiresAt?.toString() ?: stringResource(R.string.label_not_applicable)) + 
-                   " · " + stringResource(R.string.label_accommodations, need.accommodations.joinToString()),
+            text =
+                stringResource(
+                    R.string.label_validity,
+                    need.expiresAt?.toString() ?: stringResource(R.string.label_not_applicable),
+                ) +
+                    " · " +
+                    stringResource(
+                        R.string.label_accommodations,
+                        need.accommodations.joinToString(),
+                    ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -406,8 +422,11 @@ private fun PsychologicalSection(snapshot: StudentMonitoringSnapshot) {
       Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = need.summary, style = MaterialTheme.typography.bodyMedium)
         Text(
-            text = stringResource(R.string.label_confidentiality, confidentialityLabel(need.confidentiality)) + 
-                   " · " + stringResource(R.string.label_next_step, need.nextStep),
+            text =
+                stringResource(
+                    R.string.label_confidentiality,
+                    confidentialityLabel(need.confidentiality),
+                ) + " · " + stringResource(R.string.label_next_step, need.nextStep),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -496,7 +515,10 @@ private fun DomainSectionCard(title: String, options: List<String>) {
           fontWeight = FontWeight.SemiBold,
       )
       options.forEach { option ->
-        Text(text = "${stringResource(R.string.separator_bullet)} $option", style = MaterialTheme.typography.bodySmall)
+        Text(
+            text = "${stringResource(R.string.separator_bullet)} $option",
+            style = MaterialTheme.typography.bodySmall,
+        )
       }
     }
   }

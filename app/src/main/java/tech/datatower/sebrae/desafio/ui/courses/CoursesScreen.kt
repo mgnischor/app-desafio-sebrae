@@ -30,12 +30,14 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,6 +49,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.Course
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
@@ -68,12 +71,17 @@ import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 @Composable
 fun CoursesScreen(
     onBack: () -> Unit = {},
+    onCreateCourse: () -> Unit = {},
     onOpenCourseDetail: (Int) -> Unit = {},
 ) {
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val dataConnectService =
+      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
+  val scope = rememberCoroutineScope()
   val allCourses by repository.observeCourses().collectAsState(initial = emptyList())
   var query by rememberSaveable { mutableStateOf("") }
+  var isRefreshing by rememberSaveable { mutableStateOf(false) }
   val listState = rememberLazyListState()
 
   val filtered by
@@ -92,52 +100,72 @@ fun CoursesScreen(
         }
       }
 
-  DetailScaffold(title = stringResource(R.string.courses_title), onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.courses_title), onBack = onBack) { innerPadding, _
+    ->
+    /** Executa a rotina de refresh courses dentro do contexto deste componente. */
+    fun refreshCourses() {
+      if (isRefreshing) return
+      scope.launch {
+        isRefreshing = true
+        try {
+          dataConnectService.fetchCourses()
+        } finally {
+          isRefreshing = false
+        }
+      }
+    }
+
     Scaffold(
         floatingActionButton = {
           FloatingActionButton(
-              onClick = {},
+              onClick = onCreateCourse,
               containerColor = MaterialTheme.colorScheme.primary,
               contentColor = MaterialTheme.colorScheme.onPrimary,
           ) {
             Icon(
                 imageVector = Icons.Outlined.Add,
-                contentDescription = stringResource(R.string.courses_add_content_description)
+                contentDescription = stringResource(R.string.courses_add_content_description),
             )
           }
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { fabPadding ->
-      LazyColumn(
+      PullToRefreshBox(
+          isRefreshing = isRefreshing,
+          onRefresh = ::refreshCourses,
           modifier = Modifier.fillMaxSize().padding(innerPadding).padding(fabPadding),
-          state = listState,
-          contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-          verticalArrangement = Arrangement.spacedBy(10.dp),
       ) {
-        item {
-          ListSearchHeader(
-              query = query,
-              onQueryChange = { query = it },
-              placeholder = stringResource(R.string.courses_search_placeholder),
-              resultCount = filtered.size,
-              resultLabel = stringResource(R.string.courses_result_label),
-          )
-        }
-
-        if (filtered.isEmpty()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = listState,
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
           item {
-            EmptyState(
-                icon = Icons.AutoMirrored.Outlined.MenuBook,
-                message = stringResource(R.string.courses_empty_state),
+            ListSearchHeader(
+                query = query,
+                onQueryChange = { query = it },
+                placeholder = stringResource(R.string.courses_search_placeholder),
+                resultCount = filtered.size,
+                resultLabel = stringResource(R.string.courses_result_label),
             )
           }
-        } else {
-          items(
-              items = filtered,
-              key = { it.id },
-              contentType = { "course" },
-          ) { course ->
-            CourseCard(course = course, onClick = { onOpenCourseDetail(course.id) })
+
+          if (filtered.isEmpty()) {
+            item {
+              EmptyState(
+                  icon = Icons.AutoMirrored.Outlined.MenuBook,
+                  message = stringResource(R.string.courses_empty_state),
+              )
+            }
+          } else {
+            items(
+                items = filtered,
+                key = { it.id },
+                contentType = { "course" },
+            ) { course ->
+              CourseCard(course = course, onClick = { onOpenCourseDetail(course.id) })
+            }
           }
         }
       }
@@ -185,7 +213,10 @@ private fun CourseCard(
         }
         Spacer(modifier = Modifier.width(8.dp))
         StatusChip(
-            label = stringResource(if (course.isPublished) R.string.status_published else R.string.status_draft),
+            label =
+                stringResource(
+                    if (course.isPublished) R.string.status_published else R.string.status_draft
+                ),
             containerColor =
                 if (course.isPublished) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surfaceContainerHigh,

@@ -28,6 +28,12 @@ import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
+/**
+ * Executa a rotina de course detail screen dentro do contexto deste componente.
+ *
+ * @param courseId Valor de entrada utilizado por esta opera??o.
+ * @param onBack Valor de entrada utilizado por esta opera??o.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseDetailScreen(
@@ -44,7 +50,9 @@ fun CourseDetailScreen(
       }
   val classes by classesFlow.collectAsState(initial = emptyList())
 
-  DetailScaffold(title = stringResource(R.string.course_detail_title), onBack = onBack) { innerPadding, _ ->
+  DetailScaffold(title = stringResource(R.string.course_detail_title), onBack = onBack) {
+      innerPadding,
+      _ ->
     if (course == null) {
       Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(20.dp)) {
         Text(stringResource(R.string.course_not_found), style = MaterialTheme.typography.bodyLarge)
@@ -86,13 +94,18 @@ fun CourseDetailScreen(
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                stringResource(R.string.label_average_completion, (course!!.completionRate * 100).toInt()),
+                stringResource(
+                    R.string.label_average_completion,
+                    (course!!.completionRate * 100).toInt(),
+                ),
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                stringResource(R.string.status_label, 
-                    if (course!!.isPublished) stringResource(R.string.status_published) 
-                    else stringResource(R.string.status_draft)),
+                stringResource(
+                    R.string.status_label,
+                    if (course!!.isPublished) stringResource(R.string.status_published)
+                    else stringResource(R.string.status_draft),
+                ),
                 style = MaterialTheme.typography.bodySmall,
             )
           }
@@ -108,7 +121,12 @@ fun CourseDetailScreen(
       }
 
       if (classes.isEmpty()) {
-        item { Text(stringResource(R.string.no_linked_classes), style = MaterialTheme.typography.bodyMedium) }
+        item {
+          Text(
+              stringResource(R.string.no_linked_classes),
+              style = MaterialTheme.typography.bodyMedium,
+          )
+        }
       } else {
         items(classes, key = { it.id }) { schoolClass ->
           ElevatedCard(
@@ -126,13 +144,20 @@ fun CourseDetailScreen(
                   style = MaterialTheme.typography.titleSmall,
                   fontWeight = FontWeight.Medium,
               )
-              Text(stringResource(R.string.label_schedule, schoolClass.schedule), style = MaterialTheme.typography.bodySmall)
+              Text(
+                  stringResource(R.string.label_schedule, schoolClass.schedule),
+                  style = MaterialTheme.typography.bodySmall,
+              )
               Text(
                   stringResource(R.string.label_instructor, schoolClass.instructor),
                   style = MaterialTheme.typography.bodySmall,
               )
               Text(
-                  stringResource(R.string.label_students_count, schoolClass.studentsCount, schoolClass.maxCapacity),
+                  stringResource(
+                      R.string.label_students_count,
+                      schoolClass.studentsCount,
+                      schoolClass.maxCapacity,
+                  ),
                   style = MaterialTheme.typography.bodySmall,
               )
             }
