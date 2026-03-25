@@ -199,10 +199,9 @@ object StudentMonitoringRules {
     val baseCount = records.count { it.status != AttendanceStatus.JustifiedAbsence }
     if (baseCount == 0) return 1f
 
-    val presentCount =
-        records.count {
-          it.status == AttendanceStatus.Present || it.status == AttendanceStatus.Late
-        }
+    val presentCount = records.count {
+      it.status == AttendanceStatus.Present || it.status == AttendanceStatus.Late
+    }
     return presentCount.toFloat() / baseCount.toFloat()
   }
 
