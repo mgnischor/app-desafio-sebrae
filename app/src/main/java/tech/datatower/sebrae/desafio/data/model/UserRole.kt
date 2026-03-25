@@ -9,8 +9,10 @@ enum class UserRole {
   /** Acesso restrito: Alunos, Calendário e Certificados. */
   PROFESSOR,
 
-  /** Acesso intermediário: Alunos, Cursos, Turmas, Instrutores, Calendário, Certificados e
-   * Relatórios. */
+  /**
+   * Acesso intermediário: Alunos, Cursos, Turmas, Instrutores, Calendário, Certificados e
+   * Relatórios.
+   */
   COORDENADOR,
 
   /** Acesso completo a todos os módulos, incluindo Configurações. */
