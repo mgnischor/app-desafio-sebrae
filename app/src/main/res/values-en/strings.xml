@@ -7,6 +7,10 @@
     <string name="unit_hours">h</string>
     <string name="label_instructor">Instructor: %s</string>
     <string name="label_completion">%d%% completion</string>
+    <string name="status_label">Status: %s</string>
+    <string name="label_course">Course: %s</string>
+    <string name="label_email">Email: %s</string>
+    <string name="label_progress">Progress: %d%%</string>
 
     <!-- Home / Menu -->
     <string name="home_greeting_morning">Good morning</string>
@@ -89,6 +93,18 @@
     <string name="status_published">Published</string>
     <string name="status_draft">Draft</string>
 
+    <!-- Course Detail Screen -->
+    <string name="course_detail_title">Course Details</string>
+    <string name="course_not_found">Course not found.</string>
+    <string name="label_main_instructor">Main instructor: %s</string>
+    <string name="label_workload">Workload: %dh</string>
+    <string name="label_enrollments">Enrollments: %d</string>
+    <string name="label_average_completion">Average completion: %d%%</string>
+    <string name="label_linked_classes">Linked classes (%d)</string>
+    <string name="no_linked_classes">No linked classes.</string>
+    <string name="label_schedule">Schedule: %s</string>
+    <string name="label_students_count">Students: %d/%d</string>
+
     <!-- Students Screen -->
     <string name="students_title">Students</string>
     <string name="students_add_content_description">New student</string>
@@ -108,6 +124,13 @@
     <string name="class_status_open">Open</string>
     <string name="class_status_in_progress">In progress</string>
     <string name="class_status_closed">Closed</string>
+
+    <!-- Class Detail Screen -->
+    <string name="class_detail_title">Class Details</string>
+    <string name="class_not_found">Class not found.</string>
+    <string name="label_occupation">Occupation: %d/%d</string>
+    <string name="label_class_students">Class students (%d)</string>
+    <string name="no_class_students">No students linked.</string>
 
     <!-- Monitoring Screen -->
     <string name="monitoring_title">Monitoring</string>
@@ -177,4 +200,102 @@
     <string name="follow_up_waiting">Waiting for response</string>
     <string name="follow_up_completed">Completed</string>
     <string name="follow_up_no_show">No-show</string>
+
+    <!-- Calendar Screen -->
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_add_content_description">New event</string>
+    <string name="event_type_class">Class</string>
+    <string name="event_type_exam">Exam</string>
+    <string name="event_type_meeting">Meeting</string>
+    <string name="event_type_other">Other</string>
+
+    <!-- Certificates Screen -->
+    <string name="certificates_title">Certificates</string>
+    <string name="certificates_search_placeholder">Search by student, course or code...</string>
+    <string name="certificates_result_label">certificates found</string>
+    <string name="certificates_empty_state">No certificates found.</string>
+
+    <!-- Teachers Screen -->
+    <string name="teachers_title">Instructors</string>
+    <string name="teachers_add_content_description">New instructor</string>
+    <string name="teachers_search_placeholder">Search instructor or specialty...</string>
+    <string name="teachers_result_label">instructors found</string>
+    <string name="teachers_empty_state">No instructors found.</string>
+    <string name="unit_active_courses">%d active courses</string>
+
+    <!-- Teacher Detail Screen -->
+    <string name="teacher_detail_title">Instructor Details</string>
+    <string name="teacher_not_found">Instructor not found.</string>
+    <string name="label_active_courses_count">Active courses: %d</string>
+    <string name="label_total_students_count">Total students: %d</string>
+    <string name="label_rating_value">Rating: %.1f</string>
+    <string name="label_taught_classes">Taught classes (%d)</string>
+
+    <!-- Reports Screen -->
+    <string name="reports_title">Reports</string>
+    <string name="label_active_students">Active Students</string>
+    <string name="label_active_courses">Active Courses</string>
+    <string name="label_completion_rate">Completion Rate</string>
+    <string name="label_average_rating">Average Rating</string>
+    <string name="label_completion_by_course">Completion Rate by Course</string>
+    <string name="label_enrollments_by_month">Enrollments by Month</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_account">Account</string>
+    <string name="settings_item_profile">Profile</string>
+    <string name="settings_subtitle_profile">Name, email, photo</string>
+    <string name="settings_item_security">Security</string>
+    <string name="settings_subtitle_security">Password and authentication</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_item_dark_mode">Dark mode</string>
+    <string name="settings_subtitle_dark_mode">Toggle light/dark theme</string>
+    <string name="settings_item_color_theme">Color theme</string>
+    <string name="settings_subtitle_color_theme">Deep blue (default)</string>
+    <string name="settings_section_notifications">Notifications</string>
+    <string name="settings_item_push">Push notifications</string>
+    <string name="settings_subtitle_push">Real-time alerts</string>
+    <string name="settings_item_email_notif">Email notifications</string>
+    <string name="settings_subtitle_email_notif">Daily email summary</string>
+    <string name="settings_section_system">System</string>
+    <string name="settings_item_language">Language</string>
+    <string name="settings_subtitle_language">English (US)</string>
+    <string name="settings_item_storage">Storage</string>
+    <string name="settings_subtitle_storage">Clear cache and data</string>
+    <string name="settings_item_about">About</string>
+    <string name="settings_subtitle_about">Version 1.0.0 · SEBRAE Challenge App</string>
+    <string name="settings_item_user_management">Users</string>
+    <string name="settings_subtitle_user_management">Registration and access control</string>
+
+    <string name="user_management_title">User Management</string>
+    <string name="user_management_access_denied">Only administrators can access this screen.</string>
+    <string name="user_management_new_user">New user</string>
+    <string name="user_management_name">Name</string>
+    <string name="user_management_email">Email</string>
+    <string name="user_management_password">Password</string>
+    <string name="user_management_role">Access role</string>
+    <string name="user_management_save">Save user</string>
+    <string name="user_management_existing_users">Registered users</string>
+    <string name="user_management_invalid_data">Fill valid name and email.</string>
+    <string name="user_management_created_success">User created successfully.</string>
+    <string name="user_management_created_error">Unable to create user.</string>
+    <string name="user_management_removed_success">User removed successfully.</string>
+    <string name="user_management_removed_error">Unable to remove user.</string>
+
+    <!-- Missing strings for translations -->
+    <string name="label_delay">Delay</string>
+    <string name="label_minutes">min</string>
+    <string name="separator_bullet">•</string>
+    <string name="recent_activity_subtitle_student">%s — Class %s</string>
+    <string name="recent_activity_subtitle_course">%s · Level 2</string>
+    <string name="recent_activity_subtitle_certificate">%s — %s</string>
+    <string name="recent_activity_subtitle_class">%s · Thursday</string>
+    <string name="status_open_state">Open</string>
+    <string name="status_in_progress_state">In Progress</string>
+    <string name="status_closed_state">Closed</string>
+    <string name="status_active_student">Active</string>
+    <string name="status_inactive_student">Inactive</string>
+    <string name="status_graduated_student">Graduated</string>
+    <string name="stat_data_source">local data</string>
+    <string name="stat_data_source_cloud">synced data</string>
 </resources>
