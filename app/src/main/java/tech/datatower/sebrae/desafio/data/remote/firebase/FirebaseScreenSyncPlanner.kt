@@ -3,8 +3,8 @@ package tech.datatower.sebrae.desafio.data.remote.firebase
 /**
  * Define os escopos de sincronizacao por tela.
  *
- * Cada escopo representa um conjunto minimo de dados remotos necessario para
- * renderizar a tela com o Room atuando apenas como cache local.
+ * Cada escopo representa um conjunto minimo de dados remotos necessario para renderizar a tela com
+ * o Room atuando apenas como cache local.
  */
 enum class ScreenDataScope {
   HOME,
@@ -23,9 +23,7 @@ enum class ScreenDataScope {
   APP_STARTUP,
 }
 
-/**
- * Lista de tarefas de sincronizacao disponiveis no Firebase.
- */
+/** Lista de tarefas de sincronizacao disponiveis no Firebase. */
 enum class FirebaseSyncTask {
   COURSES,
   CLASSES,
@@ -46,8 +44,8 @@ enum class FirebaseSyncTask {
 /**
  * Planeja as tarefas de sincronizacao necessarias para cada tela.
  *
- * A estrategia usa principio de menor privilegio de dados: cada tela baixa
- * somente as colecoes remotas realmente necessarias para sua exibicao.
+ * A estrategia usa principio de menor privilegio de dados: cada tela baixa somente as colecoes
+ * remotas realmente necessarias para sua exibicao.
  */
 object FirebaseScreenSyncPlanner {
   /**
@@ -66,13 +64,10 @@ object FirebaseScreenSyncPlanner {
               FirebaseSyncTask.RECENT_ACTIVITIES,
           )
       ScreenDataScope.COURSES,
-      ScreenDataScope.COURSE_DETAIL ->
-          setOf(FirebaseSyncTask.COURSES, FirebaseSyncTask.CLASSES)
+      ScreenDataScope.COURSE_DETAIL -> setOf(FirebaseSyncTask.COURSES, FirebaseSyncTask.CLASSES)
       ScreenDataScope.CLASSES,
-      ScreenDataScope.CLASS_DETAIL ->
-          setOf(FirebaseSyncTask.CLASSES, FirebaseSyncTask.STUDENTS)
-      ScreenDataScope.STUDENTS ->
-          setOf(FirebaseSyncTask.STUDENTS, FirebaseSyncTask.CLASSES)
+      ScreenDataScope.CLASS_DETAIL -> setOf(FirebaseSyncTask.CLASSES, FirebaseSyncTask.STUDENTS)
+      ScreenDataScope.STUDENTS -> setOf(FirebaseSyncTask.STUDENTS, FirebaseSyncTask.CLASSES)
       ScreenDataScope.STUDENT_MONITORING ->
           setOf(
               FirebaseSyncTask.STUDENTS,
@@ -83,8 +78,7 @@ object FirebaseScreenSyncPlanner {
               FirebaseSyncTask.PARENT_FOLLOW_UPS,
           )
       ScreenDataScope.TEACHERS,
-      ScreenDataScope.TEACHER_DETAIL ->
-          setOf(FirebaseSyncTask.TEACHERS, FirebaseSyncTask.CLASSES)
+      ScreenDataScope.TEACHER_DETAIL -> setOf(FirebaseSyncTask.TEACHERS, FirebaseSyncTask.CLASSES)
       ScreenDataScope.CERTIFICATES -> setOf(FirebaseSyncTask.CERTIFICATES)
       ScreenDataScope.CALENDAR -> setOf(FirebaseSyncTask.CALENDAR_EVENTS)
       ScreenDataScope.REPORTS ->
@@ -117,4 +111,3 @@ object FirebaseScreenSyncPlanner {
     }
   }
 }
-
