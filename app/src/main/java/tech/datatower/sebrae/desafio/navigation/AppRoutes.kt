@@ -19,6 +19,9 @@ object AppRoutes {
   /** Rota da tela inicial com visão geral e atalhos dos módulos. */
   const val HOME = "home"
 
+  /** Rota da tela com histórico completo de atividades recentes. */
+  const val RECENT_ACTIVITIES = "home/recent-activities"
+
   /** Rota da tela de gestão de alunos. */
   const val STUDENTS = "students"
   const val STUDENT_CREATE = "students/new"
