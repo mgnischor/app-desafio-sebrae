@@ -23,13 +23,18 @@ import androidx.compose.material.icons.outlined.ManageAccounts
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,8 +54,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
+import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
+import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.UserRole
+import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
@@ -70,6 +81,8 @@ fun SettingsScreen(
 ) {
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val dataConnectService =
+      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
   val settings by
       repository
           .observeSettings()
@@ -88,6 +101,22 @@ fun SettingsScreen(
   var emailEnabled by remember { mutableStateOf(settings.emailEnabled) }
   var language by remember { mutableStateOf(settings.language) }
   val scope = rememberCoroutineScope()
+  val snackbarHostState = remember { SnackbarHostState() }
+  var showPasswordDialog by rememberSaveable { mutableStateOf(false) }
+  var currentPassword by rememberSaveable { mutableStateOf("") }
+  var newPassword by rememberSaveable { mutableStateOf("") }
+
+  val canClearStorage =
+      AccessPolicy.can(currentUser?.role, ProtectedResource.Settings, ProtectedAction.ClearStorage)
+  val canChangeOwnPassword =
+      AccessPolicy.can(
+          currentUser?.role,
+          ProtectedResource.Settings,
+          ProtectedAction.ChangeOwnPassword,
+      )
+  val storageClearedMessage = stringResource(R.string.settings_storage_cleared)
+  val passwordChangedMessage = stringResource(R.string.settings_password_changed)
+  val passwordErrorMessage = stringResource(R.string.settings_password_error)
 
   LaunchedEffect(settings) {
     darkMode = settings.darkMode
@@ -96,6 +125,8 @@ fun SettingsScreen(
     language = settings.language
   }
 
+  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.SETTINGS) }
+
   DetailScaffold(title = stringResource(R.string.settings_title), onBack = onBack) { innerPadding, _
     ->
     LazyColumn(
@@ -103,6 +134,8 @@ fun SettingsScreen(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+      item { SnackbarHost(hostState = snackbarHostState) }
+
       item { SettingsSectionHeader(stringResource(R.string.settings_section_account)) }
       item {
         SettingsGroup {
@@ -115,6 +148,11 @@ fun SettingsScreen(
               icon = Icons.Outlined.Lock,
               title = stringResource(R.string.settings_item_security),
               subtitle = stringResource(R.string.settings_subtitle_security),
+              onClick = {
+                if (canChangeOwnPassword) {
+                  showPasswordDialog = true
+                }
+              },
           )
           if (currentUser?.role == UserRole.ADMINISTRADOR) {
             SettingsItem(
@@ -184,11 +222,19 @@ fun SettingsScreen(
                 scope.launch { repository.updateLanguage(it) }
               },
           )
-          SettingsItem(
-              icon = Icons.Outlined.Storage,
-              title = stringResource(R.string.settings_item_storage),
-              subtitle = stringResource(R.string.settings_subtitle_storage),
-          )
+          if (canClearStorage) {
+            SettingsItem(
+                icon = Icons.Outlined.Storage,
+                title = stringResource(R.string.settings_item_storage),
+                subtitle = stringResource(R.string.settings_subtitle_storage),
+                onClick = {
+                  scope.launch {
+                    repository.clearStoragePreservingUsers()
+                    snackbarHostState.showSnackbar(storageClearedMessage)
+                  }
+                },
+            )
+          }
           SettingsItem(
               icon = Icons.Outlined.Info,
               title = stringResource(R.string.settings_item_about),
@@ -198,6 +244,53 @@ fun SettingsScreen(
       }
 
       item { Spacer(modifier = Modifier.height(16.dp)) }
+    }
+
+    if (showPasswordDialog) {
+      AlertDialog(
+          onDismissRequest = { showPasswordDialog = false },
+          title = { Text(stringResource(R.string.settings_change_password_title)) },
+          text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+              OutlinedTextField(
+                  value = currentPassword,
+                  onValueChange = { currentPassword = it },
+                  label = { Text(stringResource(R.string.settings_current_password)) },
+                  singleLine = true,
+              )
+              OutlinedTextField(
+                  value = newPassword,
+                  onValueChange = { newPassword = it },
+                  label = { Text(stringResource(R.string.settings_new_password)) },
+                  singleLine = true,
+              )
+            }
+          },
+          confirmButton = {
+            TextButton(
+                onClick = {
+                  val changed = AuthManager.changeCurrentUserPassword(currentPassword, newPassword)
+                  scope.launch {
+                    snackbarHostState.showSnackbar(
+                        if (changed) passwordChangedMessage else passwordErrorMessage
+                    )
+                  }
+                  if (changed) {
+                    currentPassword = ""
+                    newPassword = ""
+                    showPasswordDialog = false
+                  }
+                }
+            ) {
+              Text(stringResource(R.string.settings_change_password_action))
+            }
+          },
+          dismissButton = {
+            TextButton(onClick = { showPasswordDialog = false }) {
+              Text(stringResource(R.string.back))
+            }
+          },
+      )
     }
   }
 }
