@@ -18,6 +18,7 @@ import tech.datatower.sebrae.desafio.ui.courses.CourseCreateScreen
 import tech.datatower.sebrae.desafio.ui.courses.CourseDetailScreen
 import tech.datatower.sebrae.desafio.ui.courses.CoursesScreen
 import tech.datatower.sebrae.desafio.ui.home.HomeScreen
+import tech.datatower.sebrae.desafio.ui.home.RecentActivitiesScreen
 import tech.datatower.sebrae.desafio.ui.login.LoginScreen
 import tech.datatower.sebrae.desafio.ui.reports.ReportsScreen
 import tech.datatower.sebrae.desafio.ui.settings.SettingsScreen
@@ -41,6 +42,8 @@ import tech.datatower.sebrae.desafio.ui.users.UserManagementScreen
  */
 @Composable
 fun AppNavHost(navController: NavHostController) {
+  val currentUser by AuthManager.currentUser.collectAsState()
+
   NavHost(
       navController = navController,
       startDestination = AppRoutes.LOGIN,
@@ -53,18 +56,22 @@ fun AppNavHost(navController: NavHostController) {
       )
     }
     composable(AppRoutes.HOME) {
-      val currentUser by AuthManager.currentUser.collectAsState()
       HomeScreen(
           user = currentUser,
           onModuleClick = { route -> navController.navigate(route) },
+          onOpenRecentActivities = { navController.navigate(AppRoutes.RECENT_ACTIVITIES) },
           onLogout = {
             AuthManager.logout()
             navController.navigate(AppRoutes.LOGIN) { popUpTo(AppRoutes.HOME) { inclusive = true } }
           },
       )
     }
+    composable(AppRoutes.RECENT_ACTIVITIES) {
+      RecentActivitiesScreen(currentUser = currentUser, onBack = { navController.popBackStack() })
+    }
     composable(AppRoutes.STUDENTS) {
       StudentsScreen(
+          currentUser = currentUser,
           onBack = { navController.popBackStack() },
           onCreateStudent = { navController.navigate(AppRoutes.STUDENT_CREATE) },
           onOpenStudentMonitoring = { studentId ->
@@ -73,7 +80,7 @@ fun AppNavHost(navController: NavHostController) {
       )
     }
     composable(AppRoutes.STUDENT_CREATE) {
-      StudentCreateScreen(onBack = { navController.popBackStack() })
+      StudentCreateScreen(currentUser = currentUser, onBack = { navController.popBackStack() })
     }
     composable(
         route = AppRoutes.STUDENT_MONITORING,
@@ -85,6 +92,7 @@ fun AppNavHost(navController: NavHostController) {
     }
     composable(AppRoutes.COURSES) {
       CoursesScreen(
+          currentUser = currentUser,
           onBack = { navController.popBackStack() },
           onCreateCourse = { navController.navigate(AppRoutes.COURSE_CREATE) },
           onOpenCourseDetail = { courseId ->
@@ -93,7 +101,7 @@ fun AppNavHost(navController: NavHostController) {
       )
     }
     composable(AppRoutes.COURSE_CREATE) {
-      CourseCreateScreen(onBack = { navController.popBackStack() })
+      CourseCreateScreen(currentUser = currentUser, onBack = { navController.popBackStack() })
     }
     composable(
         route = AppRoutes.COURSE_DETAIL,
@@ -104,13 +112,14 @@ fun AppNavHost(navController: NavHostController) {
     }
     composable(AppRoutes.CLASSES) {
       ClassesScreen(
+          currentUser = currentUser,
           onBack = { navController.popBackStack() },
           onCreateClass = { navController.navigate(AppRoutes.CLASS_CREATE) },
           onOpenClassDetail = { classId -> navController.navigate(AppRoutes.classDetail(classId)) },
       )
     }
     composable(AppRoutes.CLASS_CREATE) {
-      ClassCreateScreen(onBack = { navController.popBackStack() })
+      ClassCreateScreen(currentUser = currentUser, onBack = { navController.popBackStack() })
     }
     composable(
         route = AppRoutes.CLASS_DETAIL,
@@ -121,6 +130,7 @@ fun AppNavHost(navController: NavHostController) {
     }
     composable(AppRoutes.TEACHERS) {
       TeachersScreen(
+          currentUser = currentUser,
           onBack = { navController.popBackStack() },
           onCreateTeacher = { navController.navigate(AppRoutes.TEACHER_CREATE) },
           onOpenTeacherDetail = { teacherId ->
@@ -129,7 +139,7 @@ fun AppNavHost(navController: NavHostController) {
       )
     }
     composable(AppRoutes.TEACHER_CREATE) {
-      TeacherCreateScreen(onBack = { navController.popBackStack() })
+      TeacherCreateScreen(currentUser = currentUser, onBack = { navController.popBackStack() })
     }
     composable(
         route = AppRoutes.TEACHER_DETAIL,
@@ -143,9 +153,10 @@ fun AppNavHost(navController: NavHostController) {
     composable(AppRoutes.CERTIFICATES) {
       CertificatesScreen(onBack = { navController.popBackStack() })
     }
-    composable(AppRoutes.CALENDAR) { CalendarScreen(onBack = { navController.popBackStack() }) }
+    composable(AppRoutes.CALENDAR) {
+      CalendarScreen(currentUser = currentUser, onBack = { navController.popBackStack() })
+    }
     composable(AppRoutes.SETTINGS) {
-      val currentUser by AuthManager.currentUser.collectAsState()
       SettingsScreen(
           currentUser = currentUser,
           onBack = { navController.popBackStack() },
@@ -153,7 +164,6 @@ fun AppNavHost(navController: NavHostController) {
       )
     }
     composable(AppRoutes.USERS_MANAGEMENT) {
-      val currentUser by AuthManager.currentUser.collectAsState()
       UserManagementScreen(
           currentUser = currentUser,
           onBack = { navController.popBackStack() },
