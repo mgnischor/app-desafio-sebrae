@@ -235,7 +235,7 @@ class AppRepository(
   fun observeRecentActivitiesCount(): Flow<Int> = dao.observeRecentActivitiesCount()
 
   /**
-   * Observa altera??es de home quick stats e publica atualiza??es reativas.
+   * Observa alterações de home quick stats e publica atualizações reativas.
    *
    * @return Resultado produzido pela opera??o em formato `Flow<List<QuickStat>>`.
    */
