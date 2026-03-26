@@ -227,15 +227,8 @@ class AppRepository(
   fun observeRecentActivities(limit: Int): Flow<List<RecentActivity>> =
       dao.observeRecentActivitiesLimited(limit).map { items -> items.map { it.toModel() } }
 
-  /** Observa atividades recentes paginadas para telas com histórico completo. */
-  fun observeRecentActivitiesPaged(limit: Int, offset: Int): Flow<List<RecentActivity>> =
-      dao.observeRecentActivitiesPaged(limit, offset).map { items -> items.map { it.toModel() } }
-
-  /** Observa a quantidade total de atividades recentes disponível no banco local. */
-  fun observeRecentActivitiesCount(): Flow<Int> = dao.observeRecentActivitiesCount()
-
   /**
-   * Observa alterações de home quick stats e publica atualizações reativas.
+   * Observa altera??es de home quick stats e publica atualiza??es reativas.
    *
    * @return Resultado produzido pela opera??o em formato `Flow<List<QuickStat>>`.
    */
