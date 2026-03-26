@@ -14,6 +14,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,8 +28,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
+import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
+import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
+import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
+import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
@@ -39,7 +45,7 @@ import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TeacherCreateScreen(onBack: () -> Unit) {
+fun TeacherCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
   val dataService = remember(context) { AppGraph.dataConnectService(context.applicationContext) }
@@ -47,6 +53,8 @@ fun TeacherCreateScreen(onBack: () -> Unit) {
   val snackbarHostState = remember { SnackbarHostState() }
 
   val teachers by repository.observeTeachers().collectAsState(initial = emptyList())
+
+  LaunchedEffect(Unit) { dataService.syncScope(ScreenDataScope.TEACHERS) }
 
   var name by rememberSaveable { mutableStateOf("") }
   var email by rememberSaveable { mutableStateOf("") }
@@ -58,6 +66,7 @@ fun TeacherCreateScreen(onBack: () -> Unit) {
   val invalidNumericMessage = stringResource(R.string.teacher_create_error_numeric)
   val saveSuccessMessage = stringResource(R.string.teacher_create_success)
   val saveErrorMessage = stringResource(R.string.teacher_create_error_save)
+  val deniedMessage = stringResource(R.string.permission_denied)
 
   DetailScaffold(title = stringResource(R.string.teacher_create_title), onBack = onBack) {
       innerPadding,
@@ -130,20 +139,34 @@ fun TeacherCreateScreen(onBack: () -> Unit) {
               return@Button
             }
 
+            if (
+                !AccessPolicy.can(
+                    currentUser?.role,
+                    ProtectedResource.Teachers,
+                    ProtectedAction.Create,
+                )
+            ) {
+              scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
+              return@Button
+            }
+
             scope.launch {
               val nextId = (teachers.maxOfOrNull { it.id } ?: 0) + 1
               when (
                   val result =
                       dataService.upsertTeacher(
-                          Teacher(
-                              id = nextId,
-                              name = name.trim(),
-                              email = email.trim(),
-                              specialty = specialty.trim(),
-                              activeCourses = active,
-                              totalStudents = students,
-                              rating = score,
-                          )
+                          requester = currentUser,
+                          teacher =
+                              Teacher(
+                                  id = nextId,
+                                  name = name.trim(),
+                                  email = email.trim(),
+                                  specialty = specialty.trim(),
+                                  activeCourses = active,
+                                  totalStudents = students,
+                                  rating = score,
+                                  isActive = true,
+                              ),
                       )
               ) {
                 is FirebaseDataConnectService.Result.Success -> {
