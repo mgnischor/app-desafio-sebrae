@@ -2,9 +2,7 @@ package tech.datatower.sebrae.desafio.data.auth
 
 import tech.datatower.sebrae.desafio.data.model.UserRole
 
-/**
- * Recursos funcionais protegidos por controle de acesso baseado em perfil.
- */
+/** Recursos funcionais protegidos por controle de acesso baseado em perfil. */
 enum class ProtectedResource {
   Students,
   Courses,
@@ -15,9 +13,7 @@ enum class ProtectedResource {
   Settings,
 }
 
-/**
- * Ações suportadas pelas regras de autorização da aplicação.
- */
+/** Ações suportadas pelas regras de autorização da aplicação. */
 enum class ProtectedAction {
   View,
   Create,
@@ -73,7 +69,8 @@ object AccessPolicy {
             )
       }
       ProtectedResource.Calendar -> action in setOf(ProtectedAction.View, ProtectedAction.Create)
-      ProtectedResource.Settings -> action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
+      ProtectedResource.Settings ->
+          action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
       ProtectedResource.Users -> false
     }
   }
@@ -85,10 +82,10 @@ object AccessPolicy {
       ProtectedResource.Students ->
           action in setOf(ProtectedAction.View, ProtectedAction.LaunchStudentRecord)
       ProtectedResource.Calendar -> action == ProtectedAction.View
-      ProtectedResource.Settings -> action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
+      ProtectedResource.Settings ->
+          action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
       ProtectedResource.Teachers,
       ProtectedResource.Users -> false
     }
   }
 }
-
