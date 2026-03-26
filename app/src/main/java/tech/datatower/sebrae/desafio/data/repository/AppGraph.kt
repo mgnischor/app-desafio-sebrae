@@ -21,7 +21,7 @@ import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseSeedCredential
 object AppGraph {
   private const val TAG = "AppGraph"
   private const val FIREBASE_REMOTE_BOOTSTRAP_ENABLED = true
-  private const val FIREBASE_AUTO_SEED_ALL_COLLECTIONS_FROM_LOCAL = true
+  private const val FIREBASE_AUTO_SEED_ALL_COLLECTIONS_FROM_LOCAL = false
   private val graphScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
   /**
    * Executa a rotina de repository dentro do contexto deste componente.
@@ -118,8 +118,6 @@ object AppGraph {
         )
 
     graphScope.launch {
-      repo.seedIfEmpty()
-
       if (FIREBASE_AUTO_SEED_ALL_COLLECTIONS_FROM_LOCAL) {
         when (
             val seedResult =
@@ -134,7 +132,8 @@ object AppGraph {
       }
 
       val hasRemoteData = remoteBootstrapper.bootstrapIntoLocalCache()
-      if (hasRemoteData) {
+      val startupSyncResult = dataConnectService(context = context, dao = dao).syncAllData()
+      if (hasRemoteData || startupSyncResult is FirebaseDataConnectService.Result.Success) {
         sourceLabelResFlow.value = R.string.stat_data_source
       }
     }
