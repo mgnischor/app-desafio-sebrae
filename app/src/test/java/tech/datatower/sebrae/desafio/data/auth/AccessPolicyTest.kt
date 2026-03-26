@@ -5,14 +5,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import tech.datatower.sebrae.desafio.data.model.UserRole
 
-/**
- * Testes unitários para as regras de RBAC centralizadas em [AccessPolicy].
- */
+/** Testes unitários para as regras de RBAC centralizadas em [AccessPolicy]. */
 class AccessPolicyTest {
 
-  /**
-   * Garante que administrador possua privilégios completos em recursos críticos.
-   */
+  /** Garante que administrador possua privilégios completos em recursos críticos. */
   @Test
   fun `admin should be allowed to delete users and clear storage`() {
     assertTrue(
@@ -52,9 +48,7 @@ class AccessPolicyTest {
     )
   }
 
-  /**
-   * Garante que professor apenas visualize cursos/turmas e registre lançamentos de aluno.
-   */
+  /** Garante que professor apenas visualize cursos/turmas e registre lançamentos de aluno. */
   @Test
   fun `teacher should view courses and launch student records only`() {
     assertTrue(
@@ -80,4 +74,3 @@ class AccessPolicyTest {
     )
   }
 }
-
