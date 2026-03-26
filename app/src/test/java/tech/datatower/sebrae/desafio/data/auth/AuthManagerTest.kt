@@ -6,6 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.UserRole
 
 /**
@@ -21,6 +22,18 @@ class AuthManagerTest {
   fun setUp() {
     // Limpar estado do AuthManager antes de cada teste
     AuthManager.logout()
+    AuthManager.registerOrUpdateUser(
+        AppUser(1, "Prof. Carlos Silva", "professor@sebrae.edu.br", UserRole.PROFESSOR),
+        "prof123",
+    )
+    AuthManager.registerOrUpdateUser(
+        AppUser(2, "Coord. Ana Santos", "coordenador@sebrae.edu.br", UserRole.COORDENADOR),
+        "coord123",
+    )
+    AuthManager.registerOrUpdateUser(
+        AppUser(3, "Admin. João Almeida", "admin@sebrae.edu.br", UserRole.ADMINISTRADOR),
+        "admin123",
+    )
   }
 
   // ── Testes de Login ───────────────────────────────────────────────────
@@ -208,5 +221,32 @@ class AuthManagerTest {
       assertFalse("Tentativa $it com senha errada deve falhar", resultado)
       assertNull("Usuário deve permanecer nulo", AuthManager.currentUser.value)
     }
+  }
+
+  /** Valida troca de senha com senha atual correta para usuário autenticado. */
+  @Test
+  fun `changeCurrentUserPassword deve atualizar senha quando dados válidos`() {
+    AuthManager.login("professor@sebrae.edu.br", "prof123")
+
+    val changed = AuthManager.changeCurrentUserPassword("prof123", "newpass123")
+    AuthManager.logout()
+    val canLoginWithNewPassword = AuthManager.login("professor@sebrae.edu.br", "newpass123")
+
+    // Restaura credencial padrão para manter isolamento da suíte.
+    AuthManager.changeCurrentUserPassword("newpass123", "prof123")
+    AuthManager.logout()
+
+    assertTrue("Troca de senha deve ocorrer", changed)
+    assertTrue("Usuário deve autenticar com a nova senha", canLoginWithNewPassword)
+  }
+
+  /** Valida bloqueio de troca de senha quando senha atual está incorreta. */
+  @Test
+  fun `changeCurrentUserPassword deve falhar com senha atual inválida`() {
+    AuthManager.login("coordenador@sebrae.edu.br", "coord123")
+
+    val changed = AuthManager.changeCurrentUserPassword("senha-invalida", "newpass123")
+
+    assertFalse("Troca de senha não deve ocorrer com senha atual incorreta", changed)
   }
 }
