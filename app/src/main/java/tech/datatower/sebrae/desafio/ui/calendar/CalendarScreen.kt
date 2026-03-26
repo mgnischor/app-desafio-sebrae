@@ -85,7 +85,7 @@ fun CalendarScreen(currentUser: AppUser? = null, onBack: () -> Unit = {}) {
   val snackbarHostState = remember { SnackbarHostState() }
   var showCreateSheet by rememberSaveable { mutableStateOf(false) }
   val createErrorFallback = stringResource(R.string.calendar_create_error)
-  val grouped = remember(events) { events.groupBy { it.date }.entries.toList() }
+  val grouped = remember(events) { events.groupBy { it.date } }
   val canCreateCalendarEvent =
       AccessPolicy.can(currentUser?.role, ProtectedResource.Calendar, ProtectedAction.Create)
 

@@ -64,15 +64,19 @@ fun RecentActivitiesScreen(
         RealtimeNotificationRules.canReceiveBackofficeNotifications(currentUser?.role)
       }
 
-  val allRecents by repository.observeRecentActivities().collectAsState(initial = emptyList())
   var pageIndex by remember { mutableIntStateOf(0) }
   val pageSize = 10
-  val pagedSource = if (canSeeBackofficeRecents) allRecents else emptyList()
-  val totalPages = ((pagedSource.size + pageSize - 1) / pageSize).coerceAtLeast(1)
+  val totalItems by
+      repository.observeRecentActivitiesCount().collectAsState(initial = 0)
+  val visibleTotalItems = if (canSeeBackofficeRecents) totalItems else 0
+  val totalPages = ((visibleTotalItems + pageSize - 1) / pageSize).coerceAtLeast(1)
   val safePageIndex = pageIndex.coerceIn(0, totalPages - 1)
-  val fromIndex = safePageIndex * pageSize
-  val toIndex = minOf(fromIndex + pageSize, pagedSource.size)
-  val pageItems = if (fromIndex < toIndex) pagedSource.subList(fromIndex, toIndex) else emptyList()
+  val pageOffset = safePageIndex * pageSize
+  val pageItems by
+      repository.observeRecentActivitiesPaged(limit = pageSize, offset = pageOffset).collectAsState(
+          initial = emptyList()
+      )
+  val visiblePageItems = if (canSeeBackofficeRecents) pageItems else emptyList()
 
   LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.HOME) }
 
@@ -97,7 +101,7 @@ fun RecentActivitiesScreen(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-      if (pageItems.isEmpty()) {
+      if (visiblePageItems.isEmpty()) {
         item {
           Text(
               text = stringResource(R.string.recent_empty),
@@ -106,7 +110,7 @@ fun RecentActivitiesScreen(
           )
         }
       } else {
-        items(items = pageItems, key = { it.id }) { item -> RecentActivityCard(item = item) }
+        items(items = visiblePageItems, key = { it.id }) { item -> RecentActivityCard(item = item) }
       }
 
       item {

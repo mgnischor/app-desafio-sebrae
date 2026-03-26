@@ -117,13 +117,13 @@ fun HomeScreen(
       remember(context) { AppGraph.dataConnectService(context.applicationContext) }
 
   val allModules = rememberModules()
-  val moduleTitleMap =
-      remember(allModules, context) { allModules.associateBy { context.getString(it.titleRes) } }
-  val moduleDescriptionMap =
-      remember(allModules, context) {
-        allModules.associateBy { context.getString(it.descriptionRes) }
-      }
   val modules = remember(allModules, user) { filterModulesByRole(allModules, user?.role) }
+  val searchableModules =
+      remember(modules, context) {
+        modules.map { module ->
+          Triple(module, context.getString(module.titleRes), context.getString(module.descriptionRes))
+        }
+      }
   val canSeeBackofficeRecents =
       remember(user?.role) {
         RealtimeNotificationRules.canReceiveBackofficeNotifications(user?.role)
@@ -147,21 +147,20 @@ fun HomeScreen(
   }
 
   val filteredModules by
-      remember(query, modules) {
+      remember(query, modules, searchableModules) {
         derivedStateOf {
           val normalizedQuery = query.trim()
           if (normalizedQuery.isBlank()) {
             modules
           } else {
-            modules.filter {
-              moduleTitleMap.keys.any { title ->
-                title.contains(normalizedQuery, ignoreCase = true) && moduleTitleMap[title] == it
-              } ||
-                  moduleDescriptionMap.keys.any { desc ->
-                    desc.contains(normalizedQuery, ignoreCase = true) &&
-                        moduleDescriptionMap[desc] == it
-                  }
-            }
+            searchableModules
+                .asSequence()
+                .filter { (_, title, description) ->
+                  title.contains(normalizedQuery, ignoreCase = true) ||
+                      description.contains(normalizedQuery, ignoreCase = true)
+                }
+                .map { (module) -> module }
+                .toList()
           }
         }
       }
@@ -180,7 +179,7 @@ fun HomeScreen(
           }
         }
       }
-  val homeRecents by remember(filteredRecents) { derivedStateOf { filteredRecents } }
+  val homeRecents = filteredRecents
 
   Scaffold(
       modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
