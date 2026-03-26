@@ -1,17 +1,13 @@
 package tech.datatower.sebrae.desafio.data.model
 
-/**
- * Tipo de mutação persistida no sistema para geração de atividade recente.
- */
+/** Tipo de mutação persistida no sistema para geração de atividade recente. */
 enum class MutationAction {
   Created,
   Updated,
   Deleted,
 }
 
-/**
- * Estrutura intermediária para criação de notificações no feed de atividades recentes.
- */
+/** Estrutura intermediária para criação de notificações no feed de atividades recentes. */
 data class RecentActivityDraft(
     val title: String,
     val subtitle: String,
@@ -19,9 +15,7 @@ data class RecentActivityDraft(
     val timeLabel: String,
 )
 
-/**
- * Regras de negócio para notificação em tempo real do painel administrativo.
- */
+/** Regras de negócio para notificação em tempo real do painel administrativo. */
 object RealtimeNotificationRules {
 
   /**
@@ -68,4 +62,3 @@ object RealtimeNotificationRules {
     )
   }
 }
-
