@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -28,10 +29,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -51,8 +56,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
+import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
+import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
+import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Student
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
+import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.EmptyState
@@ -72,19 +82,33 @@ import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentsScreen(
+    currentUser: AppUser? = null,
     onBack: () -> Unit = {},
     onCreateStudent: () -> Unit = {},
     onOpenStudentMonitoring: (Int) -> Unit = {},
 ) {
+  val canCreateStudent =
+      AccessPolicy.can(currentUser?.role, ProtectedResource.Students, ProtectedAction.Create)
+  val canDeactivateStudent =
+      AccessPolicy.can(currentUser?.role, ProtectedResource.Students, ProtectedAction.Deactivate)
+  val canReactivateStudent =
+      AccessPolicy.can(currentUser?.role, ProtectedResource.Students, ProtectedAction.Reactivate)
+  val canDeleteStudent =
+      AccessPolicy.can(currentUser?.role, ProtectedResource.Students, ProtectedAction.Delete)
+  val actionErrorMessage = stringResource(R.string.action_error)
+
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
   val dataConnectService =
       remember(context) { AppGraph.dataConnectService(context.applicationContext) }
   val scope = rememberCoroutineScope()
+  val snackbarHostState = remember { SnackbarHostState() }
   val allStudents by repository.observeStudents().collectAsState(initial = emptyList())
   var query by rememberSaveable { mutableStateOf("") }
   var isRefreshing by rememberSaveable { mutableStateOf(false) }
   val listState = rememberLazyListState()
+
+  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.STUDENTS) }
 
   val filtered by
       remember(query, allStudents) {
@@ -110,7 +134,7 @@ fun StudentsScreen(
       scope.launch {
         isRefreshing = true
         try {
-          dataConnectService.fetchStudents()
+          dataConnectService.syncScope(ScreenDataScope.STUDENTS)
         } finally {
           isRefreshing = false
         }
@@ -118,16 +142,19 @@ fun StudentsScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
-          FloatingActionButton(
-              onClick = onCreateStudent,
-              containerColor = MaterialTheme.colorScheme.primary,
-              contentColor = MaterialTheme.colorScheme.onPrimary,
-          ) {
-            Icon(
-                imageVector = Icons.Outlined.Add,
-                contentDescription = stringResource(R.string.students_add_content_description),
-            )
+          if (canCreateStudent) {
+            FloatingActionButton(
+                onClick = onCreateStudent,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
+              Icon(
+                  imageVector = Icons.Outlined.Add,
+                  contentDescription = stringResource(R.string.students_add_content_description),
+              )
+            }
           }
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -169,6 +196,45 @@ fun StudentsScreen(
               StudentCard(
                   student = student,
                   onClick = { onOpenStudentMonitoring(student.id) },
+                  canDeactivate = canDeactivateStudent,
+                  canReactivate = canReactivateStudent,
+                  canDelete = canDeleteStudent,
+                  onDeactivate = {
+                    scope.launch {
+                      val result = dataConnectService.deactivateStudent(currentUser, student)
+                      if (
+                          result
+                              is
+                              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
+                      ) {
+                        snackbarHostState.showSnackbar(actionErrorMessage)
+                      }
+                    }
+                  },
+                  onReactivate = {
+                    scope.launch {
+                      val result = dataConnectService.reactivateStudent(currentUser, student)
+                      if (
+                          result
+                              is
+                              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
+                      ) {
+                        snackbarHostState.showSnackbar(actionErrorMessage)
+                      }
+                    }
+                  },
+                  onDelete = {
+                    scope.launch {
+                      val result = dataConnectService.deleteStudent(currentUser, student.id)
+                      if (
+                          result
+                              is
+                              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
+                      ) {
+                        snackbarHostState.showSnackbar(actionErrorMessage)
+                      }
+                    }
+                  },
               )
             }
           }
@@ -188,6 +254,12 @@ fun StudentsScreen(
 private fun StudentCard(
     student: Student,
     onClick: () -> Unit,
+    canDeactivate: Boolean,
+    canReactivate: Boolean,
+    canDelete: Boolean,
+    onDeactivate: () -> Unit,
+    onReactivate: () -> Unit,
+    onDelete: () -> Unit,
 ) {
   ElevatedCard(
       modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -280,6 +352,21 @@ private fun StudentCard(
               style = MaterialTheme.typography.labelSmall,
               color = MaterialTheme.colorScheme.primary,
           )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          if (student.status == StudentStatus.Active && canDeactivate) {
+            TextButton(onClick = onDeactivate) { Text(stringResource(R.string.action_deactivate)) }
+          }
+          if (student.status == StudentStatus.Inactive && canReactivate) {
+            TextButton(onClick = onReactivate) { Text(stringResource(R.string.action_reactivate)) }
+          }
+          if (canDelete) {
+            TextButton(onClick = onDelete) {
+              Icon(imageVector = Icons.Outlined.DeleteOutline, contentDescription = null)
+              Spacer(modifier = Modifier.width(4.dp))
+              Text(stringResource(R.string.action_delete))
+            }
+          }
         }
       }
     }
