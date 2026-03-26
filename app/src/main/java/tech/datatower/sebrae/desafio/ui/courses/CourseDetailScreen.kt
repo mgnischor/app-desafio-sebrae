@@ -15,6 +15,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.flowOf
 import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
@@ -42,6 +44,8 @@ fun CourseDetailScreen(
 ) {
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val dataConnectService =
+      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
   val course by repository.observeCourseById(courseId).collectAsState(initial = null)
   val classesFlow =
       remember(course?.title) {
@@ -49,6 +53,8 @@ fun CourseDetailScreen(
         if (name == null) flowOf(emptyList()) else repository.observeClassesByCourse(name)
       }
   val classes by classesFlow.collectAsState(initial = emptyList())
+
+  LaunchedEffect(courseId) { dataConnectService.syncScope(ScreenDataScope.COURSE_DETAIL) }
 
   DetailScaffold(title = stringResource(R.string.course_detail_title), onBack = onBack) {
       innerPadding,
