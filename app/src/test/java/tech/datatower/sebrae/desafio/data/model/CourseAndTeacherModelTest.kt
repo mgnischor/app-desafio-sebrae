@@ -86,6 +86,7 @@ class CourseAndTeacherModelTest {
             activeCourses = cursosAtivos,
             totalStudents = totalEstudantes,
             rating = avaliacao,
+            isActive = true,
         )
 
     // Assert
@@ -102,9 +103,9 @@ class CourseAndTeacherModelTest {
   @Test
   fun `avaliação de professor deve estar entre 1 e 5 estrelas`() {
     // Arrange
-    val profRuim = Teacher(1, "Prof 1", "email@test", "Especialidade", 1, 10, 1.0f)
-    val profBom = Teacher(2, "Prof 2", "email@test", "Especialidade", 2, 20, 5.0f)
-    val profMedio = Teacher(3, "Prof 3", "email@test", "Especialidade", 3, 30, 3.5f)
+    val profRuim = Teacher(1, "Prof 1", "email@test", "Especialidade", 1, 10, 1.0f, true)
+    val profBom = Teacher(2, "Prof 2", "email@test", "Especialidade", 2, 20, 5.0f, true)
+    val profMedio = Teacher(3, "Prof 3", "email@test", "Especialidade", 3, 30, 3.5f, true)
 
     // Act & Assert
     assertEquals("Avaliação mínima 1.0", 1.0f, profRuim.rating, 0.001f)
@@ -149,9 +150,9 @@ class CourseAndTeacherModelTest {
     // Arrange
     val professores =
         listOf(
-            Teacher(1, "Prof 1", "prof1@test", "Mat", 2, 50, 4.5f),
-            Teacher(2, "Prof 2", "prof2@test", "Port", 3, 75, 4.8f),
-            Teacher(3, "Prof 3", "prof3@test", "Ing", 1, 30, 4.2f),
+            Teacher(1, "Prof 1", "prof1@test", "Mat", 2, 50, 4.5f, true),
+            Teacher(2, "Prof 2", "prof2@test", "Port", 3, 75, 4.8f, true),
+            Teacher(3, "Prof 3", "prof3@test", "Ing", 1, 30, 4.2f, true),
         )
 
     // Act & Assert
