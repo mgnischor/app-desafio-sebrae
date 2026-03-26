@@ -4,23 +4,52 @@ import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import tech.datatower.sebrae.desafio.BuildConfig
+import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
+import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
+import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.local.AppDao
+import tech.datatower.sebrae.desafio.data.local.AppSettingsEntity
+import tech.datatower.sebrae.desafio.data.local.AttendanceEntity
+import tech.datatower.sebrae.desafio.data.local.BehaviorEntity
+import tech.datatower.sebrae.desafio.data.local.CalendarEventEntity
+import tech.datatower.sebrae.desafio.data.local.CertificateEntity
+import tech.datatower.sebrae.desafio.data.local.MonthlyEnrollmentEntity
+import tech.datatower.sebrae.desafio.data.local.ParentFollowUpEntity
+import tech.datatower.sebrae.desafio.data.local.PedagogicalNeedEntity
+import tech.datatower.sebrae.desafio.data.local.PsychologicalNeedEntity
+import tech.datatower.sebrae.desafio.data.local.RecentActivityEntity
+import tech.datatower.sebrae.desafio.data.model.ActivityDeliveryStatus
 import tech.datatower.sebrae.desafio.data.model.AppUser
+import tech.datatower.sebrae.desafio.data.model.AttendanceStatus
 import tech.datatower.sebrae.desafio.data.model.ClassStatus
+import tech.datatower.sebrae.desafio.data.model.ConfidentialityLevel
 import tech.datatower.sebrae.desafio.data.model.Course
+import tech.datatower.sebrae.desafio.data.model.EntityLifecycleRules
+import tech.datatower.sebrae.desafio.data.model.EventType
+import tech.datatower.sebrae.desafio.data.model.MutationAction
+import tech.datatower.sebrae.desafio.data.model.ParentContactChannel
+import tech.datatower.sebrae.desafio.data.model.ParentFollowUpStatus
+import tech.datatower.sebrae.desafio.data.model.PedagogicalNeedType
+import tech.datatower.sebrae.desafio.data.model.RealtimeNotificationRules
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.model.Student
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.data.model.UserRole
 import java.security.MessageDigest
+import java.time.LocalDate
 
 /**
  * Serviço de integração com Firebase Data Connect.
@@ -35,6 +64,8 @@ class FirebaseDataConnectService(
     private val dao: AppDao,
     private val credentialStore: FirebaseSeedCredentialStore,
 ) {
+  private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
   /** Modelo e comportamento relacionados a managed user. */
   data class ManagedUser(
       val id: Int,
@@ -248,6 +279,7 @@ class FirebaseDataConnectService(
                       "activeCourses" to it.activeCourses,
                       "totalStudents" to it.totalStudents,
                       "rating" to it.rating,
+                      "isActive" to it.isActive,
                   )
                 },
             idSelector = { item -> (item["id"] as Number).toInt().toString() },
@@ -705,6 +737,7 @@ class FirebaseDataConnectService(
     }
 
     return try {
+      val action = resolveMutationAction(COLLECTION_USERS, target.id.toString())
       val normalizedEmail = target.email.trim().lowercase()
       val payload =
           mapOf(
@@ -719,6 +752,12 @@ class FirebaseDataConnectService(
           .document(target.id.toString())
           .set(payload, SetOptions.merge())
           .await()
+      registerRecentActivity(
+          requester = requester,
+          action = action,
+          entityName = "Usuário",
+          targetLabel = target.name,
+      )
       Result.Success(true)
     } catch (e: Exception) {
       val hint =
@@ -752,6 +791,12 @@ class FirebaseDataConnectService(
 
     return try {
       firestore.collection(COLLECTION_USERS).document(userId.toString()).delete().await()
+      registerRecentActivity(
+          requester = requester,
+          action = MutationAction.Deleted,
+          entityName = "Usuário",
+          targetLabel = "ID #$userId",
+      )
       Result.Success(true)
     } catch (e: Exception) {
       val hint =
@@ -825,6 +870,55 @@ class FirebaseDataConnectService(
 
         awaitClose { registration.remove() }
       }
+
+  /** Observa atividades recentes em tempo real para perfis de backoffice. */
+  fun observeRecentActivitiesRealtimeForBackoffice(
+      requester: AppUser?,
+  ): Flow<Result<List<RecentActivityEntity>>> = callbackFlow {
+    if (!RealtimeNotificationRules.canReceiveBackofficeNotifications(requester?.role)) {
+      trySend(Result.Success(emptyList()))
+      close()
+      return@callbackFlow
+    }
+
+    val registration: ListenerRegistration =
+        firestore
+            .collection(COLLECTION_RECENT_ACTIVITIES)
+            .orderBy("id", Query.Direction.DESCENDING)
+            .limit(200)
+            .addSnapshotListener { snapshot, error ->
+              if (error != null) {
+                trySend(
+                    Result.Error(error, "Falha ao observar atividades recentes: ${error.message}")
+                )
+                return@addSnapshotListener
+              }
+
+              val entities =
+                  snapshot
+                      ?.documents
+                      ?.mapNotNull { doc ->
+                        val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
+                        RecentActivityEntity(
+                            id = id,
+                            title = doc.getString("title").orEmpty(),
+                            subtitle = doc.getString("subtitle").orEmpty(),
+                            iconKey = doc.getString("iconKey").orEmpty().ifBlank { "calendar" },
+                            timeLabel = doc.getString("timeLabel").orEmpty().ifBlank { "agora" },
+                        )
+                      }
+                      ?.sortedByDescending { it.id }
+                      .orEmpty()
+
+              if (entities.isNotEmpty()) {
+                // Atualiza cache local para renderização reativa da Home.
+                serviceScope.launch { dao.insertRecentActivities(entities) }
+              }
+              trySend(Result.Success(entities))
+            }
+
+    awaitClose { registration.remove() }
+  }
 
   /** Busca lista de estudantes do Data Connect. */
   suspend fun fetchStudents(): Result<List<Student>> {
@@ -929,6 +1023,7 @@ class FirebaseDataConnectService(
                   activeCourses = (doc.get("activeCourses") as? Number)?.toInt() ?: 0,
                   totalStudents = (doc.get("totalStudents") as? Number)?.toInt() ?: 0,
                   rating = (doc.get("rating") as? Number)?.toFloat() ?: 0f,
+                  isActive = doc.getBoolean("isActive") ?: true,
               )
             } catch (e: Exception) {
               Log.w(TAG, "Erro ao converter professor: ${doc.id}", e)
@@ -949,42 +1044,365 @@ class FirebaseDataConnectService(
     }
   }
 
+  /** Busca lista de certificados e atualiza o cache local. */
+  suspend fun fetchCertificates(): Result<Int> {
+    return try {
+      val snapshot = firestore.collection(COLLECTION_CERTIFICATES).get().await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
+            CertificateEntity(
+                id = id,
+                studentName = doc.getString("studentName").orEmpty(),
+                courseName = doc.getString("courseName").orEmpty(),
+                issuedDate = doc.getString("issuedDate").orEmpty(),
+                hours = (doc.get("hours") as? Number)?.toInt() ?: 0,
+                code = doc.getString("code").orEmpty(),
+            )
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertCertificates(entities)
+      }
+      Result.Success(entities.size)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar certificados: ${e.message}")
+    }
+  }
+
+  /** Busca eventos de calendario e atualiza o cache local. */
+  suspend fun fetchCalendarEvents(): Result<Int> {
+    return try {
+      val snapshot = firestore.collection(COLLECTION_CALENDAR_EVENTS).get().await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
+            val typeName = doc.getString("type").orEmpty().ifBlank { EventType.Other.name }
+            val type = runCatching { EventType.valueOf(typeName) }.getOrDefault(EventType.Other)
+            CalendarEventEntity(
+                id = id,
+                title = doc.getString("title").orEmpty(),
+                course = doc.getString("course").orEmpty(),
+                date = doc.getString("date").orEmpty(),
+                time = doc.getString("time").orEmpty(),
+                location = doc.getString("location").orEmpty(),
+                type = type,
+            )
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertCalendarEvents(entities)
+      }
+      Result.Success(entities.size)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar eventos de calendario: ${e.message}")
+    }
+  }
+
+  /** Busca atividades recentes e atualiza o cache local. */
+  suspend fun fetchRecentActivities(): Result<Int> {
+    return try {
+      val snapshot =
+          firestore
+              .collection(COLLECTION_RECENT_ACTIVITIES)
+              .orderBy("id", Query.Direction.DESCENDING)
+              .limit(200)
+              .get()
+              .await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
+            RecentActivityEntity(
+                id = id,
+                title = doc.getString("title").orEmpty(),
+                subtitle = doc.getString("subtitle").orEmpty(),
+                iconKey = doc.getString("iconKey").orEmpty().ifBlank { "person" },
+                timeLabel = doc.getString("timeLabel").orEmpty(),
+            )
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertRecentActivities(entities)
+      }
+      Result.Success(entities.size)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar atividades recentes: ${e.message}")
+    }
+  }
+
+  /** Busca metricas mensais e atualiza o cache local. */
+  suspend fun fetchMonthlyEnrollments(): Result<Int> {
+    return try {
+      val snapshot = firestore.collection(COLLECTION_MONTHLY_ENROLLMENTS).get().await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            val month = doc.getString("month").orEmpty()
+            if (month.isBlank()) return@mapNotNull null
+            MonthlyEnrollmentEntity(
+                month = month,
+                count = (doc.get("count") as? Number)?.toInt() ?: 0,
+            )
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertMonthlyEnrollments(entities)
+      }
+      Result.Success(entities.size)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar matriculas mensais: ${e.message}")
+    }
+  }
+
+  /** Busca frequencias e atualiza o cache local. */
+  suspend fun fetchAttendanceRecords(): Result<Int> {
+    return try {
+      val snapshot = firestore.collection(COLLECTION_ATTENDANCE).get().await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            val studentId = (doc.get("studentId") as? Number)?.toInt() ?: return@mapNotNull null
+            val date =
+                runCatching { LocalDate.parse(doc.getString("date").orEmpty()) }.getOrNull()
+                    ?: return@mapNotNull null
+            val statusName =
+                doc.getString("status").orEmpty().ifBlank { AttendanceStatus.Present.name }
+            val status =
+                runCatching { AttendanceStatus.valueOf(statusName) }
+                    .getOrDefault(AttendanceStatus.Present)
+            AttendanceEntity(
+                id = (doc.get("id") as? Number)?.toInt() ?: 0,
+                studentId = studentId,
+                date = date,
+                status = status,
+                minutesLate = (doc.get("minutesLate") as? Number)?.toInt() ?: 0,
+                justification = doc.getString("justification"),
+            )
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertAttendance(entities)
+      }
+      Result.Success(entities.size)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar frequencias: ${e.message}")
+    }
+  }
+
+  /** Busca registros comportamentais e atualiza o cache local. */
+  suspend fun fetchBehaviorRecords(): Result<Int> {
+    return try {
+      val snapshot = firestore.collection(COLLECTION_BEHAVIORS).get().await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            val studentId = (doc.get("studentId") as? Number)?.toInt() ?: return@mapNotNull null
+            val date =
+                runCatching { LocalDate.parse(doc.getString("date").orEmpty()) }.getOrNull()
+                    ?: return@mapNotNull null
+            val deliveryName =
+                doc.getString("activityDelivery").orEmpty().ifBlank {
+                  ActivityDeliveryStatus.OnTime.name
+                }
+            val delivery =
+                runCatching { ActivityDeliveryStatus.valueOf(deliveryName) }
+                    .getOrDefault(ActivityDeliveryStatus.OnTime)
+            BehaviorEntity(
+                id = (doc.get("id") as? Number)?.toInt() ?: 0,
+                studentId = studentId,
+                date = date,
+                participationScore = (doc.get("participationScore") as? Number)?.toInt() ?: 0,
+                activityDelivery = delivery,
+                delayMinutes = (doc.get("delayMinutes") as? Number)?.toInt() ?: 0,
+                grade = (doc.get("grade") as? Number)?.toFloat(),
+                note = doc.getString("note").orEmpty(),
+            )
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertBehaviors(entities)
+      }
+      Result.Success(entities.size)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar comportamento: ${e.message}")
+    }
+  }
+
+  /** Busca necessidades pedagogicas e atualiza o cache local. */
+  suspend fun fetchPedagogicalNeeds(): Result<Int> {
+    return try {
+      val snapshot = firestore.collection(COLLECTION_PEDAGOGICAL_NEEDS).get().await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            val studentId = (doc.get("studentId") as? Number)?.toInt() ?: return@mapNotNull null
+            val typeName =
+                doc.getString("type").orEmpty().ifBlank { PedagogicalNeedType.Report.name }
+            val type =
+                runCatching { PedagogicalNeedType.valueOf(typeName) }
+                    .getOrDefault(PedagogicalNeedType.Report)
+            val expiresAt =
+                runCatching { LocalDate.parse(doc.getString("expiresAt").orEmpty()) }.getOrNull()
+            val accommodations =
+                (doc.get("accommodations") as? List<*>)?.mapNotNull { it?.toString() }.orEmpty()
+            PedagogicalNeedEntity(
+                id = (doc.get("id") as? Number)?.toInt() ?: 0,
+                studentId = studentId,
+                type = type,
+                description = doc.getString("description").orEmpty(),
+                expiresAt = expiresAt,
+                accommodations = accommodations,
+            )
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertPedagogicalNeeds(entities)
+      }
+      Result.Success(entities.size)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar necessidades pedagogicas: ${e.message}")
+    }
+  }
+
+  /** Busca necessidades psicologicas e atualiza o cache local. */
+  suspend fun fetchPsychologicalNeeds(): Result<Int> {
+    return try {
+      val snapshot = firestore.collection(COLLECTION_PSYCHOLOGICAL_NEEDS).get().await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            val studentId = (doc.get("studentId") as? Number)?.toInt() ?: return@mapNotNull null
+            val reviewAt =
+                runCatching { LocalDate.parse(doc.getString("reviewAt").orEmpty()) }.getOrNull()
+                    ?: return@mapNotNull null
+            val confidentialityName =
+                doc.getString("confidentiality").orEmpty().ifBlank {
+                  ConfidentialityLevel.Restricted.name
+                }
+            val confidentiality =
+                runCatching { ConfidentialityLevel.valueOf(confidentialityName) }
+                    .getOrDefault(ConfidentialityLevel.Restricted)
+            PsychologicalNeedEntity(
+                id = (doc.get("id") as? Number)?.toInt() ?: 0,
+                studentId = studentId,
+                summary = doc.getString("summary").orEmpty(),
+                confidentiality = confidentiality,
+                nextStep = doc.getString("nextStep").orEmpty(),
+                reviewAt = reviewAt,
+            )
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertPsychologicalNeeds(entities)
+      }
+      Result.Success(entities.size)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar necessidades psicologicas: ${e.message}")
+    }
+  }
+
+  /** Busca acompanhamentos de responsaveis e atualiza o cache local. */
+  suspend fun fetchParentFollowUps(): Result<Int> {
+    return try {
+      val snapshot = firestore.collection(COLLECTION_PARENT_FOLLOW_UPS).get().await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            val studentId = (doc.get("studentId") as? Number)?.toInt() ?: return@mapNotNull null
+            val date =
+                runCatching { LocalDate.parse(doc.getString("date").orEmpty()) }.getOrNull()
+                    ?: return@mapNotNull null
+            val channelName =
+                doc.getString("channel").orEmpty().ifBlank { ParentContactChannel.Meeting.name }
+            val channel =
+                runCatching { ParentContactChannel.valueOf(channelName) }
+                    .getOrDefault(ParentContactChannel.Meeting)
+            val outcomeName =
+                doc.getString("outcome").orEmpty().ifBlank { ParentFollowUpStatus.Pending.name }
+            val outcome =
+                runCatching { ParentFollowUpStatus.valueOf(outcomeName) }
+                    .getOrDefault(ParentFollowUpStatus.Pending)
+            ParentFollowUpEntity(
+                id = (doc.get("id") as? Number)?.toInt() ?: 0,
+                studentId = studentId,
+                date = date,
+                channel = channel,
+                outcome = outcome,
+                responsible = doc.getString("responsible").orEmpty(),
+                notes = doc.getString("notes").orEmpty(),
+            )
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertParentFollowUps(entities)
+      }
+      Result.Success(entities.size)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar acompanhamentos de responsaveis: ${e.message}")
+    }
+  }
+
+  /** Busca configuracoes remotas e atualiza o cache local. */
+  suspend fun fetchSettings(): Result<Boolean> {
+    return try {
+      val snapshot = firestore.collection(COLLECTION_SETTINGS).limit(1).get().await()
+      val document = snapshot.documents.firstOrNull()
+      if (document != null) {
+        dao.upsertSettings(
+            AppSettingsEntity(
+                id = 1,
+                darkMode = document.getBoolean("darkMode") ?: false,
+                pushEnabled = document.getBoolean("pushEnabled") ?: true,
+                emailEnabled = document.getBoolean("emailEnabled") ?: false,
+                language = document.getString("language").orEmpty().ifBlank { "pt" },
+            )
+        )
+      }
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar configuracoes: ${e.message}")
+    }
+  }
+
+  /**
+   * Sincroniza um escopo de tela especifico.
+   *
+   * @param scope Escopo funcional da tela que requisitou dados.
+   * @return `Success(true)` quando todas as tarefas do escopo concluem sem erro.
+   */
+  suspend fun syncScope(scope: ScreenDataScope): Result<Boolean> {
+    val tasks = FirebaseScreenSyncPlanner.tasksFor(scope)
+    tasks.forEach { task ->
+      when (val result = syncTask(task)) {
+        is Result.Success -> Unit
+        is Result.Error -> return result
+        Result.Loading -> Unit
+      }
+    }
+    return Result.Success(true)
+  }
+
+  /** Executa uma tarefa individual de sincronizacao Firebase para o cache local. */
+  private suspend fun syncTask(task: FirebaseSyncTask): Result<Boolean> {
+    return when (task) {
+      FirebaseSyncTask.COURSES -> fetchCourses().toBooleanResult()
+      FirebaseSyncTask.CLASSES -> fetchClasses().toBooleanResult()
+      FirebaseSyncTask.STUDENTS -> fetchStudents().toBooleanResult()
+      FirebaseSyncTask.TEACHERS -> fetchTeachers().toBooleanResult()
+      FirebaseSyncTask.CERTIFICATES -> fetchCertificates().toBooleanResult()
+      FirebaseSyncTask.CALENDAR_EVENTS -> fetchCalendarEvents().toBooleanResult()
+      FirebaseSyncTask.RECENT_ACTIVITIES -> fetchRecentActivities().toBooleanResult()
+      FirebaseSyncTask.MONTHLY_ENROLLMENTS -> fetchMonthlyEnrollments().toBooleanResult()
+      FirebaseSyncTask.ATTENDANCE -> fetchAttendanceRecords().toBooleanResult()
+      FirebaseSyncTask.BEHAVIORS -> fetchBehaviorRecords().toBooleanResult()
+      FirebaseSyncTask.PEDAGOGICAL_NEEDS -> fetchPedagogicalNeeds().toBooleanResult()
+      FirebaseSyncTask.PSYCHOLOGICAL_NEEDS -> fetchPsychologicalNeeds().toBooleanResult()
+      FirebaseSyncTask.PARENT_FOLLOW_UPS -> fetchParentFollowUps().toBooleanResult()
+      FirebaseSyncTask.SETTINGS -> fetchSettings()
+    }
+  }
+
+  /** Converte um resultado tipado em sucesso booleano para pipeline de sincronizacao. */
+  private fun <T> Result<T>.toBooleanResult(): Result<Boolean> {
+    return when (this) {
+      is Result.Success -> Result.Success(true)
+      is Result.Error -> this
+      Result.Loading -> Result.Loading
+    }
+  }
+
   /**
    * Sincroniza todos os dados do Data Connect com cache local.
    *
    * Executa em paralelo para melhor performance.
    */
   suspend fun syncAllData(): Result<Boolean> {
-    return try {
-      Log.d(TAG, "Iniciando sincronização completa de dados...")
-
-      val coursesResult = fetchCourses()
-      val studentsResult = fetchStudents()
-      val classesResult = fetchClasses()
-      val teachersResult = fetchTeachers()
-
-      val allSuccess =
-          coursesResult is Result.Success &&
-              studentsResult is Result.Success &&
-              classesResult is Result.Success &&
-              teachersResult is Result.Success
-
-      if (allSuccess) {
-        Log.d(TAG, "Sincronização completa concluída com sucesso")
-        Result.Success(true)
-      } else {
-        val errors = buildString {
-          if (coursesResult is Result.Error) append("Cursos: ${coursesResult.message}. ")
-          if (studentsResult is Result.Error) append("Estudantes: ${studentsResult.message}. ")
-          if (classesResult is Result.Error) append("Turmas: ${classesResult.message}. ")
-          if (teachersResult is Result.Error) append("Professores: ${teachersResult.message}. ")
-        }
-        Result.Error(Exception("Falha parcial"), errors)
-      }
-    } catch (e: Exception) {
-      Log.e(TAG, "Erro durante sincronização completa", e)
-      Result.Error(e, "Falha na sincronização: ${e.message}")
-    }
+    return syncScope(ScreenDataScope.APP_STARTUP)
   }
 
   /** Verifica conexão com Firebase. */
@@ -1006,7 +1424,22 @@ class FirebaseDataConnectService(
    * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
    */
   suspend fun upsertCourse(course: Course): Result<Boolean> {
+    return upsertCourse(requester = null, course = course)
+  }
+
+  /** Salva curso com validação explícita de autorização por perfil. */
+  suspend fun upsertCourse(requester: AppUser?, course: Course): Result<Boolean> {
+    val permissionError =
+        denyIfForbidden(
+            requester = requester,
+            resource = ProtectedResource.Courses,
+            action = ProtectedAction.Update,
+            defaultMessage = "Acesso negado para alterar cursos.",
+        )
+    if (permissionError != null) return permissionError
+
     return try {
+      val action = resolveMutationAction(COLLECTION_COURSES, course.id.toString())
       val payload =
           mapOf(
               "id" to course.id,
@@ -1020,6 +1453,12 @@ class FirebaseDataConnectService(
           )
       firestore.collection(COLLECTION_COURSES).document(course.id.toString()).set(payload).await()
       dao.insertCourses(listOf(course.toEntity()))
+      registerRecentActivity(
+          requester = requester,
+          action = action,
+          entityName = "Curso",
+          targetLabel = course.title,
+      )
       Result.Success(true)
     } catch (e: Exception) {
       Result.Error(e, "Falha ao salvar curso: ${e.message}")
@@ -1033,7 +1472,22 @@ class FirebaseDataConnectService(
    * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
    */
   suspend fun upsertClass(schoolClass: SchoolClass): Result<Boolean> {
+    return upsertClass(requester = null, schoolClass = schoolClass)
+  }
+
+  /** Salva turma com validação explícita de autorização por perfil. */
+  suspend fun upsertClass(requester: AppUser?, schoolClass: SchoolClass): Result<Boolean> {
+    val permissionError =
+        denyIfForbidden(
+            requester = requester,
+            resource = ProtectedResource.Classes,
+            action = ProtectedAction.Update,
+            defaultMessage = "Acesso negado para alterar turmas.",
+        )
+    if (permissionError != null) return permissionError
+
     return try {
+      val action = resolveMutationAction(COLLECTION_CLASSES, schoolClass.id.toString())
       val payload =
           mapOf(
               "id" to schoolClass.id,
@@ -1051,6 +1505,12 @@ class FirebaseDataConnectService(
           .set(payload)
           .await()
       dao.insertClasses(listOf(schoolClass.toEntity()))
+      registerRecentActivity(
+          requester = requester,
+          action = action,
+          entityName = "Turma",
+          targetLabel = schoolClass.name,
+      )
       Result.Success(true)
     } catch (e: Exception) {
       Result.Error(e, "Falha ao salvar turma: ${e.message}")
@@ -1064,7 +1524,22 @@ class FirebaseDataConnectService(
    * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
    */
   suspend fun upsertTeacher(teacher: Teacher): Result<Boolean> {
+    return upsertTeacher(requester = null, teacher = teacher)
+  }
+
+  /** Salva instrutor com validação explícita de autorização por perfil. */
+  suspend fun upsertTeacher(requester: AppUser?, teacher: Teacher): Result<Boolean> {
+    val permissionError =
+        denyIfForbidden(
+            requester = requester,
+            resource = ProtectedResource.Teachers,
+            action = ProtectedAction.Update,
+            defaultMessage = "Acesso negado para alterar instrutores.",
+        )
+    if (permissionError != null) return permissionError
+
     return try {
+      val action = resolveMutationAction(COLLECTION_TEACHERS, teacher.id.toString())
       val payload =
           mapOf(
               "id" to teacher.id,
@@ -1074,9 +1549,16 @@ class FirebaseDataConnectService(
               "activeCourses" to teacher.activeCourses,
               "totalStudents" to teacher.totalStudents,
               "rating" to teacher.rating,
+              "isActive" to teacher.isActive,
           )
       firestore.collection(COLLECTION_TEACHERS).document(teacher.id.toString()).set(payload).await()
       dao.insertTeachers(listOf(teacher.toEntity()))
+      registerRecentActivity(
+          requester = requester,
+          action = action,
+          entityName = "Instrutor",
+          targetLabel = teacher.name,
+      )
       Result.Success(true)
     } catch (e: Exception) {
       Result.Error(e, "Falha ao salvar instrutor: ${e.message}")
@@ -1090,7 +1572,22 @@ class FirebaseDataConnectService(
    * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
    */
   suspend fun upsertStudent(student: Student): Result<Boolean> {
+    return upsertStudent(requester = null, student = student)
+  }
+
+  /** Salva aluno com validação explícita de autorização por perfil. */
+  suspend fun upsertStudent(requester: AppUser?, student: Student): Result<Boolean> {
+    val permissionError =
+        denyIfForbidden(
+            requester = requester,
+            resource = ProtectedResource.Students,
+            action = ProtectedAction.Update,
+            defaultMessage = "Acesso negado para alterar alunos.",
+        )
+    if (permissionError != null) return permissionError
+
     return try {
+      val action = resolveMutationAction(COLLECTION_STUDENTS, student.id.toString())
       val payload =
           mapOf(
               "id" to student.id,
@@ -1103,10 +1600,265 @@ class FirebaseDataConnectService(
           )
       firestore.collection(COLLECTION_STUDENTS).document(student.id.toString()).set(payload).await()
       dao.insertStudents(listOf(student.toEntity()))
+      registerRecentActivity(
+          requester = requester,
+          action = action,
+          entityName = "Aluno",
+          targetLabel = student.name,
+      )
       Result.Success(true)
     } catch (e: Exception) {
       Result.Error(e, "Falha ao salvar aluno: ${e.message}")
     }
+  }
+
+  /** Registra evento de calendário para aulas, reuniões e eventos institucionais. */
+  suspend fun upsertCalendarEvent(
+      requester: AppUser?,
+      event: CalendarEventEntity,
+  ): Result<Boolean> {
+    val permissionError =
+        denyIfForbidden(
+            requester = requester,
+            resource = ProtectedResource.Calendar,
+            action = ProtectedAction.Create,
+            defaultMessage = "Acesso negado para cadastrar eventos no calendário.",
+        )
+    if (permissionError != null) return permissionError
+
+    return try {
+      val action = resolveMutationAction(COLLECTION_CALENDAR_EVENTS, event.id.toString())
+      val payload =
+          mapOf(
+              "id" to event.id,
+              "title" to event.title,
+              "course" to event.course,
+              "date" to event.date,
+              "time" to event.time,
+              "location" to event.location,
+              "type" to event.type.name,
+          )
+      firestore
+          .collection(COLLECTION_CALENDAR_EVENTS)
+          .document(event.id.toString())
+          .set(payload)
+          .await()
+      dao.insertCalendarEvents(listOf(event))
+      registerRecentActivity(
+          requester = requester,
+          action = action,
+          entityName = "Evento",
+          targetLabel = event.title,
+      )
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao salvar evento no calendário: ${e.message}")
+    }
+  }
+
+  /** Desativa aluno com regra de transição de ciclo de vida. */
+  suspend fun deactivateStudent(requester: AppUser?, student: Student): Result<Boolean> {
+    return upsertStudent(requester, EntityLifecycleRules.deactivateStudent(student))
+  }
+
+  /** Reativa aluno com regra de transição de ciclo de vida. */
+  suspend fun reactivateStudent(requester: AppUser?, student: Student): Result<Boolean> {
+    return upsertStudent(requester, EntityLifecycleRules.reactivateStudent(student))
+  }
+
+  /** Desativa curso com regra de transição de ciclo de vida. */
+  suspend fun deactivateCourse(requester: AppUser?, course: Course): Result<Boolean> {
+    return upsertCourse(requester, EntityLifecycleRules.deactivateCourse(course))
+  }
+
+  /** Reativa curso com regra de transição de ciclo de vida. */
+  suspend fun reactivateCourse(requester: AppUser?, course: Course): Result<Boolean> {
+    return upsertCourse(requester, EntityLifecycleRules.reactivateCourse(course))
+  }
+
+  /** Desativa turma com regra de transição de ciclo de vida. */
+  suspend fun deactivateClass(requester: AppUser?, schoolClass: SchoolClass): Result<Boolean> {
+    return upsertClass(requester, EntityLifecycleRules.deactivateClass(schoolClass))
+  }
+
+  /** Reativa turma com regra de transição de ciclo de vida. */
+  suspend fun reactivateClass(requester: AppUser?, schoolClass: SchoolClass): Result<Boolean> {
+    return upsertClass(requester, EntityLifecycleRules.reactivateClass(schoolClass))
+  }
+
+  /** Desativa instrutor com regra de transição de ciclo de vida. */
+  suspend fun deactivateTeacher(requester: AppUser?, teacher: Teacher): Result<Boolean> {
+    return upsertTeacher(requester, EntityLifecycleRules.deactivateTeacher(teacher))
+  }
+
+  /** Reativa instrutor com regra de transição de ciclo de vida. */
+  suspend fun reactivateTeacher(requester: AppUser?, teacher: Teacher): Result<Boolean> {
+    return upsertTeacher(requester, EntityLifecycleRules.reactivateTeacher(teacher))
+  }
+
+  /** Exclui aluno de forma definitiva. */
+  suspend fun deleteStudent(requester: AppUser?, studentId: Int): Result<Boolean> {
+    val permissionError =
+        denyIfForbidden(
+            requester = requester,
+            resource = ProtectedResource.Students,
+            action = ProtectedAction.Delete,
+            defaultMessage = "Acesso negado para excluir alunos.",
+        )
+    if (permissionError != null) return permissionError
+
+    return try {
+      firestore.collection(COLLECTION_STUDENTS).document(studentId.toString()).delete().await()
+      dao.deleteStudentById(studentId)
+      registerRecentActivity(
+          requester = requester,
+          action = MutationAction.Deleted,
+          entityName = "Aluno",
+          targetLabel = "ID #$studentId",
+      )
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao excluir aluno: ${e.message}")
+    }
+  }
+
+  /** Exclui curso de forma definitiva. */
+  suspend fun deleteCourse(requester: AppUser?, courseId: Int): Result<Boolean> {
+    val permissionError =
+        denyIfForbidden(
+            requester = requester,
+            resource = ProtectedResource.Courses,
+            action = ProtectedAction.Delete,
+            defaultMessage = "Acesso negado para excluir cursos.",
+        )
+    if (permissionError != null) return permissionError
+
+    return try {
+      firestore.collection(COLLECTION_COURSES).document(courseId.toString()).delete().await()
+      dao.deleteCourseById(courseId)
+      registerRecentActivity(
+          requester = requester,
+          action = MutationAction.Deleted,
+          entityName = "Curso",
+          targetLabel = "ID #$courseId",
+      )
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao excluir curso: ${e.message}")
+    }
+  }
+
+  /** Exclui turma de forma definitiva. */
+  suspend fun deleteClass(requester: AppUser?, classId: Int): Result<Boolean> {
+    val permissionError =
+        denyIfForbidden(
+            requester = requester,
+            resource = ProtectedResource.Classes,
+            action = ProtectedAction.Delete,
+            defaultMessage = "Acesso negado para excluir turmas.",
+        )
+    if (permissionError != null) return permissionError
+
+    return try {
+      firestore.collection(COLLECTION_CLASSES).document(classId.toString()).delete().await()
+      dao.deleteClassById(classId)
+      registerRecentActivity(
+          requester = requester,
+          action = MutationAction.Deleted,
+          entityName = "Turma",
+          targetLabel = "ID #$classId",
+      )
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao excluir turma: ${e.message}")
+    }
+  }
+
+  /** Exclui instrutor de forma definitiva. */
+  suspend fun deleteTeacher(requester: AppUser?, teacherId: Int): Result<Boolean> {
+    val permissionError =
+        denyIfForbidden(
+            requester = requester,
+            resource = ProtectedResource.Teachers,
+            action = ProtectedAction.Delete,
+            defaultMessage = "Acesso negado para excluir instrutores.",
+        )
+    if (permissionError != null) return permissionError
+
+    return try {
+      firestore.collection(COLLECTION_TEACHERS).document(teacherId.toString()).delete().await()
+      dao.deleteTeacherById(teacherId)
+      registerRecentActivity(
+          requester = requester,
+          action = MutationAction.Deleted,
+          entityName = "Instrutor",
+          targetLabel = "ID #$teacherId",
+      )
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao excluir instrutor: ${e.message}")
+    }
+  }
+
+  /** Retorna erro padronizado quando a ação não é permitida para o perfil informado. */
+  private fun denyIfForbidden(
+      requester: AppUser?,
+      resource: ProtectedResource,
+      action: ProtectedAction,
+      defaultMessage: String,
+  ): Result.Error? {
+    if (requester == null) return null
+    return if (!AccessPolicy.can(requester.role, resource, action)) {
+      Result.Error(SecurityException(defaultMessage), defaultMessage)
+    } else {
+      null
+    }
+  }
+
+  /** Resolve se uma escrita corresponde a criação ou atualização de documento. */
+  private suspend fun resolveMutationAction(
+      collectionName: String,
+      documentId: String,
+  ): MutationAction {
+    val exists = firestore.collection(collectionName).document(documentId).get().await().exists()
+    return if (exists) MutationAction.Updated else MutationAction.Created
+  }
+
+  /** Registra atividade recente no Firestore e no cache local para consumo em tempo real. */
+  private suspend fun registerRecentActivity(
+      requester: AppUser?,
+      action: MutationAction,
+      entityName: String,
+      targetLabel: String,
+  ) {
+    if (!RealtimeNotificationRules.canReceiveBackofficeNotifications(requester?.role)) return
+
+    val draft = RealtimeNotificationRules.buildDraft(action, entityName, targetLabel)
+    val nextId = (dao.getMaxRecentActivityId() ?: 0) + 1
+    val entity =
+        RecentActivityEntity(
+            id = nextId,
+            title = draft.title,
+            subtitle = draft.subtitle,
+            iconKey = draft.iconKey,
+            timeLabel = draft.timeLabel,
+        )
+
+    val payload =
+        mapOf(
+            "id" to entity.id,
+            "title" to entity.title,
+            "subtitle" to entity.subtitle,
+            "iconKey" to entity.iconKey,
+            "timeLabel" to entity.timeLabel,
+        )
+
+    firestore
+        .collection(COLLECTION_RECENT_ACTIVITIES)
+        .document(entity.id.toString())
+        .set(payload, SetOptions.merge())
+        .await()
+    dao.insertRecentActivities(listOf(entity))
   }
 
   // Conversões de modelo para entidade (para cache local)
@@ -1145,6 +1897,7 @@ class FirebaseDataConnectService(
           activeCourses = activeCourses,
           totalStudents = totalStudents,
           rating = rating,
+          isActive = isActive,
       )
 
   /** Executa a rotina de school class dentro do contexto deste componente. */
