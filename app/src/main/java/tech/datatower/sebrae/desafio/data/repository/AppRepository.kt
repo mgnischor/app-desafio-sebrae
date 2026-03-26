@@ -48,6 +48,7 @@ import tech.datatower.sebrae.desafio.data.model.PedagogicalNeedType
 import tech.datatower.sebrae.desafio.data.model.PsychologicalNeed
 import tech.datatower.sebrae.desafio.data.model.QuickStat
 import tech.datatower.sebrae.desafio.data.model.RecentActivity
+import tech.datatower.sebrae.desafio.data.model.RelationshipRules
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.model.Student
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringSnapshot
@@ -91,7 +92,14 @@ class AppRepository(
    * @return Resultado produzido pela opera??o em formato `Flow<List<Course>>`.
    */
   fun observeCourses(): Flow<List<Course>> =
-      dao.observeCourses().map { items -> items.map { it.toModel() } }
+      combine(dao.observeCourses(), dao.observeStudents()) { courseEntities, studentEntities ->
+        val students = studentEntities.map { it.toModel() }
+        val realByCourse = RelationshipRules.realStudentsByCourse(students)
+        courseEntities.map { entity ->
+          val model = entity.toModel()
+          model.copy(totalStudents = realByCourse[model.title.trim()].orZero())
+        }
+      }
 
   /**
    * Observa altera??es de course by id e publica atualiza??es reativas.
@@ -100,7 +108,14 @@ class AppRepository(
    * @return Resultado produzido pela opera??o em formato `Flow<Course?>`.
    */
   fun observeCourseById(courseId: Int): Flow<Course?> =
-      dao.observeCourseById(courseId).map { it?.toModel() }
+      combine(dao.observeCourseById(courseId), dao.observeStudents()) {
+          courseEntity,
+          studentEntities ->
+        val model = courseEntity?.toModel() ?: return@combine null
+        val realByCourse =
+            RelationshipRules.realStudentsByCourse(studentEntities.map { it.toModel() })
+        model.copy(totalStudents = realByCourse[model.title.trim()].orZero())
+      }
 
   /**
    * Observa altera??es de classes e publica atualiza??es reativas.
@@ -108,7 +123,14 @@ class AppRepository(
    * @return Resultado produzido pela opera??o em formato `Flow<List<SchoolClass>>`.
    */
   fun observeClasses(): Flow<List<SchoolClass>> =
-      dao.observeClasses().map { items -> items.map { it.toModel() } }
+      combine(dao.observeClasses(), dao.observeStudents()) { classEntities, studentEntities ->
+        val students = studentEntities.map { it.toModel() }
+        val realByClass = RelationshipRules.realStudentsByClass(students)
+        classEntities.map { entity ->
+          val model = entity.toModel()
+          model.copy(studentsCount = realByClass[model.name.trim()].orZero())
+        }
+      }
 
   /**
    * Observa altera??es de class by id e publica atualiza??es reativas.
@@ -117,7 +139,13 @@ class AppRepository(
    * @return Resultado produzido pela opera??o em formato `Flow<SchoolClass?>`.
    */
   fun observeClassById(classId: Int): Flow<SchoolClass?> =
-      dao.observeClassById(classId).map { it?.toModel() }
+      combine(dao.observeClassById(classId), dao.observeStudents()) { classEntity, studentEntities
+        ->
+        val model = classEntity?.toModel() ?: return@combine null
+        val realByClass =
+            RelationshipRules.realStudentsByClass(studentEntities.map { it.toModel() })
+        model.copy(studentsCount = realByClass[model.name.trim()].orZero())
+      }
 
   /**
    * Observa altera??es de classes by course e publica atualiza??es reativas.
@@ -194,6 +222,10 @@ class AppRepository(
    */
   fun observeRecentActivities(): Flow<List<RecentActivity>> =
       dao.observeRecentActivities().map { items -> items.map { it.toModel() } }
+
+  /** Observa atividades recentes com limite máximo de itens para telas de resumo. */
+  fun observeRecentActivities(limit: Int): Flow<List<RecentActivity>> =
+      dao.observeRecentActivitiesLimited(limit).map { items -> items.map { it.toModel() } }
 
   /**
    * Observa altera??es de home quick stats e publica atualiza??es reativas.
@@ -413,6 +445,26 @@ class AppRepository(
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(language = language))
   }
 
+  /** Limpa dados operacionais do armazenamento local sem apagar usuários cadastrados. */
+  suspend fun clearStoragePreservingUsers() {
+    database.withTransaction {
+      dao.clearParentFollowUps()
+      dao.clearPsychologicalNeeds()
+      dao.clearPedagogicalNeeds()
+      dao.clearBehaviors()
+      dao.clearAttendance()
+      dao.clearMonthlyEnrollments()
+      dao.clearRecentActivities()
+      dao.clearCalendarEvents()
+      dao.clearCertificates()
+      dao.clearStudents()
+      dao.clearTeachers()
+      dao.clearClasses()
+      dao.clearCourses()
+      dao.upsertSettings(defaultSettingsEntity())
+    }
+  }
+
   /** Executa a rotina de seed if empty dentro do contexto deste componente. */
   suspend fun seedIfEmpty() {
     if (dao.countCourses() > 0) return
@@ -562,6 +614,7 @@ class AppRepository(
                   3,
                   320,
                   4.9f,
+                  true,
               ),
               TeacherEntity(
                   2,
@@ -571,6 +624,7 @@ class AppRepository(
                   2,
                   210,
                   4.7f,
+                  true,
               ),
               TeacherEntity(
                   3,
@@ -580,6 +634,7 @@ class AppRepository(
                   2,
                   180,
                   4.8f,
+                  true,
               ),
               TeacherEntity(
                   4,
@@ -589,6 +644,7 @@ class AppRepository(
                   1,
                   95,
                   4.5f,
+                  true,
               ),
               TeacherEntity(
                   5,
@@ -598,6 +654,7 @@ class AppRepository(
                   1,
                   140,
                   4.6f,
+                  true,
               ),
               TeacherEntity(
                   6,
@@ -607,6 +664,7 @@ class AppRepository(
                   1,
                   260,
                   4.4f,
+                  true,
               ),
           )
       )
@@ -1078,6 +1136,7 @@ private fun TeacherEntity.toModel() =
         activeCourses = activeCourses,
         totalStudents = totalStudents,
         rating = rating,
+        isActive = isActive,
     )
 
 /** Executa a rotina de student entity dentro do contexto deste componente. */
@@ -1118,6 +1177,7 @@ private fun CalendarEventEntity.toModel() =
 /** Executa a rotina de recent activity entity dentro do contexto deste componente. */
 private fun RecentActivityEntity.toModel() =
     RecentActivity(
+        id = id,
         title = title,
         subtitle = subtitle,
         icon =
@@ -1199,3 +1259,6 @@ private fun sha256(input: String): String {
   val digest = MessageDigest.getInstance("SHA-256")
   return digest.digest(input.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
 }
+
+/** Converte valor nulo em zero para manter cálculos agregados consistentes. */
+private fun Int?.orZero(): Int = this ?: 0
