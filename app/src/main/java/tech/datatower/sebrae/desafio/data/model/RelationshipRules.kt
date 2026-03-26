@@ -1,8 +1,6 @@
 package tech.datatower.sebrae.desafio.data.model
 
-/**
- * Regras de relacionamento entre entidades acadêmicas para manter consistência dos dados.
- */
+/** Regras de relacionamento entre entidades acadêmicas para manter consistência dos dados. */
 object RelationshipRules {
 
   /**
@@ -41,8 +39,9 @@ object RelationshipRules {
     val courseExists = existingCourses.any { it.title.equals(student.course, ignoreCase = true) }
     if (!courseExists) return "O curso informado para o aluno não existe."
 
-    val classMatch = existingClasses.firstOrNull { it.name.equals(student.enrolledClass, ignoreCase = true) }
-        ?: return "A turma informada para o aluno não existe."
+    val classMatch =
+        existingClasses.firstOrNull { it.name.equals(student.enrolledClass, ignoreCase = true) }
+            ?: return "A turma informada para o aluno não existe."
 
     if (!classMatch.course.equals(student.course, ignoreCase = true)) {
       return "A turma informada não pertence ao curso selecionado."
@@ -50,4 +49,3 @@ object RelationshipRules {
     return null
   }
 }
-
