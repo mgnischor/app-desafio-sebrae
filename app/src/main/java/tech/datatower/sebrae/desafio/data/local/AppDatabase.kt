@@ -60,6 +60,7 @@ data class TeacherEntity(
     val activeCourses: Int,
     val totalStudents: Int,
     val rating: Float,
+    val isActive: Boolean,
 )
 
 /** Modelo e comportamento relacionados a student entity. */
@@ -383,8 +384,15 @@ interface AppDao {
    * @return Resultado produzido pela opera??o em formato
    *   `Flow<List<RecentActivityEntity>> @Insert(onConflict`.
    */
-  @Query("SELECT * FROM recent_activities ORDER BY id")
+  @Query("SELECT * FROM recent_activities ORDER BY id DESC")
   fun observeRecentActivities(): Flow<List<RecentActivityEntity>>
+
+  /** Observa apenas as atividades recentes mais novas para uso no painel inicial. */
+  @Query("SELECT * FROM recent_activities ORDER BY id DESC LIMIT :limit")
+  fun observeRecentActivitiesLimited(limit: Int): Flow<List<RecentActivityEntity>>
+
+  /** Retorna o maior identificador atual de atividade recente. */
+  @Query("SELECT MAX(id) FROM recent_activities") suspend fun getMaxRecentActivityId(): Int?
 
   /**
    * Executa a rotina de insert monthly enrollments dentro do contexto deste componente.
@@ -667,6 +675,45 @@ interface AppDao {
    */
   @Query("SELECT * FROM parent_follow_ups ORDER BY id")
   suspend fun getParentFollowUpsOnce(): List<ParentFollowUpEntity>
+
+  /** Remove um aluno específico do armazenamento local. */
+  @Query("DELETE FROM students WHERE id = :studentId") suspend fun deleteStudentById(studentId: Int)
+
+  /** Remove um curso específico do armazenamento local. */
+  @Query("DELETE FROM courses WHERE id = :courseId") suspend fun deleteCourseById(courseId: Int)
+
+  /** Remove uma turma específica do armazenamento local. */
+  @Query("DELETE FROM school_classes WHERE id = :classId") suspend fun deleteClassById(classId: Int)
+
+  /** Remove um instrutor específico do armazenamento local. */
+  @Query("DELETE FROM teachers WHERE id = :teacherId") suspend fun deleteTeacherById(teacherId: Int)
+
+  /** Limpa dados operacionais do app preservando usuários para evitar perda de acesso. */
+  @Query("DELETE FROM courses") suspend fun clearCourses()
+
+  @Query("DELETE FROM school_classes") suspend fun clearClasses()
+
+  @Query("DELETE FROM teachers") suspend fun clearTeachers()
+
+  @Query("DELETE FROM students") suspend fun clearStudents()
+
+  @Query("DELETE FROM certificates") suspend fun clearCertificates()
+
+  @Query("DELETE FROM calendar_events") suspend fun clearCalendarEvents()
+
+  @Query("DELETE FROM recent_activities") suspend fun clearRecentActivities()
+
+  @Query("DELETE FROM monthly_enrollments") suspend fun clearMonthlyEnrollments()
+
+  @Query("DELETE FROM attendance_records") suspend fun clearAttendance()
+
+  @Query("DELETE FROM behavior_records") suspend fun clearBehaviors()
+
+  @Query("DELETE FROM pedagogical_needs") suspend fun clearPedagogicalNeeds()
+
+  @Query("DELETE FROM psychological_needs") suspend fun clearPsychologicalNeeds()
+
+  @Query("DELETE FROM parent_follow_ups") suspend fun clearParentFollowUps()
 }
 
 @Database(
@@ -688,7 +735,7 @@ interface AppDao {
             AppSettingsEntity::class,
             AppUserEntity::class,
         ],
-    version = 4,
+    version = 6,
     exportSchema = false,
 )
 /** Modelo e comportamento relacionados a app database. */
