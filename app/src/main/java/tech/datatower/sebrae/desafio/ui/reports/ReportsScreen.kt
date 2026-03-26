@@ -21,6 +21,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
@@ -49,6 +51,8 @@ import java.util.Locale
 fun ReportsScreen(onBack: () -> Unit = {}) {
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val dataConnectService =
+      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
   val summary by
       repository
           .observeReportSummary()
@@ -66,6 +70,8 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
   val courseCompletion by
       repository.observeCourseCompletionMetrics().collectAsState(initial = emptyList())
   val monthly by repository.observeMonthlyEnrollmentMetrics().collectAsState(initial = emptyList())
+
+  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.REPORTS) }
 
   DetailScaffold(title = stringResource(R.string.reports_title), onBack = onBack) { innerPadding, _
     ->
