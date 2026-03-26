@@ -5,14 +5,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Testes unitários das transições de ciclo de vida das entidades acadêmicas.
- */
+/** Testes unitários das transições de ciclo de vida das entidades acadêmicas. */
 class EntityLifecycleRulesTest {
 
-  /**
-   * Garante desativação e reativação de aluno.
-   */
+  /** Garante desativação e reativação de aluno. */
   @Test
   fun `student lifecycle should toggle active and inactive`() {
     val student = Student(1, "Ana", "ana@mail.com", "Marketing", "A1", 0.2f, StudentStatus.Active)
@@ -24,9 +20,7 @@ class EntityLifecycleRulesTest {
     assertEquals(StudentStatus.Active, reactivated.status)
   }
 
-  /**
-   * Garante desativação e reativação de curso.
-   */
+  /** Garante desativação e reativação de curso. */
   @Test
   fun `course lifecycle should toggle publication state`() {
     val course = Course(1, "Marketing", "Negocios", "Helena", 10, 40, 0.5f, true)
@@ -38,12 +32,11 @@ class EntityLifecycleRulesTest {
     assertTrue(reactivated.isPublished)
   }
 
-  /**
-   * Garante desativação e reativação de turma.
-   */
+  /** Garante desativação e reativação de turma. */
   @Test
   fun `class lifecycle should toggle open and closed statuses`() {
-    val schoolClass = SchoolClass(1, "A1", "Marketing", "Helena", 10, 30, "Seg 19h", ClassStatus.Open)
+    val schoolClass =
+        SchoolClass(1, "A1", "Marketing", "Helena", 10, 30, "Seg 19h", ClassStatus.Open)
 
     val deactivated = EntityLifecycleRules.deactivateClass(schoolClass)
     val reactivated = EntityLifecycleRules.reactivateClass(deactivated)
@@ -52,9 +45,7 @@ class EntityLifecycleRulesTest {
     assertEquals(ClassStatus.Open, reactivated.status)
   }
 
-  /**
-   * Garante desativação e reativação de instrutor.
-   */
+  /** Garante desativação e reativação de instrutor. */
   @Test
   fun `teacher lifecycle should toggle active flag`() {
     val teacher = Teacher(1, "Helena", "helena@mail.com", "Marketing", 2, 40, 4.7f, true)
@@ -66,4 +57,3 @@ class EntityLifecycleRulesTest {
     assertTrue(reactivated.isActive)
   }
 }
-
