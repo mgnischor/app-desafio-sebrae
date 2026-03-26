@@ -391,6 +391,13 @@ interface AppDao {
   @Query("SELECT * FROM recent_activities ORDER BY id DESC LIMIT :limit")
   fun observeRecentActivitiesLimited(limit: Int): Flow<List<RecentActivityEntity>>
 
+  /** Observa uma página de atividades recentes para reduzir carga de memória em listagens longas. */
+  @Query("SELECT * FROM recent_activities ORDER BY id DESC LIMIT :limit OFFSET :offset")
+  fun observeRecentActivitiesPaged(limit: Int, offset: Int): Flow<List<RecentActivityEntity>>
+
+  /** Observa a contagem total de atividades recentes para suportar paginação eficiente. */
+  @Query("SELECT COUNT(*) FROM recent_activities") fun observeRecentActivitiesCount(): Flow<Int>
+
   /** Retorna o maior identificador atual de atividade recente. */
   @Query("SELECT MAX(id) FROM recent_activities") suspend fun getMaxRecentActivityId(): Int?
 
