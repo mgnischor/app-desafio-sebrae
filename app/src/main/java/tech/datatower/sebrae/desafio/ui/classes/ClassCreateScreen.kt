@@ -17,6 +17,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,9 +31,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
+import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
+import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
+import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.ClassStatus
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
+import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
@@ -43,7 +49,7 @@ import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ClassCreateScreen(onBack: () -> Unit) {
+fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
   val dataService = remember(context) { AppGraph.dataConnectService(context.applicationContext) }
@@ -51,6 +57,10 @@ fun ClassCreateScreen(onBack: () -> Unit) {
   val snackbarHostState = remember { SnackbarHostState() }
 
   val classes by repository.observeClasses().collectAsState(initial = emptyList())
+  val courses by repository.observeCourses().collectAsState(initial = emptyList())
+  val teachers by repository.observeTeachers().collectAsState(initial = emptyList())
+
+  LaunchedEffect(Unit) { dataService.syncScope(ScreenDataScope.CLASSES) }
 
   var name by rememberSaveable { mutableStateOf("") }
   var course by rememberSaveable { mutableStateOf("") }
@@ -63,6 +73,8 @@ fun ClassCreateScreen(onBack: () -> Unit) {
   val invalidCapacityMessage = stringResource(R.string.class_create_error_capacity)
   val saveSuccessMessage = stringResource(R.string.class_create_success)
   val saveErrorMessage = stringResource(R.string.class_create_error_save)
+  val deniedMessage = stringResource(R.string.permission_denied)
+  val relationshipMessage = stringResource(R.string.class_create_error_relationship)
 
   DetailScaffold(title = stringResource(R.string.class_create_title), onBack = onBack) {
       innerPadding,
@@ -157,21 +169,41 @@ fun ClassCreateScreen(onBack: () -> Unit) {
               return@Button
             }
 
+            if (
+                !AccessPolicy.can(
+                    currentUser?.role,
+                    ProtectedResource.Classes,
+                    ProtectedAction.Create,
+                )
+            ) {
+              scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
+              return@Button
+            }
+
+            val hasCourse = courses.any { it.title.equals(course.trim(), ignoreCase = true) }
+            val hasTeacher = teachers.any { it.name.equals(instructor.trim(), ignoreCase = true) }
+            if (!hasCourse || !hasTeacher) {
+              scope.launch { snackbarHostState.showSnackbar(relationshipMessage) }
+              return@Button
+            }
+
             scope.launch {
               val nextId = (classes.maxOfOrNull { it.id } ?: 0) + 1
               when (
                   val result =
                       dataService.upsertClass(
-                          SchoolClass(
-                              id = nextId,
-                              name = name.trim(),
-                              course = course.trim(),
-                              instructor = instructor.trim(),
-                              studentsCount = enrolled,
-                              maxCapacity = capacity,
-                              schedule = schedule.trim(),
-                              status = status,
-                          )
+                          requester = currentUser,
+                          schoolClass =
+                              SchoolClass(
+                                  id = nextId,
+                                  name = name.trim(),
+                                  course = course.trim(),
+                                  instructor = instructor.trim(),
+                                  studentsCount = enrolled,
+                                  maxCapacity = capacity,
+                                  schedule = schedule.trim(),
+                                  status = status,
+                              ),
                       )
               ) {
                 is FirebaseDataConnectService.Result.Success -> {
