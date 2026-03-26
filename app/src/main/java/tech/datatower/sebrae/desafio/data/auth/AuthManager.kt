@@ -230,6 +230,24 @@ object AuthManager {
     }
   }
 
+  /**
+   * Altera a senha do usuário autenticado após validar a senha atual.
+   *
+   * @param currentPassword Senha atual informada pelo usuário logado.
+   * @param newPassword Nova senha desejada.
+   * @return `true` quando a senha é atualizada com sucesso.
+   */
+  fun changeCurrentUserPassword(currentPassword: String, newPassword: String): Boolean {
+    val user = _currentUser.value ?: return false
+    if (newPassword.length < 8) return false
+
+    val expectedHash = hashedCredentials[user.email] ?: return false
+    if (expectedHash != sha256(currentPassword)) return false
+
+    hashedCredentials[user.email] = sha256(newPassword)
+    return true
+  }
+
   /** Encerra a sessão atual, retornando o estado para não autenticado. */
   fun logout() {
     runCatching { firebaseAuth.signOut() }
