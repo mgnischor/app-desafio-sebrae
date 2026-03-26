@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,13 +50,15 @@ import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
  * Apenas perfis de backoffice (Administrador e Coordenador) possuem visualização de conteúdo.
  */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun RecentActivitiesScreen(
     currentUser: AppUser?,
     onBack: () -> Unit,
 ) {
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataConnectService = remember(context) { AppGraph.dataConnectService(context.applicationContext) }
+  val dataConnectService =
+      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
   val canSeeBackofficeRecents =
       remember(currentUser?.role) {
         RealtimeNotificationRules.canReceiveBackofficeNotifications(currentUser?.role)
@@ -103,9 +106,7 @@ fun RecentActivitiesScreen(
           )
         }
       } else {
-        items(items = pageItems, key = { it.id }) { item ->
-          RecentActivityCard(item = item)
-        }
+        items(items = pageItems, key = { it.id }) { item -> RecentActivityCard(item = item) }
       }
 
       item {
@@ -122,7 +123,8 @@ fun RecentActivitiesScreen(
           }
 
           Text(
-              text = stringResource(R.string.pagination_page_indicator, safePageIndex + 1, totalPages),
+              text =
+                  stringResource(R.string.pagination_page_indicator, safePageIndex + 1, totalPages),
               style = MaterialTheme.typography.labelLarge,
           )
 
@@ -138,9 +140,7 @@ fun RecentActivitiesScreen(
   }
 }
 
-/**
- * Cartão de atividade usado na listagem completa de atividades recentes.
- */
+/** Cartão de atividade usado na listagem completa de atividades recentes. */
 @Composable
 private fun RecentActivityCard(item: RecentActivity) {
   ElevatedCard(
@@ -192,4 +192,3 @@ private fun RecentActivityCard(item: RecentActivity) {
     }
   }
 }
-
