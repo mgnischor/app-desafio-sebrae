@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -41,6 +42,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.Certificate
+import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.EmptyState
@@ -59,9 +61,13 @@ import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 fun CertificatesScreen(onBack: () -> Unit = {}) {
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val dataConnectService =
+      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
   val allCerts by repository.observeCertificates().collectAsState(initial = emptyList())
   var query by rememberSaveable { mutableStateOf("") }
   val listState = rememberLazyListState()
+
+  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.CERTIFICATES) }
 
   val filtered by
       remember(query, allCerts) {
