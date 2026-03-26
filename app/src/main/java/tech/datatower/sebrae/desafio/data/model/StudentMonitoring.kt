@@ -194,10 +194,10 @@ object StudentMonitoringRules {
    * @return Taxa de presença no intervalo `0f..1f`.
    */
   fun attendanceRate(records: List<AttendanceRecord>): Float {
-    if (records.isEmpty()) return 1f
+    if (records.isEmpty()) return 0f
 
     val baseCount = records.count { it.status != AttendanceStatus.JustifiedAbsence }
-    if (baseCount == 0) return 1f
+    if (baseCount == 0) return 0f
 
     val presentCount = records.count {
       it.status == AttendanceStatus.Present || it.status == AttendanceStatus.Late
