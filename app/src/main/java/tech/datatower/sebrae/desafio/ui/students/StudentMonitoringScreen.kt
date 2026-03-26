@@ -20,6 +20,7 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -44,6 +45,7 @@ import tech.datatower.sebrae.desafio.data.model.ParentFollowUpStatus
 import tech.datatower.sebrae.desafio.data.model.PedagogicalNeedType
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringRules
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringSnapshot
+import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.StatusChip
@@ -66,8 +68,12 @@ fun StudentMonitoringScreen(
 ) {
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val dataConnectService =
+      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
   val snapshot by
       repository.observeStudentMonitoringSnapshot(studentId).collectAsState(initial = null)
+
+  LaunchedEffect(studentId) { dataConnectService.syncScope(ScreenDataScope.STUDENT_MONITORING) }
   if (snapshot == null) {
     DetailScaffold(title = stringResource(R.string.monitoring_title), onBack = onBack) {
         innerPadding,
