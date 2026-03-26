@@ -12,6 +12,7 @@ import androidx.compose.runtime.Immutable
  * @property activeCourses Quantidade de cursos em que atua atualmente.
  * @property totalStudents Total de alunos atendidos em suas turmas ativas.
  * @property rating Avaliação média do instrutor no intervalo de `0f..5f`.
+ * @property isActive Indica se o instrutor está ativo no sistema.
  */
 @Immutable
 data class Teacher(
@@ -22,4 +23,5 @@ data class Teacher(
     val activeCourses: Int,
     val totalStudents: Int,
     val rating: Float, // 0f..5f
+    val isActive: Boolean,
 )
