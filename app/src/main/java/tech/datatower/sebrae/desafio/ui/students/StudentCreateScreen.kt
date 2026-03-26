@@ -17,6 +17,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,9 +31,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
+import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
+import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
+import tech.datatower.sebrae.desafio.data.model.AppUser
+import tech.datatower.sebrae.desafio.data.model.RelationshipRules
 import tech.datatower.sebrae.desafio.data.model.Student
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
+import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
@@ -43,7 +50,7 @@ import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StudentCreateScreen(onBack: () -> Unit) {
+fun StudentCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
   val dataService = remember(context) { AppGraph.dataConnectService(context.applicationContext) }
@@ -51,6 +58,10 @@ fun StudentCreateScreen(onBack: () -> Unit) {
   val snackbarHostState = remember { SnackbarHostState() }
 
   val students by repository.observeStudents().collectAsState(initial = emptyList())
+  val courses by repository.observeCourses().collectAsState(initial = emptyList())
+  val classes by repository.observeClasses().collectAsState(initial = emptyList())
+
+  LaunchedEffect(Unit) { dataService.syncScope(ScreenDataScope.STUDENTS) }
 
   var name by rememberSaveable { mutableStateOf("") }
   var email by rememberSaveable { mutableStateOf("") }
@@ -62,6 +73,7 @@ fun StudentCreateScreen(onBack: () -> Unit) {
   val invalidProgressMessage = stringResource(R.string.student_create_error_progress)
   val saveSuccessMessage = stringResource(R.string.student_create_success)
   val saveErrorMessage = stringResource(R.string.student_create_error_save)
+  val deniedMessage = stringResource(R.string.permission_denied)
 
   DetailScaffold(title = stringResource(R.string.student_create_title), onBack = onBack) {
       innerPadding,
@@ -148,20 +160,45 @@ fun StudentCreateScreen(onBack: () -> Unit) {
               return@Button
             }
 
+            if (
+                !AccessPolicy.can(
+                    currentUser?.role,
+                    ProtectedResource.Students,
+                    ProtectedAction.Create,
+                )
+            ) {
+              scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
+              return@Button
+            }
+
+            val candidate =
+                Student(
+                    id = (students.maxOfOrNull { it.id } ?: 0) + 1,
+                    name = name.trim(),
+                    email = email.trim(),
+                    course = course.trim(),
+                    enrolledClass = enrolledClass.trim(),
+                    progress = progress / 100f,
+                    status = status,
+                )
+
+            val relationshipError =
+                RelationshipRules.validateStudentLinks(
+                    student = candidate,
+                    existingCourses = courses,
+                    existingClasses = classes,
+                )
+            if (relationshipError != null) {
+              scope.launch { snackbarHostState.showSnackbar(relationshipError) }
+              return@Button
+            }
+
             scope.launch {
-              val nextId = (students.maxOfOrNull { it.id } ?: 0) + 1
               when (
                   val result =
                       dataService.upsertStudent(
-                          Student(
-                              id = nextId,
-                              name = name.trim(),
-                              email = email.trim(),
-                              course = course.trim(),
-                              enrolledClass = enrolledClass.trim(),
-                              progress = progress / 100f,
-                              status = status,
-                          )
+                          requester = currentUser,
+                          student = candidate,
                       )
               ) {
                 is FirebaseDataConnectService.Result.Success -> {
