@@ -5,14 +5,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Testes unitários das regras de notificação em tempo real do backoffice.
- */
+/** Testes unitários das regras de notificação em tempo real do backoffice. */
 class RealtimeNotificationRulesTest {
 
-  /**
-   * Garante que apenas Administrador e Coordenador recebam notificações de backoffice.
-   */
+  /** Garante que apenas Administrador e Coordenador recebam notificações de backoffice. */
   @Test
   fun `should allow realtime notifications only for admin and coordinator`() {
     assertTrue(RealtimeNotificationRules.canReceiveBackofficeNotifications(UserRole.ADMINISTRADOR))
@@ -20,9 +16,7 @@ class RealtimeNotificationRulesTest {
     assertFalse(RealtimeNotificationRules.canReceiveBackofficeNotifications(UserRole.PROFESSOR))
   }
 
-  /**
-   * Garante montagem correta do rascunho para evento de criação.
-   */
+  /** Garante montagem correta do rascunho para evento de criação. */
   @Test
   fun `should build created draft with expected title and icon`() {
     val draft =
@@ -38,9 +32,7 @@ class RealtimeNotificationRulesTest {
     assertEquals("agora", draft.timeLabel)
   }
 
-  /**
-   * Garante montagem correta do rascunho para exclusão.
-   */
+  /** Garante montagem correta do rascunho para exclusão. */
   @Test
   fun `should build deleted draft with expected title`() {
     val draft =
@@ -54,4 +46,3 @@ class RealtimeNotificationRulesTest {
     assertEquals("course", draft.iconKey)
   }
 }
-
