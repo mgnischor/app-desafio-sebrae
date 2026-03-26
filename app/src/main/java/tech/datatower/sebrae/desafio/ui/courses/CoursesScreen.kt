@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.CardDefaults
@@ -29,9 +30,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -51,7 +56,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
+import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
+import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
+import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Course
+import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.EmptyState
@@ -70,19 +80,33 @@ import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CoursesScreen(
+    currentUser: AppUser? = null,
     onBack: () -> Unit = {},
     onCreateCourse: () -> Unit = {},
     onOpenCourseDetail: (Int) -> Unit = {},
 ) {
+  val canCreateCourse =
+      AccessPolicy.can(currentUser?.role, ProtectedResource.Courses, ProtectedAction.Create)
+  val canDeactivateCourse =
+      AccessPolicy.can(currentUser?.role, ProtectedResource.Courses, ProtectedAction.Deactivate)
+  val canReactivateCourse =
+      AccessPolicy.can(currentUser?.role, ProtectedResource.Courses, ProtectedAction.Reactivate)
+  val canDeleteCourse =
+      AccessPolicy.can(currentUser?.role, ProtectedResource.Courses, ProtectedAction.Delete)
+  val actionErrorMessage = stringResource(R.string.action_error)
+
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
   val dataConnectService =
       remember(context) { AppGraph.dataConnectService(context.applicationContext) }
   val scope = rememberCoroutineScope()
+  val snackbarHostState = remember { SnackbarHostState() }
   val allCourses by repository.observeCourses().collectAsState(initial = emptyList())
   var query by rememberSaveable { mutableStateOf("") }
   var isRefreshing by rememberSaveable { mutableStateOf(false) }
   val listState = rememberLazyListState()
+
+  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.COURSES) }
 
   val filtered by
       remember(query, allCourses) {
@@ -108,7 +132,7 @@ fun CoursesScreen(
       scope.launch {
         isRefreshing = true
         try {
-          dataConnectService.fetchCourses()
+          dataConnectService.syncScope(ScreenDataScope.COURSES)
         } finally {
           isRefreshing = false
         }
@@ -116,16 +140,19 @@ fun CoursesScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
-          FloatingActionButton(
-              onClick = onCreateCourse,
-              containerColor = MaterialTheme.colorScheme.primary,
-              contentColor = MaterialTheme.colorScheme.onPrimary,
-          ) {
-            Icon(
-                imageVector = Icons.Outlined.Add,
-                contentDescription = stringResource(R.string.courses_add_content_description),
-            )
+          if (canCreateCourse) {
+            FloatingActionButton(
+                onClick = onCreateCourse,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
+              Icon(
+                  imageVector = Icons.Outlined.Add,
+                  contentDescription = stringResource(R.string.courses_add_content_description),
+              )
+            }
           }
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -164,7 +191,49 @@ fun CoursesScreen(
                 key = { it.id },
                 contentType = { "course" },
             ) { course ->
-              CourseCard(course = course, onClick = { onOpenCourseDetail(course.id) })
+              CourseCard(
+                  course = course,
+                  onClick = { onOpenCourseDetail(course.id) },
+                  canDeactivate = canDeactivateCourse,
+                  canReactivate = canReactivateCourse,
+                  canDelete = canDeleteCourse,
+                  onDeactivate = {
+                    scope.launch {
+                      val result = dataConnectService.deactivateCourse(currentUser, course)
+                      if (
+                          result
+                              is
+                              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
+                      ) {
+                        snackbarHostState.showSnackbar(actionErrorMessage)
+                      }
+                    }
+                  },
+                  onReactivate = {
+                    scope.launch {
+                      val result = dataConnectService.reactivateCourse(currentUser, course)
+                      if (
+                          result
+                              is
+                              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
+                      ) {
+                        snackbarHostState.showSnackbar(actionErrorMessage)
+                      }
+                    }
+                  },
+                  onDelete = {
+                    scope.launch {
+                      val result = dataConnectService.deleteCourse(currentUser, course.id)
+                      if (
+                          result
+                              is
+                              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
+                      ) {
+                        snackbarHostState.showSnackbar(actionErrorMessage)
+                      }
+                    }
+                  },
+              )
             }
           }
         }
@@ -182,6 +251,12 @@ fun CoursesScreen(
 private fun CourseCard(
     course: Course,
     onClick: () -> Unit,
+    canDeactivate: Boolean,
+    canReactivate: Boolean,
+    canDelete: Boolean,
+    onDeactivate: () -> Unit,
+    onReactivate: () -> Unit,
+    onDelete: () -> Unit,
 ) {
   ElevatedCard(
       modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -283,6 +358,22 @@ private fun CourseCard(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.tertiary,
         )
+      }
+
+      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (course.isPublished && canDeactivate) {
+          TextButton(onClick = onDeactivate) { Text(stringResource(R.string.action_deactivate)) }
+        }
+        if (!course.isPublished && canReactivate) {
+          TextButton(onClick = onReactivate) { Text(stringResource(R.string.action_reactivate)) }
+        }
+        if (canDelete) {
+          TextButton(onClick = onDelete) {
+            Icon(imageVector = Icons.Outlined.DeleteOutline, contentDescription = null)
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(stringResource(R.string.action_delete))
+          }
+        }
       }
     }
   }
