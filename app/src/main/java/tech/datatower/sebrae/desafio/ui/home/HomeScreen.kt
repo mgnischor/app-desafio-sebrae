@@ -1,5 +1,6 @@
 package tech.datatower.sebrae.desafio.ui.home
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,6 +53,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -74,8 +76,10 @@ import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.MenuModule
 import tech.datatower.sebrae.desafio.data.model.QuickStat
+import tech.datatower.sebrae.desafio.data.model.RealtimeNotificationRules
 import tech.datatower.sebrae.desafio.data.model.RecentActivity
 import tech.datatower.sebrae.desafio.data.model.UserRole
+import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.navigation.AppRoutes
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
@@ -102,18 +106,45 @@ fun HomeScreen(
     user: AppUser? = null,
     notificationCount: Int = 3,
     onModuleClick: (String) -> Unit = {},
+    onOpenRecentActivities: () -> Unit = {},
     onNotificationsClick: () -> Unit = {},
     onLogout: () -> Unit = {},
 ) {
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
   val context = LocalContext.current
   val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+  val dataConnectService =
+      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
 
   val allModules = rememberModules()
+  val moduleTitleMap =
+      remember(allModules, context) { allModules.associateBy { context.getString(it.titleRes) } }
+  val moduleDescriptionMap =
+      remember(allModules, context) {
+        allModules.associateBy { context.getString(it.descriptionRes) }
+      }
   val modules = remember(allModules, user) { filterModulesByRole(allModules, user?.role) }
+  val canSeeBackofficeRecents =
+      remember(user?.role) {
+        RealtimeNotificationRules.canReceiveBackofficeNotifications(user?.role)
+      }
   val stats by repository.observeHomeQuickStats().collectAsState(initial = emptyList())
-  val recents = rememberRecents()
+  val recents by repository.observeRecentActivities(limit = 5).collectAsState(initial = emptyList())
   var query by rememberSaveable { mutableStateOf("") }
+
+  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.HOME) }
+
+  LaunchedEffect(user?.id, user?.role) {
+    dataConnectService.observeRecentActivitiesRealtimeForBackoffice(user).collect { result ->
+      if (
+          result
+              is
+              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
+      ) {
+        Log.w("HomeScreen", "Falha no listener de atividades recentes: ${result.message}")
+      }
+    }
+  }
 
   val filteredModules by
       remember(query, modules) {
@@ -123,8 +154,13 @@ fun HomeScreen(
             modules
           } else {
             modules.filter {
-              context.getString(it.titleRes).contains(normalizedQuery, ignoreCase = true) ||
-                  context.getString(it.descriptionRes).contains(normalizedQuery, ignoreCase = true)
+              moduleTitleMap.keys.any { title ->
+                title.contains(normalizedQuery, ignoreCase = true) && moduleTitleMap[title] == it
+              } ||
+                  moduleDescriptionMap.keys.any { desc ->
+                    desc.contains(normalizedQuery, ignoreCase = true) &&
+                        moduleDescriptionMap[desc] == it
+                  }
             }
           }
         }
@@ -133,16 +169,18 @@ fun HomeScreen(
       remember(query, recents) {
         derivedStateOf {
           val normalizedQuery = query.trim()
+          val source = if (canSeeBackofficeRecents) recents else emptyList()
           if (normalizedQuery.isBlank()) {
-            recents
+            source
           } else {
-            recents.filter {
+            source.filter {
               it.title.contains(normalizedQuery, ignoreCase = true) ||
                   it.subtitle.contains(normalizedQuery, ignoreCase = true)
             }
           }
         }
       }
+  val homeRecents by remember(filteredRecents) { derivedStateOf { filteredRecents } }
 
   Scaffold(
       modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -206,19 +244,21 @@ fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
           SectionTitle(text = stringResource(R.string.section_recent))
-          Text(
-              text = stringResource(R.string.see_all),
-              style = MaterialTheme.typography.labelLarge,
-              color = MaterialTheme.colorScheme.primary,
-              modifier =
-                  Modifier.clip(RoundedCornerShape(8.dp))
-                      .clickable {}
-                      .padding(horizontal = 8.dp, vertical = 4.dp),
-          )
+          if (canSeeBackofficeRecents) {
+            Text(
+                text = stringResource(R.string.see_all),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier =
+                    Modifier.clip(RoundedCornerShape(8.dp))
+                        .clickable { onOpenRecentActivities() }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+          }
         }
       }
 
-      if (filteredRecents.isEmpty()) {
+      if (homeRecents.isEmpty()) {
         item {
           Text(
               text = stringResource(R.string.recent_empty),
@@ -229,12 +269,12 @@ fun HomeScreen(
         }
       } else {
         items(
-            count = filteredRecents.size,
-            key = { index -> filteredRecents[index].title + filteredRecents[index].timeLabel },
+            count = homeRecents.size,
+            key = { index -> homeRecents[index].id },
             contentType = { "recent" },
         ) { index ->
           RecentActivityItem(
-              item = filteredRecents[index],
+              item = homeRecents[index],
               modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
           )
         }
@@ -686,7 +726,13 @@ private fun RecentActivityItem(item: RecentActivity, modifier: Modifier = Modifi
 private fun filterModulesByRole(allModules: List<MenuModule>, role: UserRole?): List<MenuModule> {
   val allowedRoutes =
       when (role) {
-        UserRole.PROFESSOR -> setOf(AppRoutes.STUDENTS, AppRoutes.CALENDAR, AppRoutes.CERTIFICATES)
+        UserRole.PROFESSOR ->
+            setOf(
+                AppRoutes.STUDENTS,
+                AppRoutes.COURSES,
+                AppRoutes.CLASSES,
+                AppRoutes.CALENDAR,
+            )
         UserRole.COORDENADOR ->
             setOf(
                 AppRoutes.STUDENTS,
@@ -694,8 +740,6 @@ private fun filterModulesByRole(allModules: List<MenuModule>, role: UserRole?): 
                 AppRoutes.CLASSES,
                 AppRoutes.TEACHERS,
                 AppRoutes.CALENDAR,
-                AppRoutes.CERTIFICATES,
-                AppRoutes.REPORTS,
             )
         UserRole.ADMINISTRADOR,
         null -> null // null = all routes visible
@@ -761,56 +805,6 @@ private fun rememberModules(): List<MenuModule> = remember {
           AppRoutes.SETTINGS,
       ),
   )
-}
-
-/**
- * Memoriza o feed de atividades recentes da tela inicial.
- *
- * @return Lista de atividades recentes exibidas ao usuário.
- */
-@Composable
-private fun rememberRecents(): List<RecentActivity> {
-  // Call @Composable functions in composable context
-  val studentTitle = stringResource(R.string.recent_new_student_title)
-  val courseTitle = stringResource(R.string.recent_course_published_title)
-  val certificateTitle = stringResource(R.string.recent_certificate_issued_title)
-  val classTitle = stringResource(R.string.recent_class_scheduled_title)
-
-  val time5min = stringResource(R.string.time_5min_ago)
-  val time1h = stringResource(R.string.time_1h_ago)
-  val time3h = stringResource(R.string.time_3h_ago)
-  val timeYesterday = stringResource(R.string.time_yesterday)
-
-  val studentSubtitle =
-      stringResource(R.string.recent_activity_subtitle_student, "Carlos Souza", "B3")
-  val courseSubtitle =
-      stringResource(R.string.recent_activity_subtitle_course, "Excel para Negócios")
-  val certificateSubtitle =
-      stringResource(R.string.recent_activity_subtitle_certificate, "Ana Lima", "Marketing Digital")
-  val classSubtitle = stringResource(R.string.recent_activity_subtitle_class, "Empreendedorismo")
-
-  // Pass strings to remember, not @Composable calls
-  return remember(
-      studentTitle,
-      courseTitle,
-      certificateTitle,
-      classTitle,
-      time5min,
-      time1h,
-      time3h,
-      timeYesterday,
-      studentSubtitle,
-      courseSubtitle,
-      certificateSubtitle,
-      classSubtitle,
-  ) {
-    listOf(
-        RecentActivity(studentTitle, studentSubtitle, Icons.Outlined.Person, time5min),
-        RecentActivity(courseTitle, courseSubtitle, Icons.AutoMirrored.Outlined.MenuBook, time1h),
-        RecentActivity(certificateTitle, certificateSubtitle, Icons.Outlined.Bookmarks, time3h),
-        RecentActivity(classTitle, classSubtitle, Icons.Outlined.DateRange, timeYesterday),
-    )
-  }
 }
 
 // ── Preview ───────────────────────────────────────────────────────────────────
