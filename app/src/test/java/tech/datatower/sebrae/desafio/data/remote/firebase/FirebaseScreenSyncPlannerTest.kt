@@ -7,8 +7,8 @@ import org.junit.Test
 /**
  * Testes unitarios do planejamento de sincronizacao por tela.
  *
- * Garante que cada escopo mapeia apenas as colecoes remotas necessarias,
- * reduzindo trafego e limitando exposicao de dados desnecessarios.
+ * Garante que cada escopo mapeia apenas as colecoes remotas necessarias, reduzindo trafego e
+ * limitando exposicao de dados desnecessarios.
  */
 class FirebaseScreenSyncPlannerTest {
   /** Valida o escopo de acompanhamento do aluno com todas as dependencias criticas. */
@@ -55,4 +55,3 @@ class FirebaseScreenSyncPlannerTest {
     assertEquals(14, tasks.size)
   }
 }
-
