@@ -52,6 +52,10 @@
     <!-- Recent activity -->
     <string name="recent_empty">Nenhuma atividade recente.</string>
     <string name="see_all">Ver tudo</string>
+    <string name="recent_activities_title" translatable="false">Atividades Recentes</string>
+    <string name="pagination_previous" translatable="false">Anterior</string>
+    <string name="pagination_next" translatable="false">Próxima</string>
+    <string name="pagination_page_indicator" translatable="false">Página %1$d de %2$d</string>
     <string name="recent_new_student_title">Novo aluno matriculado</string>
     <string name="recent_course_published_title">Curso publicado</string>
     <string name="recent_certificate_issued_title">Certificado emitido</string>
@@ -216,6 +220,14 @@
     <string name="event_type_exam">Prova</string>
     <string name="event_type_meeting">Reunião</string>
     <string name="event_type_other">Outro</string>
+    <string name="calendar_event_type_event" translatable="false">Evento</string>
+    <string name="calendar_form_title" translatable="false">Título</string>
+    <string name="calendar_form_context" translatable="false">Curso/Contexto</string>
+    <string name="calendar_form_date" translatable="false">Data</string>
+    <string name="calendar_form_time" translatable="false">Horário</string>
+    <string name="calendar_form_location" translatable="false">Local</string>
+    <string name="calendar_form_cancel" translatable="false">Cancelar</string>
+    <string name="calendar_form_save" translatable="false">Salvar</string>
 
     <!-- Certificates Screen -->
     <string name="certificates_title">Certificados</string>
@@ -355,4 +367,18 @@
     <string name="status_graduated_student">Formado</string>
     <string name="stat_data_source">dados locais</string>
     <string name="stat_data_source_cloud">dados sincronizados</string>
+    <string name="permission_denied" translatable="false">Você não tem permissão para esta ação.</string>
+    <string name="class_create_error_relationship" translatable="false">Curso ou instrutor inválido para a turma.</string>
+    <string name="calendar_create_error" translatable="false">Não foi possível salvar o evento.</string>
+    <string name="settings_storage_cleared" translatable="false">Cache e dados operacionais foram limpos.</string>
+    <string name="settings_change_password_title" translatable="false">Alterar senha</string>
+    <string name="settings_current_password" translatable="false">Senha atual</string>
+    <string name="settings_new_password" translatable="false">Nova senha (mínimo 8 caracteres)</string>
+    <string name="settings_change_password_action" translatable="false">Atualizar senha</string>
+    <string name="settings_password_changed" translatable="false">Senha alterada com sucesso.</string>
+    <string name="settings_password_error" translatable="false">Não foi possível alterar a senha.</string>
+    <string name="action_deactivate" translatable="false">Desativar</string>
+    <string name="action_reactivate" translatable="false">Reativar</string>
+    <string name="action_delete" translatable="false">Excluir</string>
+    <string name="action_error" translatable="false">Não foi possível concluir a ação.</string>
 </resources>
