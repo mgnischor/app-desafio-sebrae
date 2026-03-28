@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/users/UserManagementScreen.kt
+    Descrição: Tela de gerenciamento de usuários, permitindo criar e excluir contas.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.users
 
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +50,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,23 +58,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
-import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.UserRole
-import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
 /**
  * Executa a rotina de user management screen dentro do contexto deste componente.
  *
- * @param currentUser Valor de entrada utilizado por esta opera??o.
- * @param onBack Valor de entrada utilizado por esta opera??o.
+ * @param currentUser Valor de entrada utilizado por esta operação.
+ * @param onBack Valor de entrada utilizado por esta operação.
  */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,26 +79,47 @@ fun UserManagementScreen(
     currentUser: AppUser?,
     onBack: () -> Unit,
 ) {
-  val context = LocalContext.current
-  val service = remember(context) { AppGraph.dataConnectService(context.applicationContext) }
+  val viewModel: UserManagementViewModel = hiltViewModel()
   val scope = rememberCoroutineScope()
   val snackbarHostState = remember { SnackbarHostState() }
 
-  val usersResult by
-      service
-          .observeUsersRealtimeForAdmin(currentUser)
-          .collectAsState(initial = FirebaseDataConnectService.Result.Success(emptyList()))
-
-  val users =
-      when (val result = usersResult) {
-        is FirebaseDataConnectService.Result.Success -> result.data
-        else -> emptyList()
-      }
+  val usersState by viewModel.usersState.collectAsState()
+  val actionResult by viewModel.actionResult.collectAsState()
+  val users = when (val s = usersState) {
+    is UserManagementViewModel.UsersState.Success -> s.users
+    else -> emptyList()
+  }
 
   var name by remember { mutableStateOf("") }
   var email by remember { mutableStateOf("") }
   var password by remember { mutableStateOf("") }
   var selectedRole by remember { mutableStateOf(UserRole.PROFESSOR) }
+  var pendingSaveReset by remember { mutableStateOf(false) }
+
+  LaunchedEffect(currentUser?.id, currentUser?.role) { viewModel.observeUsers(currentUser) }
+
+  LaunchedEffect(actionResult) {
+    when (val r = actionResult) {
+      is UserManagementViewModel.ActionResult.Success -> {
+        if (pendingSaveReset) {
+          name = ""
+          email = ""
+          password = ""
+          selectedRole = UserRole.PROFESSOR
+          pendingSaveReset = false
+          snackbarHostState.showSnackbar("Usuário cadastrado com sucesso.")
+        } else {
+          snackbarHostState.showSnackbar("Usuário removido com sucesso.")
+        }
+        viewModel.clearActionResult()
+      }
+      is UserManagementViewModel.ActionResult.Error -> {
+        snackbarHostState.showSnackbar(r.message)
+        viewModel.clearActionResult()
+      }
+      else -> Unit
+    }
+  }
 
   DetailScaffold(
       title = "Gestao de Usuarios",
@@ -157,42 +202,9 @@ fun UserManagementScreen(
                   return@Button
                 }
 
-                scope.launch {
-                  val nextId = (users.maxOfOrNull { it.id } ?: 0) + 1
-                  val result =
-                      service.upsertUserForAdmin(
-                          requester = currentUser,
-                          target =
-                              AppUser(
-                                  id = nextId,
-                                  name = name.trim(),
-                                  email = normalizedEmail,
-                                  role = selectedRole,
-                              ),
-                          plainPassword = password,
-                      )
-                  when (result) {
-                    is FirebaseDataConnectService.Result.Success -> {
-                      AuthManager.registerOrUpdateUser(
-                          AppUser(nextId, name.trim(), normalizedEmail, selectedRole),
-                          password,
-                      )
-                      name = ""
-                      email = ""
-                      password = ""
-                      selectedRole = UserRole.PROFESSOR
-                      snackbarHostState.showSnackbar("Usuario cadastrado com sucesso.")
-                    }
-                    is FirebaseDataConnectService.Result.Error -> {
-                      val details =
-                          (result.message.ifBlank { result.exception.message.orEmpty() }).ifBlank {
-                            "Nao foi possivel cadastrar o usuario."
-                          }
-                      snackbarHostState.showSnackbar(details)
-                    }
-                    FirebaseDataConnectService.Result.Loading -> Unit
-                  }
-                }
+                val nextId = (users.maxOfOrNull { it.id } ?: 0) + 1
+                pendingSaveReset = true
+                viewModel.createUser(currentUser, nextId, name.trim(), normalizedEmail, selectedRole, password)
               },
               modifier = Modifier.fillMaxWidth(),
           ) {
@@ -219,25 +231,9 @@ fun UserManagementScreen(
                 Text(text = user.email, style = MaterialTheme.typography.bodySmall)
                 Text(text = roleLabel(user.role), style = MaterialTheme.typography.labelMedium)
               }
-              if (user.id != currentUser.id) {
+              if (user.id != currentUser?.id) {
                 IconButton(
-                    onClick = {
-                      scope.launch {
-                        when (val result = service.deleteUserForAdmin(currentUser, user.id)) {
-                          is FirebaseDataConnectService.Result.Success -> {
-                            AuthManager.removeUserById(user.id)
-                            snackbarHostState.showSnackbar("Usuario removido com sucesso.")
-                          }
-                          is FirebaseDataConnectService.Result.Error -> {
-                            val details =
-                                (result.message.ifBlank { result.exception.message.orEmpty() })
-                                    .ifBlank { "Nao foi possivel remover o usuario." }
-                            snackbarHostState.showSnackbar(details)
-                          }
-                          FirebaseDataConnectService.Result.Loading -> Unit
-                        }
-                      }
-                    }
+                    onClick = { viewModel.deleteUser(currentUser, user.id) }
                 ) {
                   Icon(Icons.Outlined.DeleteOutline, contentDescription = null)
                 }
@@ -253,8 +249,8 @@ fun UserManagementScreen(
 /**
  * Executa a rotina de role label dentro do contexto deste componente.
  *
- * @param role Valor de entrada utilizado por esta opera??o.
- * @return Resultado produzido pela opera??o em formato `String`.
+ * @param role Valor de entrada utilizado por esta operação.
+ * @return Resultado produzido pela operação em formato `String`.
  */
 private fun roleLabel(role: UserRole): String {
   return when (role) {
