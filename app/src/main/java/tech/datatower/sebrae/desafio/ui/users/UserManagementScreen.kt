@@ -37,6 +37,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -49,6 +50,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -78,6 +80,7 @@ import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 fun UserManagementScreen(
     currentUser: AppUser?,
     onBack: () -> Unit,
+    onOpenUserProfile: (Int) -> Unit = {},
 ) {
   val viewModel: UserManagementViewModel = hiltViewModel()
   val scope = rememberCoroutineScope()
@@ -85,10 +88,12 @@ fun UserManagementScreen(
 
   val usersState by viewModel.usersState.collectAsState()
   val actionResult by viewModel.actionResult.collectAsState()
-  val users = when (val s = usersState) {
-    is UserManagementViewModel.UsersState.Success -> s.users
-    else -> emptyList()
-  }
+  val isRefreshing by viewModel.isRefreshing.collectAsState()
+  val users =
+      when (val s = usersState) {
+        is UserManagementViewModel.UsersState.Success -> s.users
+        else -> emptyList()
+      }
 
   var name by remember { mutableStateOf("") }
   var email by remember { mutableStateOf("") }
@@ -204,7 +209,14 @@ fun UserManagementScreen(
 
                 val nextId = (users.maxOfOrNull { it.id } ?: 0) + 1
                 pendingSaveReset = true
-                viewModel.createUser(currentUser, nextId, name.trim(), normalizedEmail, selectedRole, password)
+                viewModel.createUser(
+                    currentUser,
+                    nextId,
+                    name.trim(),
+                    normalizedEmail,
+                    selectedRole,
+                    password,
+                )
               },
               modifier = Modifier.fillMaxWidth(),
           ) {
@@ -215,27 +227,36 @@ fun UserManagementScreen(
 
       Text(text = "Usuarios cadastrados", style = MaterialTheme.typography.titleMedium)
 
-      LazyColumn(
+      PullToRefreshBox(
+          isRefreshing = isRefreshing,
+          onRefresh = { viewModel.refresh(currentUser) },
           modifier = Modifier.fillMaxSize(),
-          contentPadding = PaddingValues(bottom = 24.dp),
-          verticalArrangement = Arrangement.spacedBy(8.dp),
       ) {
-        items(users, key = { it.id }) { user ->
-          ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-              Column {
-                Text(text = user.name, style = MaterialTheme.typography.bodyLarge)
-                Text(text = user.email, style = MaterialTheme.typography.bodySmall)
-                Text(text = roleLabel(user.role), style = MaterialTheme.typography.labelMedium)
-              }
-              if (user.id != currentUser?.id) {
-                IconButton(
-                    onClick = { viewModel.deleteUser(currentUser, user.id) }
-                ) {
-                  Icon(Icons.Outlined.DeleteOutline, contentDescription = null)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+          items(users, key = { it.email.ifBlank { it.id.toString() } }) { user ->
+            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+              Row(
+                  modifier = Modifier.fillMaxWidth().padding(12.dp),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+              ) {
+                Column(modifier = Modifier.weight(1f)) {
+                  Text(text = user.name, style = MaterialTheme.typography.bodyLarge)
+                  Text(text = user.email, style = MaterialTheme.typography.bodySmall)
+                  Text(text = roleLabel(user.role), style = MaterialTheme.typography.labelMedium)
+                }
+                Row {
+                  IconButton(onClick = { onOpenUserProfile(user.id) }) {
+                    Icon(Icons.Outlined.Person, contentDescription = "Ver perfil")
+                  }
+                  if (user.id != currentUser.id) {
+                    IconButton(onClick = { viewModel.deleteUser(currentUser, user.id) }) {
+                      Icon(Icons.Outlined.DeleteOutline, contentDescription = null)
+                    }
+                  }
                 }
               }
             }
