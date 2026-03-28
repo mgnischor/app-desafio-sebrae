@@ -55,6 +55,7 @@ import tech.datatower.sebrae.desafio.ui.teachers.TeacherCreateScreen
 import tech.datatower.sebrae.desafio.ui.teachers.TeacherDetailScreen
 import tech.datatower.sebrae.desafio.ui.teachers.TeachersScreen
 import tech.datatower.sebrae.desafio.ui.users.UserManagementScreen
+import tech.datatower.sebrae.desafio.ui.users.UserProfileScreen
 
 /**
  * Declara o grafo de navegação principal da aplicação.
@@ -187,7 +188,14 @@ fun AppNavHost(navController: NavHostController) {
       UserManagementScreen(
           currentUser = currentUser,
           onBack = { navController.popBackStack() },
+          onOpenUserProfile = { userId -> navController.navigate(AppRoutes.userProfile(userId)) },
       )
+    }
+    composable(
+        route = AppRoutes.USER_PROFILE,
+        arguments = listOf(navArgument(AppRoutes.USER_ID_ARG) { type = NavType.IntType }),
+    ) {
+      UserProfileScreen(onBack = { navController.popBackStack() })
     }
   }
 }
