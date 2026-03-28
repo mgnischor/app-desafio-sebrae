@@ -1,6 +1,7 @@
 package tech.datatower.sebrae.desafio.ui.courses
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +40,7 @@ import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectSer
 import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
+import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 
 /**
  * Executa a rotina de course create screen dentro do contexto deste componente.
@@ -70,7 +72,9 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val saveSuccessMessage = stringResource(R.string.course_create_success)
   val saveErrorMessage = stringResource(R.string.course_create_error_save)
   val deniedMessage = stringResource(R.string.permission_denied)
+  var isSaving by remember { mutableStateOf(false) }
 
+  Box(modifier = Modifier.fillMaxSize()) {
   DetailScaffold(title = stringResource(R.string.course_create_title), onBack = onBack) {
       innerPadding,
       _ ->
@@ -169,6 +173,7 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
             }
 
             scope.launch {
+              isSaving = true
               val nextId = (courses.maxOfOrNull { it.id } ?: 0) + 1
               val result =
                   dataService.upsertCourse(
@@ -191,12 +196,16 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
               } else if (result is FirebaseDataConnectService.Result.Error) {
                 snackbarHostState.showSnackbar(result.message.ifBlank { saveErrorMessage })
               }
+              isSaving = false
             }
           },
+          enabled = !isSaving,
           modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       ) {
         Text(stringResource(R.string.course_create_save))
       }
     }
+  }
+  LoadingOverlay(isVisible = isSaving, message = stringResource(R.string.loading_saving))
   }
 }
