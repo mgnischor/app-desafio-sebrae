@@ -45,35 +45,41 @@ import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
+class HomeViewModel
+@Inject
+constructor(
     private val repository: AppRepository,
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-    val stats: StateFlow<List<QuickStat>> = repository.observeHomeQuickStats()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+  val stats: StateFlow<List<QuickStat>> =
+      repository
+          .observeHomeQuickStats()
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val recentActivities: StateFlow<List<RecentActivity>> = repository.observeRecentActivities(limit = 5)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+  val recentActivities: StateFlow<List<RecentActivity>> =
+      repository
+          .observeRecentActivities(limit = 5)
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val _isSyncing = MutableStateFlow(false)
-    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+  private val _isSyncing = MutableStateFlow(false)
+  val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
-    fun syncHome() {
-        viewModelScope.launch {
-            _isSyncing.value = true
-            dataConnectService.syncScope(ScreenDataScope.HOME)
-            _isSyncing.value = false
-        }
+  fun syncHome() {
+    viewModelScope.launch {
+      _isSyncing.value = true
+      dataConnectService.syncScope(ScreenDataScope.HOME)
+      _isSyncing.value = false
     }
+  }
 
-    fun observeRealtimeActivities(user: AppUser?) {
-        viewModelScope.launch {
-            dataConnectService.observeRecentActivitiesRealtimeForBackoffice(user).collect { result ->
-                if (result is FirebaseDataConnectService.Result.Error) {
-                    Log.w("HomeViewModel", "Falha no listener de atividades recentes: ${result.message}")
-                }
-            }
+  fun observeRealtimeActivities(user: AppUser?) {
+    viewModelScope.launch {
+      dataConnectService.observeRecentActivitiesRealtimeForBackoffice(user).collect { result ->
+        if (result is FirebaseDataConnectService.Result.Error) {
+          Log.w("HomeViewModel", "Falha no listener de atividades recentes: ${result.message}")
         }
+      }
     }
+  }
 }
