@@ -31,13 +31,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
+import tech.datatower.sebrae.desafio.data.connectivity.ConnectivityObserver
 import tech.datatower.sebrae.desafio.data.model.AppSettings
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import tech.datatower.sebrae.desafio.navigation.AppNavHost
+import tech.datatower.sebrae.desafio.ui.components.OfflineBanner
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 import javax.inject.Inject
 
@@ -51,6 +56,7 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
   @Inject lateinit var repository: AppRepository
+  @Inject lateinit var connectivityObserver: ConnectivityObserver
 
   /**
    * Inicializa a UI declarativa da aplicação e conecta o `NavController` ao `AppNavHost`.
@@ -76,7 +82,16 @@ class MainActivity : ComponentActivity() {
 
       AppDesafioSEBRAETheme(darkTheme = settings.darkMode) {
         val navController = rememberNavController()
-        AppNavHost(navController = navController)
+        val connectivityStatus by
+            connectivityObserver
+                .observe()
+                .collectAsState(initial = ConnectivityObserver.Status.Available)
+        val isOffline = connectivityStatus != ConnectivityObserver.Status.Available
+
+        Column(modifier = Modifier.fillMaxSize()) {
+          OfflineBanner(isOffline = isOffline)
+          AppNavHost(navController = navController)
+        }
       }
     }
   }
