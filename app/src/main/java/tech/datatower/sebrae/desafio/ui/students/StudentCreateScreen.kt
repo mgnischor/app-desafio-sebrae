@@ -1,6 +1,7 @@
 package tech.datatower.sebrae.desafio.ui.students
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,6 +43,7 @@ import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectSer
 import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
+import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 
 /**
  * Executa a rotina de student create screen dentro do contexto deste componente.
@@ -74,7 +76,9 @@ fun StudentCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val saveSuccessMessage = stringResource(R.string.student_create_success)
   val saveErrorMessage = stringResource(R.string.student_create_error_save)
   val deniedMessage = stringResource(R.string.permission_denied)
+  var isSaving by remember { mutableStateOf(false) }
 
+  Box(modifier = Modifier.fillMaxSize()) {
   DetailScaffold(title = stringResource(R.string.student_create_title), onBack = onBack) {
       innerPadding,
       _ ->
@@ -194,6 +198,7 @@ fun StudentCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
             }
 
             scope.launch {
+              isSaving = true
               when (
                   val result =
                       dataService.upsertStudent(
@@ -209,12 +214,16 @@ fun StudentCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
                     snackbarHostState.showSnackbar(result.message.ifBlank { saveErrorMessage })
                 FirebaseDataConnectService.Result.Loading -> Unit
               }
+              isSaving = false
             }
           },
+          enabled = !isSaving,
           modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       ) {
         Text(stringResource(R.string.student_create_save))
       }
     }
+  }
+  LoadingOverlay(isVisible = isSaving, message = stringResource(R.string.loading_saving))
   }
 }
