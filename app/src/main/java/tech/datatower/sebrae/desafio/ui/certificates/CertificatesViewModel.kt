@@ -40,17 +40,19 @@ import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
 @HiltViewModel
-class CertificatesViewModel @Inject constructor(
+class CertificatesViewModel
+@Inject
+constructor(
     private val repository: AppRepository,
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-    val certificates: StateFlow<List<Certificate>> = repository.observeCertificates()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+  val certificates: StateFlow<List<Certificate>> =
+      repository
+          .observeCertificates()
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    init {
-        viewModelScope.launch {
-            dataConnectService.syncScope(ScreenDataScope.CERTIFICATES)
-        }
-    }
+  init {
+    viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.CERTIFICATES) }
+  }
 }
