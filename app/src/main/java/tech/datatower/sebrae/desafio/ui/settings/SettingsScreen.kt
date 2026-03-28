@@ -42,6 +42,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Lock
@@ -113,11 +114,14 @@ fun SettingsScreen(
   val scope = rememberCoroutineScope()
   val snackbarHostState = remember { SnackbarHostState() }
   var showPasswordDialog by rememberSaveable { mutableStateOf(false) }
+  var showResetDatabaseDialog by rememberSaveable { mutableStateOf(false) }
   var currentPassword by rememberSaveable { mutableStateOf("") }
   var newPassword by rememberSaveable { mutableStateOf("") }
 
   val canClearStorage =
       AccessPolicy.can(currentUser?.role, ProtectedResource.Settings, ProtectedAction.ClearStorage)
+  val canResetDatabase =
+      AccessPolicy.can(currentUser?.role, ProtectedResource.Settings, ProtectedAction.ResetDatabase)
   val canChangeOwnPassword =
       AccessPolicy.can(
           currentUser?.role,
@@ -125,6 +129,7 @@ fun SettingsScreen(
           ProtectedAction.ChangeOwnPassword,
       )
   val storageClearedMessage = stringResource(R.string.settings_storage_cleared)
+  val resetDatabaseSuccessMessage = stringResource(R.string.settings_reset_database_success)
   val passwordChangedMessage = stringResource(R.string.settings_password_changed)
   val passwordErrorMessage = stringResource(R.string.settings_password_error)
 
@@ -236,6 +241,14 @@ fun SettingsScreen(
                 },
             )
           }
+          if (canResetDatabase) {
+            SettingsItem(
+                icon = Icons.Outlined.DeleteForever,
+                title = stringResource(R.string.settings_item_reset_database),
+                subtitle = stringResource(R.string.settings_subtitle_reset_database),
+                onClick = { showResetDatabaseDialog = true },
+            )
+          }
           SettingsItem(
               icon = Icons.Outlined.Info,
               title = stringResource(R.string.settings_item_about),
@@ -289,6 +302,33 @@ fun SettingsScreen(
           dismissButton = {
             TextButton(onClick = { showPasswordDialog = false }) {
               Text(stringResource(R.string.back))
+            }
+          },
+      )
+    }
+
+    if (showResetDatabaseDialog) {
+      AlertDialog(
+          onDismissRequest = { showResetDatabaseDialog = false },
+          title = { Text(stringResource(R.string.settings_reset_database_confirm_title)) },
+          text = { Text(stringResource(R.string.settings_reset_database_confirm_message)) },
+          confirmButton = {
+            TextButton(
+                onClick = {
+                  viewModel.resetAllData()
+                  showResetDatabaseDialog = false
+                  scope.launch { snackbarHostState.showSnackbar(resetDatabaseSuccessMessage) }
+                }
+            ) {
+              Text(
+                  stringResource(R.string.settings_reset_database_action),
+                  color = MaterialTheme.colorScheme.error,
+              )
+            }
+          },
+          dismissButton = {
+            TextButton(onClick = { showResetDatabaseDialog = false }) {
+              Text(stringResource(R.string.settings_reset_database_cancel))
             }
           },
       )
