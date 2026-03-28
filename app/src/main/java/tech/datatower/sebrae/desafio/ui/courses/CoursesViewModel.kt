@@ -43,76 +43,82 @@ import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
 @HiltViewModel
-class CoursesViewModel @Inject constructor(
+class CoursesViewModel
+@Inject
+constructor(
     private val repository: AppRepository,
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-    val courses: StateFlow<List<Course>> = repository.observeCourses()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+  val courses: StateFlow<List<Course>> =
+      repository
+          .observeCourses()
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val _isInitialLoading = MutableStateFlow(true)
-    val isInitialLoading: StateFlow<Boolean> = _isInitialLoading.asStateFlow()
+  private val _isInitialLoading = MutableStateFlow(true)
+  val isInitialLoading: StateFlow<Boolean> = _isInitialLoading.asStateFlow()
 
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+  private val _isRefreshing = MutableStateFlow(false)
+  val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    sealed class ActionResult {
-        data object Idle : ActionResult()
-        data object Success : ActionResult()
-        data class Error(val message: String) : ActionResult()
+  sealed class ActionResult {
+    data object Idle : ActionResult()
+
+    data object Success : ActionResult()
+
+    data class Error(val message: String) : ActionResult()
+  }
+
+  private val _actionResult = MutableStateFlow<ActionResult>(ActionResult.Idle)
+  val actionResult: StateFlow<ActionResult> = _actionResult.asStateFlow()
+
+  init {
+    viewModelScope.launch {
+      dataConnectService.syncScope(ScreenDataScope.COURSES)
+      _isInitialLoading.value = false
     }
+  }
 
-    private val _actionResult = MutableStateFlow<ActionResult>(ActionResult.Idle)
-    val actionResult: StateFlow<ActionResult> = _actionResult.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            dataConnectService.syncScope(ScreenDataScope.COURSES)
-            _isInitialLoading.value = false
-        }
+  fun refresh() {
+    if (_isRefreshing.value) return
+    viewModelScope.launch {
+      _isRefreshing.value = true
+      try {
+        dataConnectService.syncScope(ScreenDataScope.COURSES)
+      } finally {
+        _isRefreshing.value = false
+      }
     }
+  }
 
-    fun refresh() {
-        if (_isRefreshing.value) return
-        viewModelScope.launch {
-            _isRefreshing.value = true
-            try {
-                dataConnectService.syncScope(ScreenDataScope.COURSES)
-            } finally {
-                _isRefreshing.value = false
-            }
-        }
+  fun deactivateCourse(currentUser: AppUser?, course: Course) {
+    viewModelScope.launch {
+      val result = dataConnectService.deactivateCourse(currentUser, course)
+      if (result is FirebaseDataConnectService.Result.Error) {
+        _actionResult.value = ActionResult.Error(result.message)
+      }
     }
+  }
 
-    fun deactivateCourse(currentUser: AppUser?, course: Course) {
-        viewModelScope.launch {
-            val result = dataConnectService.deactivateCourse(currentUser, course)
-            if (result is FirebaseDataConnectService.Result.Error) {
-                _actionResult.value = ActionResult.Error(result.message)
-            }
-        }
+  fun reactivateCourse(currentUser: AppUser?, course: Course) {
+    viewModelScope.launch {
+      val result = dataConnectService.reactivateCourse(currentUser, course)
+      if (result is FirebaseDataConnectService.Result.Error) {
+        _actionResult.value = ActionResult.Error(result.message)
+      }
     }
+  }
 
-    fun reactivateCourse(currentUser: AppUser?, course: Course) {
-        viewModelScope.launch {
-            val result = dataConnectService.reactivateCourse(currentUser, course)
-            if (result is FirebaseDataConnectService.Result.Error) {
-                _actionResult.value = ActionResult.Error(result.message)
-            }
-        }
+  fun deleteCourse(currentUser: AppUser?, courseId: Int) {
+    viewModelScope.launch {
+      val result = dataConnectService.deleteCourse(currentUser, courseId)
+      if (result is FirebaseDataConnectService.Result.Error) {
+        _actionResult.value = ActionResult.Error(result.message)
+      }
     }
+  }
 
-    fun deleteCourse(currentUser: AppUser?, courseId: Int) {
-        viewModelScope.launch {
-            val result = dataConnectService.deleteCourse(currentUser, courseId)
-            if (result is FirebaseDataConnectService.Result.Error) {
-                _actionResult.value = ActionResult.Error(result.message)
-            }
-        }
-    }
-
-    fun clearActionResult() {
-        _actionResult.value = ActionResult.Idle
-    }
+  fun clearActionResult() {
+    _actionResult.value = ActionResult.Idle
+  }
 }
