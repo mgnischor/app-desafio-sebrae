@@ -1,0 +1,40 @@
+plugins {
+  alias(libs.plugins.android.library)
+  alias(libs.plugins.kotlin.compose)
+  alias(libs.plugins.google.devtools.ksp)
+  alias(libs.plugins.hilt)
+}
+
+kotlin { jvmToolchain(17) }
+
+android {
+  namespace = "tech.datatower.sebrae.desafio.feature.users"
+  compileSdk = 36
+
+  defaultConfig { minSdk = 26 }
+
+  compileOptions {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+  }
+
+  buildFeatures { compose = true }
+}
+
+dependencies {
+  implementation(project(":core"))
+
+  implementation(libs.androidx.compose.material3)
+  implementation(libs.androidx.compose.material.icons.extended)
+  implementation(libs.androidx.compose.ui)
+  implementation(libs.androidx.compose.ui.graphics)
+  implementation(libs.androidx.compose.ui.tooling.preview)
+  implementation(libs.androidx.core.ktx)
+  implementation(libs.androidx.hilt.navigation.compose)
+  implementation(libs.androidx.lifecycle.runtime.ktx)
+  implementation(libs.androidx.navigation.compose)
+  implementation(libs.hilt.android)
+  implementation(platform(libs.androidx.compose.bom))
+
+  ksp(libs.hilt.android.compiler)
+}
