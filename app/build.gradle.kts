@@ -2,8 +2,10 @@ import java.util.Properties
 
 plugins {
   alias(libs.plugins.android.application)
-  alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.google.devtools.ksp)
+  alias(libs.plugins.hilt)
+  alias(libs.plugins.kotlin.compose)
+
   id("com.google.gms.google-services")
 }
 
@@ -86,16 +88,18 @@ dependencies {
   implementation(libs.androidx.room.runtime)
   implementation(libs.firebase.auth.ktx)
   implementation(libs.firebase.firestore.ktx)
+  implementation(libs.hilt.android)
   implementation(libs.jetbrains.kotlinx.coroutines.play.services)
   implementation(platform(libs.androidx.compose.bom))
   implementation(platform(libs.firebase.bom))
 
   ksp(libs.androidx.room.compiler)
+  ksp(libs.hilt.android.compiler)
 
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
-  testImplementation(libs.mockito.kotlin)
   testImplementation(libs.mockito.core)
+  testImplementation(libs.mockito.kotlin)
 
   androidTestImplementation(libs.androidx.compose.ui.test.junit4)
   androidTestImplementation(libs.androidx.espresso.core)
