@@ -1,6 +1,31 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/home/HomeScreen.kt
+    Descrição: Tela inicial da aplicação, exibindo estatísticas rápidas e atividades recentes.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.home
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -72,6 +97,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.MenuModule
@@ -79,8 +105,6 @@ import tech.datatower.sebrae.desafio.data.model.QuickStat
 import tech.datatower.sebrae.desafio.data.model.RealtimeNotificationRules
 import tech.datatower.sebrae.desafio.data.model.RecentActivity
 import tech.datatower.sebrae.desafio.data.model.UserRole
-import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.navigation.AppRoutes
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 import java.util.Calendar
@@ -112,9 +136,7 @@ fun HomeScreen(
 ) {
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
   val context = LocalContext.current
-  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataConnectService =
-      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
+  val viewModel: HomeViewModel = hiltViewModel()
 
   val allModules = rememberModules()
   val moduleTitleMap =
@@ -128,23 +150,11 @@ fun HomeScreen(
       remember(user?.role) {
         RealtimeNotificationRules.canReceiveBackofficeNotifications(user?.role)
       }
-  val stats by repository.observeHomeQuickStats().collectAsState(initial = emptyList())
-  val recents by repository.observeRecentActivities(limit = 5).collectAsState(initial = emptyList())
+  val stats by viewModel.stats.collectAsState()
+  val recents by viewModel.recentActivities.collectAsState()
   var query by rememberSaveable { mutableStateOf("") }
 
-  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.HOME) }
-
-  LaunchedEffect(user?.id, user?.role) {
-    dataConnectService.observeRecentActivitiesRealtimeForBackoffice(user).collect { result ->
-      if (
-          result
-              is
-              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
-      ) {
-        Log.w("HomeScreen", "Falha no listener de atividades recentes: ${result.message}")
-      }
-    }
-  }
+  LaunchedEffect(user?.id, user?.role) { viewModel.observeRealtimeActivities(user) }
 
   val filteredModules by
       remember(query, modules) {
