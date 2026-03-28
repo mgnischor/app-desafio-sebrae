@@ -39,27 +39,31 @@ import javax.inject.Inject
 @HiltViewModel
 class LoginViewModel @Inject constructor() : ViewModel() {
 
-    sealed class LoginState {
-        data object Idle : LoginState()
-        data object Loading : LoginState()
-        data class Error(val message: String) : LoginState()
-        data object Success : LoginState()
-    }
+  sealed class LoginState {
+    data object Idle : LoginState()
 
-    private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
-    val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
+    data object Loading : LoginState()
 
-    fun login(email: String, password: String) {
-        viewModelScope.launch {
-            _loginState.value = LoginState.Loading
-            _loginState.value = when (val result = AuthManager.loginWithFirebase(email, password)) {
-                is AuthManager.FirebaseLoginResult.Success -> LoginState.Success
-                is AuthManager.FirebaseLoginResult.Error -> LoginState.Error(result.message)
-            }
-        }
-    }
+    data class Error(val message: String) : LoginState()
 
-    fun resetState() {
-        _loginState.value = LoginState.Idle
+    data object Success : LoginState()
+  }
+
+  private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
+  val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
+
+  fun login(email: String, password: String) {
+    viewModelScope.launch {
+      _loginState.value = LoginState.Loading
+      _loginState.value =
+          when (val result = AuthManager.loginWithFirebase(email, password)) {
+            is AuthManager.FirebaseLoginResult.Success -> LoginState.Success
+            is AuthManager.FirebaseLoginResult.Error -> LoginState.Error(result.message)
+          }
     }
+  }
+
+  fun resetState() {
+    _loginState.value = LoginState.Idle
+  }
 }
