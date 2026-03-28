@@ -45,27 +45,30 @@ import tech.datatower.sebrae.desafio.navigation.AppRoutes
 import javax.inject.Inject
 
 @HiltViewModel
-class ClassDetailViewModel @Inject constructor(
+class ClassDetailViewModel
+@Inject
+constructor(
     private val repository: AppRepository,
     private val dataConnectService: FirebaseDataConnectService,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val classId: Int = checkNotNull(savedStateHandle[AppRoutes.CLASS_ID_ARG])
+  private val classId: Int = checkNotNull(savedStateHandle[AppRoutes.CLASS_ID_ARG])
 
-    val schoolClass: StateFlow<SchoolClass?> = repository.observeClassById(classId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+  val schoolClass: StateFlow<SchoolClass?> =
+      repository
+          .observeClassById(classId)
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val students: StateFlow<List<Student>> = schoolClass
-        .flatMapLatest { c ->
+  val students: StateFlow<List<Student>> =
+      schoolClass
+          .flatMapLatest { c ->
             val name = c?.name ?: return@flatMapLatest flowOf(emptyList())
             repository.observeStudentsByClass(name)
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+          }
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    init {
-        viewModelScope.launch {
-            dataConnectService.syncScope(ScreenDataScope.CLASS_DETAIL)
-        }
-    }
+  init {
+    viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.CLASS_DETAIL) }
+  }
 }
