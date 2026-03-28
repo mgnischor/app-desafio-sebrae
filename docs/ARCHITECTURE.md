@@ -4,7 +4,7 @@
 
 O aplicativo é um sistema de **Gestão Educacional** para Android, desenvolvido em Kotlin com
 Jetpack Compose. Segue uma arquitetura em camadas inspirada no **Clean Architecture**, combinada
-com o padrão **Repository** e um grafo de dependências manual (sem framework de DI).
+com o padrão **Repository** e injeção de dependências via **Hilt**.
 
 ---
 
@@ -19,6 +19,7 @@ com o padrão **Repository** e um grafo de dependências manual (sem framework d
 | Banco local | Room | 2.8.4 |
 | Backend remoto | Firebase Firestore | 26.1.2 |
 | Autenticação | Firebase Auth | 24.0.1 |
+| Injeção de Dependências | Hilt | 2.59.2 |
 | Geração de código | KSP | 2.3.6 |
 | Coroutines | Kotlinx Coroutines | 1.10.2 |
 | Build | AGP | 9.1.0 |
@@ -76,8 +77,11 @@ com o padrão **Repository** e um grafo de dependências manual (sem framework d
 
 ```
 tech.datatower.sebrae.desafio/
-├── SebraeApplication.kt          # Application — pre-warm do grafo
-├── MainActivity.kt               # Única Activity; aplica tema e inicia NavHost
+├── SebraeApplication.kt          # @HiltAndroidApp — pre-warm + bootstrap via AppGraph
+├── MainActivity.kt               # @AndroidEntryPoint — @Inject AppRepository; aplica tema
+│
+├── di/
+│   └── AppModule.kt              # @Module @InstallIn(SingletonComponent) — provê todos os singletons
 │
 ├── navigation/
 │   ├── AppNavHost.kt             # Declaração do NavHost com todas as rotas
@@ -98,7 +102,7 @@ tech.datatower.sebrae.desafio/
 │   │   └── AccessPolicy.kt       # RBAC — regras por papel e recurso
 │   └── repository/
 │       ├── AppRepository.kt      # Único repositório; expõe Flow<T>
-│       └── AppGraph.kt           # Grafo manual de dependências (singleton)
+│       └── AppGraph.kt           # @EntryPoint bridge — acesso ao grafo Hilt em contextos Compose
 │
 └── ui/
     ├── theme/                    # Color.kt, Theme.kt, Type.kt
@@ -118,25 +122,55 @@ tech.datatower.sebrae.desafio/
 
 ---
 
-## Padrão de Injeção de Dependência
+## Injeção de Dependências (Hilt)
 
-O projeto **não utiliza Hilt nem Koin**. A injeção é feita via **grafo manual** (`AppGraph`),
-um `object` singleton seguro para threads que inicializa `AppDatabase`, `AppDao`,
-`AppRepository` e `FirebaseDataConnectService` com `Double-Checked Locking`:
+O projeto utiliza **Hilt** (`com.google.dagger:hilt-android:2.56.2`) para gerenciar o ciclo de vida
+de todas as dependências singleton da camada de dados. O processamento de anotações é feito via
+**KSP** (sem KAPT).
+
+### Entrypoints Android
+
+- `SebraeApplication` — anotada com `@HiltAndroidApp`; dispara a inicialização do grafo Hilt e
+  chama `AppGraph.warmUp()` para pré-aquecer singletons e Bootstrap remoto antes do primeiro frame.
+- `MainActivity` — anotada com `@AndroidEntryPoint`; recebe `AppRepository` via `@Inject`.
+
+### Módulo de Dados (`di/AppModule.kt`)
+
+Todo provisionamento de singletons está centralizado em `AppModule`, instalado em
+`SingletonComponent`:
+
+| Binding | Escopo | Descrição |
+|---|---|---|
+| `AppDatabase` | `@Singleton` | Room DB `sebrae_local.db` |
+| `AppDao` | `@Singleton` | DAO extraído do `AppDatabase` |
+| `MutableStateFlow<Int>` (`@DataSourceLabelFlow`) | `@Singleton` | Rótulo reativo da fonte de dados |
+| `AppRepository` | `@Singleton` | Repositório central da UI |
+| `FirebaseFirestore` | `@Singleton` | Instância do Firestore |
+| `FirebaseSeedCredentialStore` | `@Singleton` | Store de credenciais cifradas |
+| `FirebaseDataConnectService` | `@Singleton` | Serviço de sync Firestore → Room |
+
+### Bridge para Composables (`AppGraph`)
+
+Composables que não são injetados via ViewModel ainda acessam dependências através de
+`AppGraph.repository(context)` e `AppGraph.dataConnectService(context)`. Internamente,
+`AppGraph` usa `@EntryPoint` + `EntryPointAccessors` para delegar ao container Hilt,
+garantindo que **uma única instância singleton** seja usada em toda a aplicação:
 
 ```kotlin
-object AppGraph {
-    @Volatile private var repository: AppRepository? = null
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface AppGraphEntryPoint {
+    fun repository(): AppRepository
+    fun dataConnectService(): FirebaseDataConnectService
+    fun dao(): AppDao
+}
 
+object AppGraph {
     fun repository(context: Context): AppRepository =
-        repository ?: synchronized(this) {
-            repository ?: buildRepository(context.applicationContext).also { repository = it }
-        }
+        EntryPointAccessors.fromApplication(context.applicationContext,
+            AppGraphEntryPoint::class.java).repository()
 }
 ```
-
-O `AppGraph.warmUp()` é chamado no `SebraeApplication.onCreate()` para pré-aquecer as
-dependências antes do primeiro frame da UI.
 
 ---
 
@@ -198,10 +232,11 @@ na `MainActivity`.
 
 ## Checklist de Melhorias de Arquitetura
 
-- [ ] **Adotar Hilt** para substituir o grafo manual (`AppGraph`), reduzindo boilerplate e
+- [x] **Adotar Hilt** para substituir o grafo manual (`AppGraph`), reduzindo boilerplate e
   tornando as dependências testáveis
 - [ ] **Introduzir ViewModels** para cada feature, separando lógica de estado da camada de UI
-  e sobrevivendo a reconfiguração de tela
+  e sobrevivendo a reconfiguração de tela; com Hilt já configurado, basta adicionar
+  `@HiltViewModel` e `@Inject constructor`
 - [ ] **Criar módulos Gradle por feature** (`students`, `courses`, etc.) para melhorar tempos
   de build incremental e limitar visibilidade entre módulos
 - [ ] **Definir UseCases** (interactors) entre o `AppRepository` e a UI, evitando que regras de
@@ -210,7 +245,8 @@ na `MainActivity`.
   `false` sem fazer nada)
 - [ ] **Adicionar tratamento de estado offline** explícito: exibir indicador de dados desatualizados
   quando não há conectividade
-- [ ] **Cobrir o repositório com testes de integração** usando Room in-memory database
+- [ ] **Cobrir o repositório com testes de integração** usando Room in-memory database;
+  com Hilt, usar `@HiltAndroidTest` + `HiltTestApplication`
 - [ ] **Migrar de `fallbackToDestructiveMigration`** para migrações versionadas no Room, evitando
   perda de dados em atualizações
 - [ ] **Centralizar CoroutineScope** de operações de dados: evitar criação de scope local em
