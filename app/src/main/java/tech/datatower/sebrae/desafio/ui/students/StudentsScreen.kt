@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/students/StudentsScreen.kt
+    Descrição: Tela de listagem de alunos, com busca, filtro e ações de gerenciamento.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.students
 
 import androidx.compose.foundation.clickable
@@ -43,19 +69,17 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
+import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
 import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
@@ -63,8 +87,6 @@ import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Student
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
-import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.EmptyState
 import tech.datatower.sebrae.desafio.ui.components.ListSearchHeader
@@ -99,21 +121,20 @@ fun StudentsScreen(
       AccessPolicy.can(currentUser?.role, ProtectedResource.Students, ProtectedAction.Delete)
   val actionErrorMessage = stringResource(R.string.action_error)
 
-  val context = LocalContext.current
-  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataConnectService =
-      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
-  val scope = rememberCoroutineScope()
+  val viewModel: StudentsViewModel = hiltViewModel()
+  val allStudents by viewModel.students.collectAsState()
+  val isRefreshing by viewModel.isRefreshing.collectAsState()
+  val isInitialLoading by viewModel.isInitialLoading.collectAsState()
+  val actionResult by viewModel.actionResult.collectAsState()
   val snackbarHostState = remember { SnackbarHostState() }
-  val allStudents by repository.observeStudents().collectAsState(initial = emptyList())
   var query by rememberSaveable { mutableStateOf("") }
-  var isRefreshing by rememberSaveable { mutableStateOf(false) }
-  var isInitialLoading by remember { mutableStateOf(true) }
   val listState = rememberLazyListState()
 
-  LaunchedEffect(Unit) {
-    dataConnectService.syncScope(ScreenDataScope.STUDENTS)
-    isInitialLoading = false
+  LaunchedEffect(actionResult) {
+    if (actionResult is StudentsViewModel.ActionResult.Error) {
+      snackbarHostState.showSnackbar(actionErrorMessage)
+      viewModel.clearActionResult()
+    }
   }
 
   val filtered by
@@ -136,17 +157,7 @@ fun StudentsScreen(
   DetailScaffold(title = stringResource(R.string.students_title), onBack = onBack) { innerPadding, _
     ->
     /** Executa a rotina de refresh students dentro do contexto deste componente. */
-    fun refreshStudents() {
-      if (isRefreshing) return
-      scope.launch {
-        isRefreshing = true
-        try {
-          dataConnectService.syncScope(ScreenDataScope.STUDENTS)
-        } finally {
-          isRefreshing = false
-        }
-      }
-    }
+    fun refreshStudents() = viewModel.refresh()
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -206,42 +217,9 @@ fun StudentsScreen(
                   canDeactivate = canDeactivateStudent,
                   canReactivate = canReactivateStudent,
                   canDelete = canDeleteStudent,
-                  onDeactivate = {
-                    scope.launch {
-                      val result = dataConnectService.deactivateStudent(currentUser, student)
-                      if (
-                          result
-                              is
-                              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
-                      ) {
-                        snackbarHostState.showSnackbar(actionErrorMessage)
-                      }
-                    }
-                  },
-                  onReactivate = {
-                    scope.launch {
-                      val result = dataConnectService.reactivateStudent(currentUser, student)
-                      if (
-                          result
-                              is
-                              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
-                      ) {
-                        snackbarHostState.showSnackbar(actionErrorMessage)
-                      }
-                    }
-                  },
-                  onDelete = {
-                    scope.launch {
-                      val result = dataConnectService.deleteStudent(currentUser, student.id)
-                      if (
-                          result
-                              is
-                              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
-                      ) {
-                        snackbarHostState.showSnackbar(actionErrorMessage)
-                      }
-                    }
-                  },
+                  onDeactivate = { viewModel.deactivateStudent(currentUser, student) },
+                  onReactivate = { viewModel.reactivateStudent(currentUser, student) },
+                  onDelete = { viewModel.deleteStudent(currentUser, student.id) },
               )
             }
           }
