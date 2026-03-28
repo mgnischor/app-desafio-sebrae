@@ -150,7 +150,8 @@
     <string name="label_average_grade">Média %.1f</string>
 
     <string name="attendance_section_title">Cadastro de frequência</string>
-    <string name="attendance_rule_1">Status por dia/aula: Presente, Falta, Falta Justificada, Atraso.</string>
+    <string name="attendance_rule_1">Status por dia/aula: Presente, Falta, Falta Justificada,
+        Atraso.</string>
     <string name="attendance_rule_2">Falta justificada deve registrar motivo e protocolo.</string>
     <string name="attendance_rule_3">Atraso registra minutos para gatilhos recorrentes.</string>
     <string name="label_justification">Justificativa: %s</string>
@@ -368,13 +369,17 @@
     <string name="stat_data_source">dados locais</string>
     <string name="stat_data_source_cloud">dados sincronizados</string>
     <string name="permission_denied" translatable="false">Você não tem permissão para esta ação.</string>
-    <string name="class_create_error_relationship" translatable="false">Curso ou instrutor inválido para a turma.</string>
+    <string name="class_create_error_relationship" translatable="false">Curso ou instrutor inválido
+        para a turma.</string>
     <string name="calendar_create_error" translatable="false">Não foi possível salvar o evento.</string>
-    <string name="settings_storage_cleared" translatable="false">Cache e dados operacionais foram limpos.</string>
+    <string name="settings_storage_cleared" translatable="false">Cache e dados operacionais foram
+        limpos.</string>
     <string name="settings_item_reset_database">Resetar banco de dados</string>
     <string name="settings_subtitle_reset_database">Apagar todos os dados locais e do Firebase</string>
     <string name="settings_reset_database_confirm_title">Confirmar reset completo</string>
-    <string name="settings_reset_database_confirm_message">Esta ação apagará de forma irreversível todos os dados operacionais locais e do Firebase — cursos, alunos, turmas, certificados e relatórios. Os usuários cadastrados serão preservados. Deseja continuar?</string>
+    <string name="settings_reset_database_confirm_message">Esta ação apagará de forma irreversível
+        todos os dados operacionais locais e do Firebase — cursos, alunos, turmas, certificados e
+        relatórios. Os usuários cadastrados serão preservados. Deseja continuar?</string>
     <string name="settings_reset_database_action">Resetar tudo</string>
     <string name="settings_reset_database_success">Base de dados resetada com sucesso.</string>
     <string name="settings_reset_database_cancel">Cancelar</string>
@@ -392,6 +397,9 @@
     <!-- Loading overlay -->
     <string name="loading_syncing">Sincronizando dados…</string>
     <string name="loading_saving">Salvando…</string>
+
+    <!-- Offline -->
+    <string name="offline_banner_message">Sem conexão — exibindo dados salvos localmente</string>
 
     <!-- Componente SearchableDropdown -->
     <string name="dropdown_search">Buscar</string>
@@ -417,6 +425,7 @@
     <string name="user_profile_label_student_status">Situação</string>
     <string name="user_profile_classes_taught">Turmas que ministra:</string>
     <string name="user_profile_classes_enrolled">Turmas matriculado:</string>
-    <string name="user_profile_no_links">Este usuário ainda não possui vínculo como instrutor ou aluno.</string>
+    <string name="user_profile_no_links">Este usuário ainda não possui vínculo como instrutor ou
+        aluno.</string>
     <string name="user_profile_view_button">Ver perfil</string>
 </resources>
