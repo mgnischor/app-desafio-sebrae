@@ -237,13 +237,13 @@ na `MainActivity`.
 - [x] **Introduzir ViewModels** para cada feature, separando lógica de estado da camada de UI
   e sobrevivendo a reconfiguração de tela; com Hilt já configurado, basta adicionar
   `@HiltViewModel` e `@Inject constructor`
-- [ ] **Criar módulos Gradle por feature** (`students`, `courses`, etc.) para melhorar tempos
+- [x] **Criar módulos Gradle por feature** (`students`, `courses`, etc.) para melhorar tempos
   de build incremental e limitar visibilidade entre módulos
 - [ ] **Definir UseCases** (interactors) entre o `AppRepository` e a UI, evitando que regras de
   negócio fiquem espalhadas nos Composables
 - [ ] **Implementar o `RemoteBootstrapper`** com hydration real do Firestore (atualmente retorna
   `false` sem fazer nada)
-- [ ] **Adicionar tratamento de estado offline** explícito: exibir indicador de dados desatualizados
+- [x] **Adicionar tratamento de estado offline** explícito: exibir indicador de dados desatualizados
   quando não há conectividade
 - [ ] **Cobrir o repositório com testes de integração** usando Room in-memory database;
   com Hilt, usar `@HiltAndroidTest` + `HiltTestApplication`
