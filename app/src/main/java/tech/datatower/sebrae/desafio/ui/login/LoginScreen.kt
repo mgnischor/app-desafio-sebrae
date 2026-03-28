@@ -128,7 +128,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
     }
   }
   /** Executa a rotina de attempt login dentro do contexto deste componente. */
-  fun attemptLogin() { viewModel.login(email, password) }
+  fun attemptLogin() {
+    viewModel.login(email, password)
+  }
 
   Scaffold(
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -193,15 +195,21 @@ private fun LogoSection() {
   val density = LocalDensity.current
   // Obtém o ícone do launcher via PackageManager — funciona com adaptive icons (API 26+)
   // sem depender de painterResource, que não suporta drawables adaptativos.
-  val iconBitmap = remember(context, density) {
-    val drawable = context.packageManager.getApplicationIcon(context.packageName)
-    val sizePx = with(density) { 80.dp.roundToPx() }
-    val bmp = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
-    val canvas = android.graphics.Canvas(bmp)
-    drawable.setBounds(0, 0, sizePx, sizePx)
-    drawable.draw(canvas)
-    bmp.asImageBitmap()
-  }
+  val iconBitmap =
+      remember(context, density) {
+        val drawable = context.packageManager.getApplicationIcon(context.packageName)
+        val sizePx = with(density) { 80.dp.roundToPx() }
+        val bmp =
+            android.graphics.Bitmap.createBitmap(
+                sizePx,
+                sizePx,
+                android.graphics.Bitmap.Config.ARGB_8888,
+            )
+        val canvas = android.graphics.Canvas(bmp)
+        drawable.setBounds(0, 0, sizePx, sizePx)
+        drawable.draw(canvas)
+        bmp.asImageBitmap()
+      }
   Column(horizontalAlignment = Alignment.CenterHorizontally) {
     Image(
         bitmap = iconBitmap,
