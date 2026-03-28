@@ -234,7 +234,7 @@ na `MainActivity`.
 
 - [x] **Adotar Hilt** para substituir o grafo manual (`AppGraph`), reduzindo boilerplate e
   tornando as dependências testáveis
-- [ ] **Introduzir ViewModels** para cada feature, separando lógica de estado da camada de UI
+- [x] **Introduzir ViewModels** para cada feature, separando lógica de estado da camada de UI
   e sobrevivendo a reconfiguração de tela; com Hilt já configurado, basta adicionar
   `@HiltViewModel` e `@Inject constructor`
 - [ ] **Criar módulos Gradle por feature** (`students`, `courses`, etc.) para melhorar tempos
