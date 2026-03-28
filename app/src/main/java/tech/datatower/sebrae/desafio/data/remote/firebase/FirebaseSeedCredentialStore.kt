@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/data/remote/firebase/FirebaseSeedCredentialStore.kt
+    Descrição: Armazenamento local de credenciais de seed para autenticação no Firebase.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.data.remote.firebase
 
 import android.content.Context
@@ -14,7 +40,7 @@ import javax.crypto.spec.GCMParameterSpec
 /**
  * Armazena credenciais de seed do Firebase em storage protegido por Android Keystore.
  *
- * O valor eh cifrado com AES/GCM; a chave fica no Keystore do dispositivo.
+ * O valor é cifrado com AES/GCM; a chave fica no Keystore do dispositivo.
  */
 class FirebaseSeedCredentialStore(context: Context) {
 
@@ -24,33 +50,33 @@ class FirebaseSeedCredentialStore(context: Context) {
   /**
    * Executa a rotina de has credentials dentro do contexto deste componente.
    *
-   * @return Resultado produzido pela opera??o em formato `Boolean`.
+   * @return Resultado produzido pela operação em formato `Boolean`.
    */
   fun hasCredentials(): Boolean =
       decrypt(KEY_EMAIL_DATA, KEY_EMAIL_IV).isNotBlank() &&
           decrypt(KEY_PASSWORD_DATA, KEY_PASSWORD_IV).isNotBlank()
 
   /**
-   * Obt?m dados necess?rios para email de forma consistente.
+   * Obtém dados necessários para email de forma consistente.
    *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `String`.
+   * @param ) Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `String`.
    */
   fun getEmail(): String = decrypt(KEY_EMAIL_DATA, KEY_EMAIL_IV)
 
   /**
-   * Obt?m dados necess?rios para password de forma consistente.
+   * Obtém dados necessários para password de forma consistente.
    *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `String`.
+   * @param ) Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `String`.
    */
   fun getPassword(): String = decrypt(KEY_PASSWORD_DATA, KEY_PASSWORD_IV)
 
   /**
    * Executa a rotina de save credentials dentro do contexto deste componente.
    *
-   * @param email Valor de entrada utilizado por esta opera??o.
-   * @param password Valor de entrada utilizado por esta opera??o.
+   * @param email Valor de entrada utilizado por esta operação.
+   * @param password Valor de entrada utilizado por esta operação.
    */
   fun saveCredentials(email: String, password: String) {
     if (email.isBlank() || password.isBlank()) return
@@ -72,9 +98,9 @@ class FirebaseSeedCredentialStore(context: Context) {
   /**
    * Executa a rotina de encrypt and save dentro do contexto deste componente.
    *
-   * @param value Valor de entrada utilizado por esta opera??o.
-   * @param dataKey Valor de entrada utilizado por esta opera??o.
-   * @param ivKey Valor de entrada utilizado por esta opera??o.
+   * @param value Valor de entrada utilizado por esta operação.
+   * @param dataKey Valor de entrada utilizado por esta operação.
+   * @param ivKey Valor de entrada utilizado por esta operação.
    */
   private fun encryptAndSave(value: String, dataKey: String, ivKey: String) {
     val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -88,9 +114,9 @@ class FirebaseSeedCredentialStore(context: Context) {
   /**
    * Executa a rotina de decrypt dentro do contexto deste componente.
    *
-   * @param dataKey Valor de entrada utilizado por esta opera??o.
-   * @param ivKey Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `String`.
+   * @param dataKey Valor de entrada utilizado por esta operação.
+   * @param ivKey Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `String`.
    */
   private fun decrypt(dataKey: String, ivKey: String): String {
     val encryptedBase64 = prefs.getString(dataKey, null) ?: return ""
@@ -107,9 +133,9 @@ class FirebaseSeedCredentialStore(context: Context) {
   }
 
   /**
-   * Obt?m dados necess?rios para or create secret key de forma consistente.
+   * Obtém dados necessários para or create secret key de forma consistente.
    *
-   * @return Resultado produzido pela opera??o em formato `SecretKey`.
+   * @return Resultado produzido pela operação em formato `SecretKey`.
    */
   private fun getOrCreateSecretKey(): SecretKey {
     val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
