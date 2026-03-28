@@ -42,21 +42,22 @@ import tech.datatower.sebrae.desafio.navigation.AppRoutes
 import javax.inject.Inject
 
 @HiltViewModel
-class StudentMonitoringViewModel @Inject constructor(
+class StudentMonitoringViewModel
+@Inject
+constructor(
     private val repository: AppRepository,
     private val dataConnectService: FirebaseDataConnectService,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val studentId: Int = checkNotNull(savedStateHandle[AppRoutes.STUDENT_ID_ARG])
+  private val studentId: Int = checkNotNull(savedStateHandle[AppRoutes.STUDENT_ID_ARG])
 
-    val snapshot: StateFlow<StudentMonitoringSnapshot?> =
-        repository.observeStudentMonitoringSnapshot(studentId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+  val snapshot: StateFlow<StudentMonitoringSnapshot?> =
+      repository
+          .observeStudentMonitoringSnapshot(studentId)
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    init {
-        viewModelScope.launch {
-            dataConnectService.syncScope(ScreenDataScope.STUDENT_MONITORING)
-        }
-    }
+  init {
+    viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.STUDENT_MONITORING) }
+  }
 }
