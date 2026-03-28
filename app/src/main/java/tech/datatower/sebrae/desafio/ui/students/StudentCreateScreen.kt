@@ -62,11 +62,14 @@ import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
 import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
 import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.AppUser
+import tech.datatower.sebrae.desafio.data.model.Course
 import tech.datatower.sebrae.desafio.data.model.RelationshipRules
+import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.model.Student
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
+import tech.datatower.sebrae.desafio.ui.components.SearchableDropdown
 
 /**
  * Executa a rotina de student create screen dentro do contexto deste componente.
@@ -105,8 +108,8 @@ fun StudentCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
 
   var name by rememberSaveable { mutableStateOf("") }
   var email by rememberSaveable { mutableStateOf("") }
-  var course by rememberSaveable { mutableStateOf("") }
-  var enrolledClass by rememberSaveable { mutableStateOf("") }
+  var selectedCourse by remember { mutableStateOf<Course?>(null) }
+  var selectedClass by remember { mutableStateOf<SchoolClass?>(null) }
   var progressPercent by rememberSaveable { mutableStateOf("0") }
   var status by rememberSaveable { mutableStateOf(StudentStatus.Active) }
   val requiredFieldsMessage = stringResource(R.string.student_create_error_required)
@@ -114,133 +117,153 @@ fun StudentCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val deniedMessage = stringResource(R.string.permission_denied)
 
   Box(modifier = Modifier.fillMaxSize()) {
-  DetailScaffold(title = stringResource(R.string.student_create_title), onBack = onBack) {
-      innerPadding,
-      _ ->
-    Column(
-        modifier =
-            Modifier.fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-      SnackbarHost(hostState = snackbarHostState)
+    DetailScaffold(title = stringResource(R.string.student_create_title), onBack = onBack) {
+        innerPadding,
+        _ ->
+      Column(
+          modifier =
+              Modifier.fillMaxSize()
+                  .padding(innerPadding)
+                  .padding(horizontal = 20.dp)
+                  .verticalScroll(rememberScrollState()),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        SnackbarHost(hostState = snackbarHostState)
 
-      OutlinedTextField(
-          value = name,
-          onValueChange = { name = it },
-          label = { Text(stringResource(R.string.student_create_name)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = email,
-          onValueChange = { email = it },
-          label = { Text(stringResource(R.string.student_create_email)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = course,
-          onValueChange = { course = it },
-          label = { Text(stringResource(R.string.student_create_course)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = enrolledClass,
-          onValueChange = { enrolledClass = it },
-          label = { Text(stringResource(R.string.student_create_class)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = progressPercent,
-          onValueChange = { progressPercent = it.filter(Char::isDigit) },
-          label = { Text(stringResource(R.string.student_create_progress)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text(stringResource(R.string.student_create_name)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text(stringResource(R.string.student_create_email)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
 
-      Text(
-          text = stringResource(R.string.student_create_status),
-          style = MaterialTheme.typography.labelLarge,
-      )
-      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        StudentStatus.entries.forEach { item ->
-          FilterChip(
-              selected = status == item,
-              onClick = { status = item },
-              label = {
-                Text(
-                    stringResource(
-                        when (item) {
-                          StudentStatus.Active -> R.string.status_active
-                          StudentStatus.Inactive -> R.string.status_inactive
-                          StudentStatus.Graduated -> R.string.status_graduated
-                        }
-                    )
-                )
-              },
-          )
+        SearchableDropdown(
+            label = stringResource(R.string.student_create_course),
+            items = courses,
+            selected = selectedCourse,
+            itemLabel = { it.title },
+            onItemSelected = { picked ->
+              selectedCourse = picked
+              selectedClass = null // limpa turma ao trocar de curso
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // Somente exibe turmas do curso selecionado
+        val availableClasses =
+            remember(classes, selectedCourse) {
+              val courseName = selectedCourse?.title ?: return@remember emptyList<SchoolClass>()
+              classes.filter { it.course.equals(courseName, ignoreCase = true) }
+            }
+
+        SearchableDropdown(
+            label = stringResource(R.string.student_create_class),
+            items = availableClasses,
+            selected = selectedClass,
+            itemLabel = { it.name },
+            onItemSelected = { selectedClass = it },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        OutlinedTextField(
+            value = progressPercent,
+            onValueChange = { progressPercent = it.filter(Char::isDigit) },
+            label = { Text(stringResource(R.string.student_create_progress)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+
+        Text(
+            text = stringResource(R.string.student_create_status),
+            style = MaterialTheme.typography.labelLarge,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          StudentStatus.entries.forEach { item ->
+            FilterChip(
+                selected = status == item,
+                onClick = { status = item },
+                label = {
+                  Text(
+                      stringResource(
+                          when (item) {
+                            StudentStatus.Active -> R.string.status_active
+                            StudentStatus.Inactive -> R.string.status_inactive
+                            StudentStatus.Graduated -> R.string.status_graduated
+                          }
+                      )
+                  )
+                },
+            )
+          }
+        }
+
+        Button(
+            onClick = {
+              val progress = progressPercent.toIntOrNull()
+              if (
+                  name.isBlank() ||
+                      email.isBlank() ||
+                      selectedCourse == null ||
+                      selectedClass == null
+              ) {
+                scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
+                return@Button
+              }
+              if (progress == null || progress !in 0..100) {
+                scope.launch { snackbarHostState.showSnackbar(invalidProgressMessage) }
+                return@Button
+              }
+
+              if (
+                  !AccessPolicy.can(
+                      currentUser?.role,
+                      ProtectedResource.Students,
+                      ProtectedAction.Create,
+                  )
+              ) {
+                scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
+                return@Button
+              }
+
+              val candidate =
+                  Student(
+                      id = (students.maxOfOrNull { it.id } ?: 0) + 1,
+                      name = name.trim(),
+                      email = email.trim(),
+                      course = selectedCourse!!.title,
+                      enrolledClass = selectedClass!!.name,
+                      progress = progress / 100f,
+                      status = status,
+                  )
+
+              val relationshipError =
+                  RelationshipRules.validateStudentLinks(
+                      student = candidate,
+                      existingCourses = courses,
+                      existingClasses = classes,
+                  )
+              if (relationshipError != null) {
+                scope.launch { snackbarHostState.showSnackbar(relationshipError) }
+                return@Button
+              }
+
+              viewModel.saveStudent(currentUser, candidate)
+            },
+            enabled = !isSaving,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        ) {
+          Text(stringResource(R.string.student_create_save))
         }
       }
-
-      Button(
-          onClick = {
-            val progress = progressPercent.toIntOrNull()
-            if (name.isBlank() || email.isBlank() || course.isBlank() || enrolledClass.isBlank()) {
-              scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
-              return@Button
-            }
-            if (progress == null || progress !in 0..100) {
-              scope.launch { snackbarHostState.showSnackbar(invalidProgressMessage) }
-              return@Button
-            }
-
-            if (
-                !AccessPolicy.can(
-                    currentUser?.role,
-                    ProtectedResource.Students,
-                    ProtectedAction.Create,
-                )
-            ) {
-              scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
-              return@Button
-            }
-
-            val candidate =
-                Student(
-                    id = (students.maxOfOrNull { it.id } ?: 0) + 1,
-                    name = name.trim(),
-                    email = email.trim(),
-                    course = course.trim(),
-                    enrolledClass = enrolledClass.trim(),
-                    progress = progress / 100f,
-                    status = status,
-                )
-
-            val relationshipError =
-                RelationshipRules.validateStudentLinks(
-                    student = candidate,
-                    existingCourses = courses,
-                    existingClasses = classes,
-                )
-            if (relationshipError != null) {
-              scope.launch { snackbarHostState.showSnackbar(relationshipError) }
-              return@Button
-            }
-
-            viewModel.saveStudent(currentUser, candidate)
-          },
-          enabled = !isSaving,
-          modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-      ) {
-        Text(stringResource(R.string.student_create_save))
-      }
     }
-  }
-  LoadingOverlay(isVisible = isSaving, message = stringResource(R.string.loading_saving))
+    LoadingOverlay(isVisible = isSaving, message = stringResource(R.string.loading_saving))
   }
 }
