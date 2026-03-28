@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/teachers/TeacherCreateScreen.kt
+    Descrição: Tela de cadastro de novo professor com dados pessoais e disciplinas.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.teachers
 
 import androidx.compose.foundation.layout.Arrangement
@@ -24,9 +50,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
@@ -34,9 +60,6 @@ import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
 import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Teacher
-import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
-import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 
@@ -48,15 +71,30 @@ import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeacherCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
-  val context = LocalContext.current
-  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataService = remember(context) { AppGraph.dataConnectService(context.applicationContext) }
+  val viewModel: TeacherCreateViewModel = hiltViewModel()
   val scope = rememberCoroutineScope()
   val snackbarHostState = remember { SnackbarHostState() }
 
-  val teachers by repository.observeTeachers().collectAsState(initial = emptyList())
+  val teachers by viewModel.teachers.collectAsState()
+  val saveState by viewModel.saveState.collectAsState()
+  val isSaving = saveState is TeacherCreateViewModel.SaveState.Saving
 
-  LaunchedEffect(Unit) { dataService.syncScope(ScreenDataScope.TEACHERS) }
+  val saveSuccessMessage = stringResource(R.string.teacher_create_success)
+  val saveErrorMessage = stringResource(R.string.teacher_create_error_save)
+  LaunchedEffect(saveState) {
+    when (val s = saveState) {
+      is TeacherCreateViewModel.SaveState.Success -> {
+        snackbarHostState.showSnackbar(saveSuccessMessage)
+        viewModel.resetSaveState()
+        onBack()
+      }
+      is TeacherCreateViewModel.SaveState.Error -> {
+        snackbarHostState.showSnackbar(s.message.ifBlank { saveErrorMessage })
+        viewModel.resetSaveState()
+      }
+      else -> Unit
+    }
+  }
 
   var name by rememberSaveable { mutableStateOf("") }
   var email by rememberSaveable { mutableStateOf("") }
@@ -66,10 +104,7 @@ fun TeacherCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   var rating by rememberSaveable { mutableStateOf("0.0") }
   val requiredFieldsMessage = stringResource(R.string.teacher_create_error_required)
   val invalidNumericMessage = stringResource(R.string.teacher_create_error_numeric)
-  val saveSuccessMessage = stringResource(R.string.teacher_create_success)
-  val saveErrorMessage = stringResource(R.string.teacher_create_error_save)
   val deniedMessage = stringResource(R.string.permission_denied)
-  var isSaving by remember { mutableStateOf(false) }
 
   Box(modifier = Modifier.fillMaxSize()) {
   DetailScaffold(title = stringResource(R.string.teacher_create_title), onBack = onBack) {
@@ -154,36 +189,21 @@ fun TeacherCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
               return@Button
             }
 
-            scope.launch {
-              isSaving = true
-              val nextId = (teachers.maxOfOrNull { it.id } ?: 0) + 1
-              when (
-                  val result =
-                      dataService.upsertTeacher(
-                          requester = currentUser,
-                          teacher =
-                              Teacher(
-                                  id = nextId,
-                                  name = name.trim(),
-                                  email = email.trim(),
-                                  specialty = specialty.trim(),
-                                  activeCourses = active,
-                                  totalStudents = students,
-                                  rating = score,
-                                  isActive = true,
-                              ),
-                      )
-              ) {
-                is FirebaseDataConnectService.Result.Success -> {
-                  snackbarHostState.showSnackbar(saveSuccessMessage)
-                  onBack()
-                }
-                is FirebaseDataConnectService.Result.Error ->
-                    snackbarHostState.showSnackbar(result.message.ifBlank { saveErrorMessage })
-                FirebaseDataConnectService.Result.Loading -> Unit
-              }
-              isSaving = false
-            }
+            val nextId = (teachers.maxOfOrNull { it.id } ?: 0) + 1
+            viewModel.saveTeacher(
+                requester = currentUser,
+                teacher =
+                    Teacher(
+                        id = nextId,
+                        name = name.trim(),
+                        email = email.trim(),
+                        specialty = specialty.trim(),
+                        activeCourses = active,
+                        totalStudents = students,
+                        rating = score,
+                        isActive = true,
+                    ),
+            )
           },
           enabled = !isSaving,
           modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
