@@ -23,7 +23,7 @@
     O descumprimento destes termos poderá resultar em medidas legais cabíveis.
 
     Todos os direitos reservados.
-*/package tech.datatower.sebrae.desafio.ui.theme
+*/ package tech.datatower.sebrae.desafio.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
