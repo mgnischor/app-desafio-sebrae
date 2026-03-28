@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/calendar/CalendarScreen.kt
+    Descrição: Tela de calendário educacional, exibindo e permitindo a criação de eventos por data.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.calendar
 
 import androidx.compose.foundation.background
@@ -40,29 +66,24 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
+import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
 import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
 import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
-import tech.datatower.sebrae.desafio.data.local.CalendarEventEntity
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.CalendarEvent
 import tech.datatower.sebrae.desafio.data.model.EventType
-import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.StatusChip
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
@@ -75,21 +96,23 @@ import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(currentUser: AppUser? = null, onBack: () -> Unit = {}) {
-  val context = LocalContext.current
-  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataConnectService =
-      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
-  val events by repository.observeCalendarEvents().collectAsState(initial = emptyList())
+  val viewModel: CalendarViewModel = hiltViewModel()
+  val events by viewModel.events.collectAsState()
+  val grouped by viewModel.groupedEvents.collectAsState()
+  val actionResult by viewModel.actionResult.collectAsState()
   val listState = rememberLazyListState()
-  val scope = rememberCoroutineScope()
   val snackbarHostState = remember { SnackbarHostState() }
   var showCreateSheet by rememberSaveable { mutableStateOf(false) }
   val createErrorFallback = stringResource(R.string.calendar_create_error)
-  val grouped = remember(events) { events.groupBy { it.date }.entries.toList() }
   val canCreateCalendarEvent =
       AccessPolicy.can(currentUser?.role, ProtectedResource.Calendar, ProtectedAction.Create)
 
-  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.CALENDAR) }
+  LaunchedEffect(actionResult) {
+    if (actionResult is CalendarViewModel.ActionResult.Error) {
+      snackbarHostState.showSnackbar(createErrorFallback)
+      viewModel.clearActionResult()
+    }
+  }
 
   DetailScaffold(title = stringResource(R.string.calendar_title), onBack = onBack) { innerPadding, _
     ->
@@ -141,32 +164,9 @@ fun CalendarScreen(currentUser: AppUser? = null, onBack: () -> Unit = {}) {
       if (showCreateSheet) {
         CalendarEventCreateCard(
             onDismiss = { showCreateSheet = false },
-            onSave = { title, course, date, time, location, type ->
-              scope.launch {
-                val nextId = (events.maxOfOrNull { it.id } ?: 0) + 1
-                val result =
-                    dataConnectService.upsertCalendarEvent(
-                        requester = currentUser,
-                        event =
-                            CalendarEventEntity(
-                                id = nextId,
-                                title = title,
-                                course = course,
-                                date = date,
-                                time = time,
-                                location = location,
-                                type = type,
-                            ),
-                    )
-                showCreateSheet = false
-                if (
-                    result
-                        is
-                        tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
-                ) {
-                  snackbarHostState.showSnackbar(result.message.ifBlank { createErrorFallback })
-                }
-              }
+            onSave = { evtTitle, evtCourse, evtDate, evtTime, evtLocation, evtType ->
+              viewModel.createEvent(currentUser, evtTitle, evtCourse, evtDate, evtTime, evtLocation, evtType)
+              showCreateSheet = false
             },
         )
       }
