@@ -637,5 +637,5 @@ private fun followUpStatusLabel(status: ParentFollowUpStatus): String =
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun StudentMonitoringPreview() {
-  AppDesafioSEBRAETheme { StudentMonitoringScreen(studentId = 1) }
+  AppDesafioSEBRAETheme { StudentMonitoringScreen() }
 }
