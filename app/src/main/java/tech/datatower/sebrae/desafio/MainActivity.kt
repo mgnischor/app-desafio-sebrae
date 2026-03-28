@@ -6,12 +6,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
+import dagger.hilt.android.AndroidEntryPoint
+import tech.datatower.sebrae.desafio.data.model.AppSettings
+import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import tech.datatower.sebrae.desafio.navigation.AppNavHost
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
+import javax.inject.Inject
 
 /**
  * Activity de entrada da aplicação.
@@ -19,7 +20,11 @@ import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
  * Responsável por configurar o conteúdo Compose, aplicar o tema global e iniciar o host de
  * navegação principal.
  */
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+  @Inject lateinit var repository: AppRepository
+
   /**
    * Inicializa a UI declarativa da aplicação e conecta o `NavController` ao `AppNavHost`.
    *
@@ -29,14 +34,12 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
-      val context = LocalContext.current
-      val repository = remember(context) { AppGraph.repository(context.applicationContext) }
       val settings by
           repository
               .observeSettings()
               .collectAsState(
                   initial =
-                      tech.datatower.sebrae.desafio.data.model.AppSettings(
+                      AppSettings(
                           darkMode = false,
                           pushEnabled = true,
                           emailEnabled = false,
