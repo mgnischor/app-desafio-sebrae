@@ -151,83 +151,84 @@ fun ClassesScreen(
       }
 
   Box(modifier = Modifier.fillMaxSize()) {
-  DetailScaffold(title = stringResource(R.string.classes_title), onBack = onBack) { innerPadding, _
-    ->
-    /** Executa a rotina de refresh classes dentro do contexto deste componente. */
-    fun refreshClasses() = viewModel.refresh()
+    DetailScaffold(title = stringResource(R.string.classes_title), onBack = onBack) {
+        innerPadding,
+        _ ->
+      /** Executa a rotina de refresh classes dentro do contexto deste componente. */
+      fun refreshClasses() = viewModel.refresh()
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        floatingActionButton = {
-          if (canCreateClass) {
-            FloatingActionButton(
-                onClick = onCreateClass,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ) {
-              Icon(
-                  imageVector = Icons.Outlined.Add,
-                  contentDescription = stringResource(R.string.classes_add_content_description),
-              )
+      Scaffold(
+          snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+          floatingActionButton = {
+            if (canCreateClass) {
+              FloatingActionButton(
+                  onClick = onCreateClass,
+                  containerColor = MaterialTheme.colorScheme.primary,
+                  contentColor = MaterialTheme.colorScheme.onPrimary,
+              ) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = stringResource(R.string.classes_add_content_description),
+                )
+              }
             }
-          }
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { fabPadding ->
-      PullToRefreshBox(
-          isRefreshing = isRefreshing,
-          onRefresh = ::refreshClasses,
-          modifier = Modifier.fillMaxSize().padding(innerPadding).padding(fabPadding),
-      ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            state = listState,
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+          },
+          containerColor = MaterialTheme.colorScheme.background,
+      ) { fabPadding ->
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = ::refreshClasses,
+            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(fabPadding),
         ) {
-          item {
-            ListSearchHeader(
-                query = query,
-                onQueryChange = { query = it },
-                placeholder = stringResource(R.string.classes_search_placeholder),
-                resultCount = filtered.size,
-                resultLabel = stringResource(R.string.classes_result_label),
-            )
-          }
-
-          if (filtered.isEmpty()) {
+          LazyColumn(
+              modifier = Modifier.fillMaxSize(),
+              state = listState,
+              contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+              verticalArrangement = Arrangement.spacedBy(10.dp),
+          ) {
             item {
-              EmptyState(
-                  icon = Icons.Outlined.Group,
-                  message = stringResource(R.string.classes_empty_state),
+              ListSearchHeader(
+                  query = query,
+                  onQueryChange = { query = it },
+                  placeholder = stringResource(R.string.classes_search_placeholder),
+                  resultCount = filtered.size,
+                  resultLabel = stringResource(R.string.classes_result_label),
               )
             }
-          } else {
-            items(
-                items = filtered,
-                key = { it.id },
-                contentType = { "class" },
-            ) { sc ->
-              ClassCard(
-                  sc = sc,
-                  onClick = { onOpenClassDetail(sc.id) },
-                  canDeactivate = canDeactivateClass,
-                  canReactivate = canReactivateClass,
-                  canDelete = canDeleteClass,
-                  onDeactivate = { viewModel.deactivateClass(currentUser, sc) },
-                  onReactivate = { viewModel.reactivateClass(currentUser, sc) },
-                  onDelete = { viewModel.deleteClass(currentUser, sc.id) },
-              )
+
+            if (filtered.isEmpty()) {
+              item {
+                EmptyState(
+                    icon = Icons.Outlined.Group,
+                    message = stringResource(R.string.classes_empty_state),
+                )
+              }
+            } else {
+              items(
+                  items = filtered,
+                  key = { it.id },
+                  contentType = { "class" },
+              ) { sc ->
+                ClassCard(
+                    sc = sc,
+                    onClick = { onOpenClassDetail(sc.id) },
+                    canDeactivate = canDeactivateClass,
+                    canReactivate = canReactivateClass,
+                    canDelete = canDeleteClass,
+                    onDeactivate = { viewModel.deactivateClass(currentUser, sc) },
+                    onReactivate = { viewModel.reactivateClass(currentUser, sc) },
+                    onDelete = { viewModel.deleteClass(currentUser, sc.id) },
+                )
+              }
             }
           }
         }
       }
     }
-  }
-  LoadingOverlay(
-      isVisible = isInitialLoading,
-      message = stringResource(R.string.loading_syncing),
-  )
+    LoadingOverlay(
+        isVisible = isInitialLoading,
+        message = stringResource(R.string.loading_syncing),
+    )
   }
 }
 
