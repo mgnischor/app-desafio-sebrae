@@ -40,41 +40,59 @@ import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
+class SettingsViewModel
+@Inject
+constructor(
     private val repository: AppRepository,
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-    val settings: StateFlow<AppSettings> = repository.observeSettings()
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5_000),
-            AppSettings(darkMode = false, pushEnabled = true, emailEnabled = false, language = "pt"),
-        )
+  val settings: StateFlow<AppSettings> =
+      repository
+          .observeSettings()
+          .stateIn(
+              viewModelScope,
+              SharingStarted.WhileSubscribed(5_000),
+              AppSettings(
+                  darkMode = false,
+                  pushEnabled = true,
+                  emailEnabled = false,
+                  language = "pt",
+              ),
+          )
 
-    init {
-        viewModelScope.launch {
-            dataConnectService.syncScope(ScreenDataScope.SETTINGS)
-        }
-    }
+  init {
+    viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.SETTINGS) }
+  }
 
-    fun updateDarkMode(enabled: Boolean) {
-        viewModelScope.launch { repository.updateDarkMode(enabled) }
-    }
+  fun updateDarkMode(enabled: Boolean) {
+    viewModelScope.launch { repository.updateDarkMode(enabled) }
+  }
 
-    fun updatePushEnabled(enabled: Boolean) {
-        viewModelScope.launch { repository.updatePushEnabled(enabled) }
-    }
+  fun updatePushEnabled(enabled: Boolean) {
+    viewModelScope.launch { repository.updatePushEnabled(enabled) }
+  }
 
-    fun updateEmailEnabled(enabled: Boolean) {
-        viewModelScope.launch { repository.updateEmailEnabled(enabled) }
-    }
+  fun updateEmailEnabled(enabled: Boolean) {
+    viewModelScope.launch { repository.updateEmailEnabled(enabled) }
+  }
 
-    fun updateLanguage(language: String) {
-        viewModelScope.launch { repository.updateLanguage(language) }
-    }
+  fun updateLanguage(language: String) {
+    viewModelScope.launch { repository.updateLanguage(language) }
+  }
 
-    fun clearStoragePreservingUsers() {
-        viewModelScope.launch { repository.clearStoragePreservingUsers() }
+  fun clearStoragePreservingUsers() {
+    viewModelScope.launch { repository.clearStoragePreservingUsers() }
+  }
+
+  /**
+   * Executa reset completo da base de dados local (Room) e remota (Firebase). Acessível apenas ao
+   * administrador — verificar permissão na UI antes de chamar.
+   */
+  fun resetAllData() {
+    viewModelScope.launch {
+      dataConnectService.deleteAllCollections()
+      repository.resetAllData()
     }
+  }
 }
