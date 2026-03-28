@@ -94,7 +94,9 @@ fun RecentActivitiesScreen(
   val toIndex = minOf(fromIndex + pageSize, pagedSource.size)
   val pageItems = if (fromIndex < toIndex) pagedSource.subList(fromIndex, toIndex) else emptyList()
 
-  LaunchedEffect(currentUser?.id, currentUser?.role) { viewModel.observeRealtimeActivities(currentUser) }
+  LaunchedEffect(currentUser?.id, currentUser?.role) {
+    viewModel.observeRealtimeActivities(currentUser)
+  }
 
   DetailScaffold(
       title = stringResource(R.string.recent_activities_title),
