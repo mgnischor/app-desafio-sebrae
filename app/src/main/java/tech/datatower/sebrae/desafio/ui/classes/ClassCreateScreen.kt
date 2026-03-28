@@ -63,9 +63,12 @@ import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
 import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.ClassStatus
+import tech.datatower.sebrae.desafio.data.model.Course
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
+import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
+import tech.datatower.sebrae.desafio.ui.components.SearchableDropdown
 
 /**
  * Executa a rotina de class create screen dentro do contexto deste componente.
@@ -103,8 +106,8 @@ fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   }
 
   var name by rememberSaveable { mutableStateOf("") }
-  var course by rememberSaveable { mutableStateOf("") }
-  var instructor by rememberSaveable { mutableStateOf("") }
+  var selectedCourse by remember { mutableStateOf<Course?>(null) }
+  var selectedTeacher by remember { mutableStateOf<Teacher?>(null) }
   var studentsCount by rememberSaveable { mutableStateOf("0") }
   var maxCapacity by rememberSaveable { mutableStateOf("0") }
   var schedule by rememberSaveable { mutableStateOf("") }
@@ -115,140 +118,160 @@ fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val relationshipMessage = stringResource(R.string.class_create_error_relationship)
 
   Box(modifier = Modifier.fillMaxSize()) {
-  DetailScaffold(title = stringResource(R.string.class_create_title), onBack = onBack) {
-      innerPadding,
-      _ ->
-    Column(
-        modifier =
-            Modifier.fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-      SnackbarHost(hostState = snackbarHostState)
+    DetailScaffold(title = stringResource(R.string.class_create_title), onBack = onBack) {
+        innerPadding,
+        _ ->
+      Column(
+          modifier =
+              Modifier.fillMaxSize()
+                  .padding(innerPadding)
+                  .padding(horizontal = 20.dp)
+                  .verticalScroll(rememberScrollState()),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        SnackbarHost(hostState = snackbarHostState)
 
-      OutlinedTextField(
-          value = name,
-          onValueChange = { name = it },
-          label = { Text(stringResource(R.string.class_create_name)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = course,
-          onValueChange = { course = it },
-          label = { Text(stringResource(R.string.class_create_course)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = instructor,
-          onValueChange = { instructor = it },
-          label = { Text(stringResource(R.string.class_create_instructor)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = studentsCount,
-          onValueChange = { studentsCount = it.filter(Char::isDigit) },
-          label = { Text(stringResource(R.string.class_create_students_count)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = maxCapacity,
-          onValueChange = { maxCapacity = it.filter(Char::isDigit) },
-          label = { Text(stringResource(R.string.class_create_capacity)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = schedule,
-          onValueChange = { schedule = it },
-          label = { Text(stringResource(R.string.class_create_schedule)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text(stringResource(R.string.class_create_name)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
 
-      Text(
-          text = stringResource(R.string.class_create_status),
-          style = MaterialTheme.typography.labelLarge,
-      )
-      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ClassStatus.entries.forEach { item ->
-          FilterChip(
-              selected = status == item,
-              onClick = { status = item },
-              label = {
-                Text(
-                    stringResource(
-                        when (item) {
-                          ClassStatus.Open -> R.string.class_status_open
-                          ClassStatus.InProgress -> R.string.class_status_in_progress
-                          ClassStatus.Closed -> R.string.class_status_closed
-                        }
-                    )
-                )
-              },
-          )
+        SearchableDropdown(
+            label = stringResource(R.string.class_create_course),
+            items = courses,
+            selected = selectedCourse,
+            itemLabel = { it.title },
+            onItemSelected = { picked ->
+              selectedCourse = picked
+              // Limpa instrutor ao trocar o curso para evitar inconsistência
+              selectedTeacher = null
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // Filtra instrutores que já possuem turmas no curso selecionado;
+        // se não houver turmas ainda, exibe todos os instrutores cadastrados.
+        val availableTeachers =
+            remember(teachers, selectedCourse, classes) {
+              val courseName = selectedCourse?.title ?: return@remember teachers
+              val names =
+                  classes
+                      .filter { it.course.equals(courseName, ignoreCase = true) }
+                      .map { it.instructor.trim().lowercase() }
+                      .toSet()
+              if (names.isEmpty()) teachers
+              else teachers.filter { it.name.trim().lowercase() in names }
+            }
+
+        SearchableDropdown(
+            label = stringResource(R.string.class_create_instructor),
+            items = if (selectedCourse != null) availableTeachers else teachers,
+            selected = selectedTeacher,
+            itemLabel = { it.name },
+            onItemSelected = { selectedTeacher = it },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedTextField(
+            value = studentsCount,
+            onValueChange = { studentsCount = it.filter(Char::isDigit) },
+            label = { Text(stringResource(R.string.class_create_students_count)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = maxCapacity,
+            onValueChange = { maxCapacity = it.filter(Char::isDigit) },
+            label = { Text(stringResource(R.string.class_create_capacity)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = schedule,
+            onValueChange = { schedule = it },
+            label = { Text(stringResource(R.string.class_create_schedule)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+
+        Text(
+            text = stringResource(R.string.class_create_status),
+            style = MaterialTheme.typography.labelLarge,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          ClassStatus.entries.forEach { item ->
+            FilterChip(
+                selected = status == item,
+                onClick = { status = item },
+                label = {
+                  Text(
+                      stringResource(
+                          when (item) {
+                            ClassStatus.Open -> R.string.class_status_open
+                            ClassStatus.InProgress -> R.string.class_status_in_progress
+                            ClassStatus.Closed -> R.string.class_status_closed
+                          }
+                      )
+                  )
+                },
+            )
+          }
+        }
+
+        Button(
+            onClick = {
+              val enrolled = studentsCount.toIntOrNull()
+              val capacity = maxCapacity.toIntOrNull()
+              if (
+                  name.isBlank() ||
+                      selectedCourse == null ||
+                      selectedTeacher == null ||
+                      schedule.isBlank()
+              ) {
+                scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
+                return@Button
+              }
+              if (enrolled == null || capacity == null || capacity <= 0 || enrolled > capacity) {
+                scope.launch { snackbarHostState.showSnackbar(invalidCapacityMessage) }
+                return@Button
+              }
+
+              if (
+                  !AccessPolicy.can(
+                      currentUser?.role,
+                      ProtectedResource.Classes,
+                      ProtectedAction.Create,
+                  )
+              ) {
+                scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
+                return@Button
+              }
+
+              val nextId = (classes.maxOfOrNull { it.id } ?: 0) + 1
+              viewModel.saveClass(
+                  requester = currentUser,
+                  schoolClass =
+                      SchoolClass(
+                          id = nextId,
+                          name = name.trim(),
+                          course = selectedCourse!!.title,
+                          instructor = selectedTeacher!!.name,
+                          studentsCount = enrolled,
+                          maxCapacity = capacity,
+                          schedule = schedule.trim(),
+                          status = status,
+                      ),
+              )
+            },
+            enabled = !isSaving,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        ) {
+          Text(stringResource(R.string.class_create_save))
         }
       }
-
-      Button(
-          onClick = {
-            val enrolled = studentsCount.toIntOrNull()
-            val capacity = maxCapacity.toIntOrNull()
-            if (name.isBlank() || course.isBlank() || instructor.isBlank() || schedule.isBlank()) {
-              scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
-              return@Button
-            }
-            if (enrolled == null || capacity == null || capacity <= 0 || enrolled > capacity) {
-              scope.launch { snackbarHostState.showSnackbar(invalidCapacityMessage) }
-              return@Button
-            }
-
-            if (
-                !AccessPolicy.can(
-                    currentUser?.role,
-                    ProtectedResource.Classes,
-                    ProtectedAction.Create,
-                )
-            ) {
-              scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
-              return@Button
-            }
-
-            val hasCourse = courses.any { it.title.equals(course.trim(), ignoreCase = true) }
-            val hasTeacher = teachers.any { it.name.equals(instructor.trim(), ignoreCase = true) }
-            if (!hasCourse || !hasTeacher) {
-              scope.launch { snackbarHostState.showSnackbar(relationshipMessage) }
-              return@Button
-            }
-
-            val nextId = (classes.maxOfOrNull { it.id } ?: 0) + 1
-            viewModel.saveClass(
-                requester = currentUser,
-                schoolClass =
-                    SchoolClass(
-                        id = nextId,
-                        name = name.trim(),
-                        course = course.trim(),
-                        instructor = instructor.trim(),
-                        studentsCount = enrolled,
-                        maxCapacity = capacity,
-                        schedule = schedule.trim(),
-                        status = status,
-                    ),
-            )
-          },
-          enabled = !isSaving,
-          modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-      ) {
-        Text(stringResource(R.string.class_create_save))
-      }
     }
-  }
-  LoadingOverlay(isVisible = isSaving, message = stringResource(R.string.loading_saving))
+    LoadingOverlay(isVisible = isSaving, message = stringResource(R.string.loading_saving))
   }
 }
