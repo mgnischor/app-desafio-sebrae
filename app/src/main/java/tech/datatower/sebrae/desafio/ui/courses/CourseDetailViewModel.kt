@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.data.model.Course
@@ -46,27 +45,30 @@ import tech.datatower.sebrae.desafio.navigation.AppRoutes
 import javax.inject.Inject
 
 @HiltViewModel
-class CourseDetailViewModel @Inject constructor(
+class CourseDetailViewModel
+@Inject
+constructor(
     private val repository: AppRepository,
     private val dataConnectService: FirebaseDataConnectService,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val courseId: Int = checkNotNull(savedStateHandle[AppRoutes.COURSE_ID_ARG])
+  private val courseId: Int = checkNotNull(savedStateHandle[AppRoutes.COURSE_ID_ARG])
 
-    val course: StateFlow<Course?> = repository.observeCourseById(courseId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+  val course: StateFlow<Course?> =
+      repository
+          .observeCourseById(courseId)
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val classes: StateFlow<List<SchoolClass>> = course
-        .flatMapLatest { c ->
+  val classes: StateFlow<List<SchoolClass>> =
+      course
+          .flatMapLatest { c ->
             val name = c?.title ?: return@flatMapLatest flowOf(emptyList())
             repository.observeClassesByCourse(name)
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+          }
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    init {
-        viewModelScope.launch {
-            dataConnectService.syncScope(ScreenDataScope.COURSE_DETAIL)
-        }
-    }
+  init {
+    viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.COURSE_DETAIL) }
+  }
 }
