@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/courses/CourseDetailScreen.kt
+    Descrição: Tela de detalhes de um curso, exibindo turmas associadas e informações completas.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.courses
 
 import androidx.compose.foundation.layout.Arrangement
@@ -15,46 +41,30 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.flowOf
+import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.R
-import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
 /**
  * Executa a rotina de course detail screen dentro do contexto deste componente.
  *
- * @param courseId Valor de entrada utilizado por esta opera??o.
- * @param onBack Valor de entrada utilizado por esta opera??o.
+ * @param courseId Valor de entrada utilizado por esta operação.
+ * @param onBack Valor de entrada utilizado por esta operação.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseDetailScreen(
-    courseId: Int,
     onBack: () -> Unit = {},
 ) {
-  val context = LocalContext.current
-  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataConnectService =
-      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
-  val course by repository.observeCourseById(courseId).collectAsState(initial = null)
-  val classesFlow =
-      remember(course?.title) {
-        val name = course?.title
-        if (name == null) flowOf(emptyList()) else repository.observeClassesByCourse(name)
-      }
-  val classes by classesFlow.collectAsState(initial = emptyList())
-
-  LaunchedEffect(courseId) { dataConnectService.syncScope(ScreenDataScope.COURSE_DETAIL) }
+  val viewModel: CourseDetailViewModel = hiltViewModel()
+  val course by viewModel.course.collectAsState()
+  val classes by viewModel.classes.collectAsState()
 
   DetailScaffold(title = stringResource(R.string.course_detail_title), onBack = onBack) {
       innerPadding,
