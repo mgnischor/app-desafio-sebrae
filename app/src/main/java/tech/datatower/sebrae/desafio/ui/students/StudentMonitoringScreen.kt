@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/students/StudentMonitoringScreen.kt
+    Descrição: Tela de monitoramento individual de aluno, exibindo desempenho e frequência.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.students
 
 import androidx.compose.foundation.background
@@ -20,7 +46,6 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -28,11 +53,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.ActivityDeliveryStatus
 import tech.datatower.sebrae.desafio.data.model.AttendanceRecord
@@ -45,8 +70,6 @@ import tech.datatower.sebrae.desafio.data.model.ParentFollowUpStatus
 import tech.datatower.sebrae.desafio.data.model.PedagogicalNeedType
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringRules
 import tech.datatower.sebrae.desafio.data.model.StudentMonitoringSnapshot
-import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.StatusChip
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
@@ -63,17 +86,11 @@ import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentMonitoringScreen(
-    studentId: Int,
     onBack: () -> Unit = {},
 ) {
-  val context = LocalContext.current
-  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataConnectService =
-      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
-  val snapshot by
-      repository.observeStudentMonitoringSnapshot(studentId).collectAsState(initial = null)
+  val viewModel: StudentMonitoringViewModel = hiltViewModel()
+  val snapshot by viewModel.snapshot.collectAsState()
 
-  LaunchedEffect(studentId) { dataConnectService.syncScope(ScreenDataScope.STUDENT_MONITORING) }
   if (snapshot == null) {
     DetailScaffold(title = stringResource(R.string.monitoring_title), onBack = onBack) {
         innerPadding,
