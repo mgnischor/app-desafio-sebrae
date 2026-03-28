@@ -25,3 +25,27 @@ dependencyResolutionManagement {
 rootProject.name = "App Desafio SEBRAE"
 
 include(":app")
+
+include(":core")
+
+include(":feature:login")
+
+include(":feature:home")
+
+include(":feature:students")
+
+include(":feature:courses")
+
+include(":feature:classes")
+
+include(":feature:teachers")
+
+include(":feature:reports")
+
+include(":feature:certificates")
+
+include(":feature:calendar")
+
+include(":feature:settings")
+
+include(":feature:users")
