@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/courses/CourseCreateScreen.kt
+    Descrição: Tela de cadastro de novo curso com campos de título, carga horária e descrição.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.courses
 
 import androidx.compose.foundation.layout.Arrangement
@@ -26,9 +52,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
@@ -36,9 +62,6 @@ import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
 import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Course
-import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
-import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 
@@ -50,15 +73,30 @@ import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
-  val context = LocalContext.current
-  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataService = remember(context) { AppGraph.dataConnectService(context.applicationContext) }
+  val viewModel: CourseCreateViewModel = hiltViewModel()
   val scope = rememberCoroutineScope()
   val snackbarHostState = remember { SnackbarHostState() }
 
-  val courses by repository.observeCourses().collectAsState(initial = emptyList())
+  val courses by viewModel.courses.collectAsState()
+  val saveState by viewModel.saveState.collectAsState()
+  val isSaving = saveState is CourseCreateViewModel.SaveState.Saving
 
-  LaunchedEffect(Unit) { dataService.syncScope(ScreenDataScope.COURSES) }
+  val saveSuccessMessage = stringResource(R.string.course_create_success)
+  val saveErrorMessage = stringResource(R.string.course_create_error_save)
+  LaunchedEffect(saveState) {
+    when (val s = saveState) {
+      is CourseCreateViewModel.SaveState.Success -> {
+        snackbarHostState.showSnackbar(saveSuccessMessage)
+        viewModel.resetSaveState()
+        onBack()
+      }
+      is CourseCreateViewModel.SaveState.Error -> {
+        snackbarHostState.showSnackbar(s.message.ifBlank { saveErrorMessage })
+        viewModel.resetSaveState()
+      }
+      else -> Unit
+    }
+  }
 
   var title by rememberSaveable { mutableStateOf("") }
   var category by rememberSaveable { mutableStateOf("") }
@@ -69,10 +107,7 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   var isPublished by rememberSaveable { mutableStateOf(true) }
   val requiredFieldsMessage = stringResource(R.string.course_create_error_required)
   val invalidNumericMessage = stringResource(R.string.course_create_error_numeric)
-  val saveSuccessMessage = stringResource(R.string.course_create_success)
-  val saveErrorMessage = stringResource(R.string.course_create_error_save)
   val deniedMessage = stringResource(R.string.permission_denied)
-  var isSaving by remember { mutableStateOf(false) }
 
   Box(modifier = Modifier.fillMaxSize()) {
   DetailScaffold(title = stringResource(R.string.course_create_title), onBack = onBack) {
@@ -172,32 +207,21 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
               return@Button
             }
 
-            scope.launch {
-              isSaving = true
-              val nextId = (courses.maxOfOrNull { it.id } ?: 0) + 1
-              val result =
-                  dataService.upsertCourse(
-                      requester = currentUser,
-                      course =
-                          Course(
-                              id = nextId,
-                              title = title.trim(),
-                              category = category.trim(),
-                              instructor = instructor.trim(),
-                              totalStudents = students,
-                              durationHours = hours,
-                              completionRate = completion / 100f,
-                              isPublished = isPublished,
-                          ),
-                  )
-              if (result is FirebaseDataConnectService.Result.Success) {
-                snackbarHostState.showSnackbar(saveSuccessMessage)
-                onBack()
-              } else if (result is FirebaseDataConnectService.Result.Error) {
-                snackbarHostState.showSnackbar(result.message.ifBlank { saveErrorMessage })
-              }
-              isSaving = false
-            }
+            val nextId = (courses.maxOfOrNull { it.id } ?: 0) + 1
+            viewModel.saveCourse(
+                requester = currentUser,
+                course =
+                    Course(
+                        id = nextId,
+                        title = title.trim(),
+                        category = category.trim(),
+                        instructor = instructor.trim(),
+                        totalStudents = students,
+                        durationHours = hours,
+                        completionRate = completion / 100f,
+                        isPublished = isPublished,
+                    ),
+            )
           },
           enabled = !isSaving,
           modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
