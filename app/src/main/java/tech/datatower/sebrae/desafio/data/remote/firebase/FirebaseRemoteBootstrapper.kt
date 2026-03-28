@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/data/remote/firebase/FirebaseRemoteBootstrapper.kt
+    Descrição: Implementação Firebase do bootstrapper remoto para inicialização de dados.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.data.remote.firebase
 
 import android.content.Context
@@ -16,7 +42,7 @@ class FirebaseRemoteBootstrapper(
   /**
    * Executa a rotina de bootstrap into local cache dentro do contexto deste componente.
    *
-   * @return Resultado produzido pela opera??o em formato `Boolean`.
+   * @return Resultado produzido pela operação em formato `Boolean`.
    */
   override suspend fun bootstrapIntoLocalCache(): Boolean {
     val localHasData = dao.countCourses() > 0
@@ -29,11 +55,11 @@ class FirebaseRemoteBootstrapper(
 
   companion object {
     /**
-     * Cria um novo recurso para seguindo as regras de dom?nio.
+     * Cria um novo recurso seguindo as regras de domínio.
      *
-     * @param _context Valor de entrada utilizado por esta opera??o.
-     * @param dao Valor de entrada utilizado por esta opera??o.
-     * @return Resultado produzido pela opera??o em formato `RemoteBootstrapper`.
+     * @param _context Valor de entrada utilizado por esta operação.
+     * @param dao Valor de entrada utilizado por esta operação.
+     * @return Resultado produzido pela operação em formato `RemoteBootstrapper`.
      */
     @Suppress("UNUSED_PARAMETER")
     fun create(_context: Context, dao: AppDao): RemoteBootstrapper {
