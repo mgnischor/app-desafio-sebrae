@@ -30,9 +30,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,13 +41,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import tech.datatower.sebrae.desafio.R
 
 /**
  * Dropdown com filtro de busca inline para seleção a partir de uma lista de itens.
  *
- * Quando a lista possui mais de 5 itens, exibe um campo de texto para filtragem em tempo real.
- * O campo é somente leitura — o usuário não pode digitar um valor arbitrário.
+ * Quando a lista possui mais de 5 itens, exibe um campo de texto para filtragem em tempo real. O
+ * campo é somente leitura — o usuário não pode digitar um valor arbitrário.
  *
  * @param T Tipo genérico do item da lista.
  * @param label Rótulo exibido no campo de seleção.
@@ -67,67 +69,64 @@ fun <T> SearchableDropdown(
     onItemSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
+  var expanded by remember { mutableStateOf(false) }
+  var searchQuery by remember { mutableStateOf("") }
 
-    val filteredItems = remember(items, searchQuery) {
+  val filteredItems =
+      remember(items, searchQuery) {
         if (searchQuery.isBlank()) items
         else items.filter { itemLabel(it).contains(searchQuery, ignoreCase = true) }
-    }
+      }
 
-    ExposedDropdownMenuBox(
+  ExposedDropdownMenuBox(
+      expanded = expanded,
+      onExpandedChange = { expanded = !expanded },
+      modifier = modifier,
+  ) {
+    OutlinedTextField(
+        value = selected?.let { itemLabel(it) } ?: "",
+        onValueChange = {},
+        readOnly = true,
+        label = { Text(label) },
+        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+        modifier =
+            Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+    )
+    ExposedDropdownMenu(
         expanded = expanded,
-        onExpandedChange = { expanded = !expanded },
-        modifier = modifier,
+        onDismissRequest = {
+          expanded = false
+          searchQuery = ""
+        },
     ) {
+      // Campo de busca inline apenas para listas longas
+      if (items.size > 5) {
         OutlinedTextField(
-            value = selected?.let { itemLabel(it) } ?: "",
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth(),
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text(stringResource(R.string.dropdown_search)) },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+            singleLine = true,
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = {
+      }
+      if (filteredItems.isEmpty()) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.dropdown_empty)) },
+            onClick = {},
+            enabled = false,
+        )
+      } else {
+        filteredItems.forEach { item ->
+          DropdownMenuItem(
+              text = { Text(itemLabel(item)) },
+              onClick = {
+                onItemSelected(item)
                 expanded = false
                 searchQuery = ""
-            },
-        ) {
-            // Campo de busca inline apenas para listas longas
-            if (items.size > 5) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    label = { Text("Buscar") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    singleLine = true,
-                )
-            }
-            if (filteredItems.isEmpty()) {
-                DropdownMenuItem(
-                    text = { Text("Nenhum resultado") },
-                    onClick = {},
-                    enabled = false,
-                )
-            } else {
-                filteredItems.forEach { item ->
-                    DropdownMenuItem(
-                        text = { Text(itemLabel(item)) },
-                        onClick = {
-                            onItemSelected(item)
-                            expanded = false
-                            searchQuery = ""
-                        },
-                    )
-                }
-            }
+              },
+          )
         }
+      }
     }
+  }
 }
-
