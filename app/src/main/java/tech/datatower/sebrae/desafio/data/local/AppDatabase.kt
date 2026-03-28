@@ -417,6 +417,13 @@ interface AppDao {
   @Query("SELECT * FROM recent_activities ORDER BY id DESC LIMIT :limit")
   fun observeRecentActivitiesLimited(limit: Int): Flow<List<RecentActivityEntity>>
 
+  /** Observa uma página específica de atividades recentes (paginação por offset). */
+  @Query("SELECT * FROM recent_activities ORDER BY id DESC LIMIT :limit OFFSET :offset")
+  fun observeRecentActivitiesPaged(limit: Int, offset: Int): Flow<List<RecentActivityEntity>>
+
+  /** Observa o total de atividades recentes de forma reativa. */
+  @Query("SELECT COUNT(*) FROM recent_activities") fun observeRecentActivitiesCount(): Flow<Int>
+
   /** Retorna o maior identificador atual de atividade recente. */
   @Query("SELECT MAX(id) FROM recent_activities") suspend fun getMaxRecentActivityId(): Int?
 
@@ -603,6 +610,9 @@ interface AppDao {
 
   @Query("SELECT * FROM app_users ORDER BY name") fun observeUsers(): Flow<List<AppUserEntity>>
 
+  @Query("SELECT * FROM app_users WHERE id = :userId LIMIT 1")
+  fun observeUserById(userId: Int): Flow<AppUserEntity?>
+
   @Query("SELECT * FROM app_users ORDER BY name") suspend fun getUsersOnce(): List<AppUserEntity>
 
   @Query("SELECT * FROM school_classes ORDER BY id")
@@ -740,6 +750,12 @@ interface AppDao {
   @Query("DELETE FROM psychological_needs") suspend fun clearPsychologicalNeeds()
 
   @Query("DELETE FROM parent_follow_ups") suspend fun clearParentFollowUps()
+
+  /** Remove todos os usuários cadastrados do armazenamento local (usado no reset completo). */
+  @Query("DELETE FROM app_users") suspend fun clearUsers()
+
+  /** Remove um usuário específico do armazenamento local pelo seu ID. */
+  @Query("DELETE FROM app_users WHERE id = :userId") suspend fun deleteUserById(userId: Int)
 }
 
 @Database(
