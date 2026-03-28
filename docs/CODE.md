@@ -188,20 +188,52 @@ verdade para versões de bibliotecas:
 ```toml
 [versions]
 room = "2.8.4"
+hilt = "2.56.2"
 composeBom = "2026.03.00"
 
 [libraries]
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+
+[plugins]
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ```
 
 **Regras:**
 - Nenhuma versão hardcoded diretamente no `build.gradle.kts`
 - Dependências de test sempre no escopo correto (`testImplementation`, `androidTestImplementation`)
 - Firebase gerenciado via BOM (`firebase-bom`) para garantir compatibilidade entre libs
+- Hilt usa **KSP** (`ksp(libs.hilt.compiler)`) — sem KAPT
+
+## Injeção de Dependências
+
+O projeto usa **Hilt** para gerenciar singletons da camada de dados. As regras são:
+
+- **`@HiltAndroidApp`** em `SebraeApplication` — gerado pelo processador KSP; é o entrypoint do
+  grafo.
+- **`@AndroidEntryPoint`** em `MainActivity` — habilita injeção de campo na Activity.
+- **`@Inject`** para receber dependências em Activities, Fragments e ViewModels Hilt.
+- **`@Module @InstallIn(SingletonComponent::class)`** em `di/AppModule.kt` — fonte única de
+  provisionamento dos singletons (`AppDatabase`, `AppDao`, `AppRepository`,
+  `FirebaseDataConnectService`, `FirebaseSeedCredentialStore`).
+- **`@EntryPoint`** em `AppGraphEntryPoint` — permite que `AppGraph` (bridge para composables
+  sem ViewModel) acesse o container Hilt via `EntryPointAccessors.fromApplication()`.
+
+```kotlin
+// Composable sem ViewModel — acessa via bridge
+val repository = remember(context) { AppGraph.repository(context.applicationContext) }
+
+// Activity com @AndroidEntryPoint — injeção direta
+@Inject lateinit var repository: AppRepository
+```
+
+**Não usar** `AppGraph.repository()` em novas classes que podem ser anotadas
+com `@AndroidEntryPoint` ou `@HiltViewModel`.
 
 ---
 
-## Tratamento de Nulos
+
 
 - **Kotlin null safety** estritamente respeitado; sem `!!` exceto nos casos em que a invariante
   é verificada imediatamente antes
@@ -235,6 +267,10 @@ composable(...) { backStackEntry ->
 | Coroutines | `kotlinx-coroutines-test` | `app/src/test/` |
 | Instrumentados | Espresso, Compose UI Test | `app/src/androidTest/` |
 
+Para testes instrumentados que dependem de Hilt, usar `@HiltAndroidTest` na classe de teste
+e declarar `HiltAndroidRule` como `@get:Rule`. O `testInstrumentationRunner` deve ser
+configurado para `HiltTestRunner` quando ViewModels injetados estiverem em escopo.
+
 ---
 
 ## Checklist de Melhorias de Código
@@ -242,9 +278,9 @@ composable(...) { backStackEntry ->
 - [ ] **Introduzir ViewModels por feature**: remover a lógica de estado dos Composables e
   centralizar em `ViewModel` com `StateFlow<UiState>`, seguindo a arquitetura UDF recomendada
   pelo Android
-- [ ] **Eliminar acesso direto ao `AppGraph` dentro de Composables**: o grafo de dependências
-  deve ser injetado na criação (via Hilt ou `CompositionLocal`), não resolvido dentro
-  da árvore Compose
+- [x] **Eliminar acesso direto ao `AppGraph` em Activities**: `MainActivity` agora recebe
+  `AppRepository` via `@Inject` gracias ao Hilt; composables ainda usam `AppGraph` como bridge
+  até a migração para ViewModels
 - [ ] **Adotar `UiState` data class por tela**: substituir múltiplos `mutableStateOf` soltos
   por um único estado coeso que representa loading/success/error
 - [ ] **Criar interface para `AppRepository`**: facilita mocking em testes unitários e permite
