@@ -24,7 +24,8 @@
     O descumprimento destes termos poderá resultar em medidas legais cabíveis.
 
     Todos os direitos reservados.
-*/package tech.datatower.sebrae.desafio
+*/
+package tech.datatower.sebrae.desafio
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
@@ -33,7 +34,7 @@ import tech.datatower.sebrae.desafio.data.repository.AppGraph
 /** Ponto de entrada da aplicação, responsável por inicializar o Hilt e o bootstrapper remoto. */
 @HiltAndroidApp
 class SebraeApplication : Application() {
-  /** Trata o evento de create no contexto da tela atual. */
+  /** Trata o evento de create no contexto da aplicação. */
   override fun onCreate() {
     super.onCreate()
     AppGraph.warmUp(this)
