@@ -381,4 +381,8 @@
     <string name="action_reactivate" translatable="false">Reativar</string>
     <string name="action_delete" translatable="false">Excluir</string>
     <string name="action_error" translatable="false">Não foi possível concluir a ação.</string>
+
+    <!-- Loading overlay -->
+    <string name="loading_syncing">Sincronizando dados…</string>
+    <string name="loading_saving">Salvando…</string>
 </resources>
