@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/navigation/AppNavHost.kt
+    Descrição: Host de navegação principal da aplicação, definindo o grafo de telas Compose.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.navigation
 
 import androidx.compose.runtime.Composable
@@ -85,10 +111,8 @@ fun AppNavHost(navController: NavHostController) {
     composable(
         route = AppRoutes.STUDENT_MONITORING,
         arguments = listOf(navArgument(AppRoutes.STUDENT_ID_ARG) { type = NavType.IntType }),
-    ) { backStackEntry ->
-      val studentId =
-          backStackEntry.arguments?.getInt(AppRoutes.STUDENT_ID_ARG) ?: return@composable
-      StudentMonitoringScreen(studentId = studentId, onBack = { navController.popBackStack() })
+    ) {
+      StudentMonitoringScreen(onBack = { navController.popBackStack() })
     }
     composable(AppRoutes.COURSES) {
       CoursesScreen(
@@ -106,9 +130,8 @@ fun AppNavHost(navController: NavHostController) {
     composable(
         route = AppRoutes.COURSE_DETAIL,
         arguments = listOf(navArgument(AppRoutes.COURSE_ID_ARG) { type = NavType.IntType }),
-    ) { backStackEntry ->
-      val courseId = backStackEntry.arguments?.getInt(AppRoutes.COURSE_ID_ARG) ?: return@composable
-      CourseDetailScreen(courseId = courseId, onBack = { navController.popBackStack() })
+    ) {
+      CourseDetailScreen(onBack = { navController.popBackStack() })
     }
     composable(AppRoutes.CLASSES) {
       ClassesScreen(
@@ -124,9 +147,8 @@ fun AppNavHost(navController: NavHostController) {
     composable(
         route = AppRoutes.CLASS_DETAIL,
         arguments = listOf(navArgument(AppRoutes.CLASS_ID_ARG) { type = NavType.IntType }),
-    ) { backStackEntry ->
-      val classId = backStackEntry.arguments?.getInt(AppRoutes.CLASS_ID_ARG) ?: return@composable
-      ClassDetailScreen(classId = classId, onBack = { navController.popBackStack() })
+    ) {
+      ClassDetailScreen(onBack = { navController.popBackStack() })
     }
     composable(AppRoutes.TEACHERS) {
       TeachersScreen(
@@ -144,10 +166,8 @@ fun AppNavHost(navController: NavHostController) {
     composable(
         route = AppRoutes.TEACHER_DETAIL,
         arguments = listOf(navArgument(AppRoutes.TEACHER_ID_ARG) { type = NavType.IntType }),
-    ) { backStackEntry ->
-      val teacherId =
-          backStackEntry.arguments?.getInt(AppRoutes.TEACHER_ID_ARG) ?: return@composable
-      TeacherDetailScreen(teacherId = teacherId, onBack = { navController.popBackStack() })
+    ) {
+      TeacherDetailScreen(onBack = { navController.popBackStack() })
     }
     composable(AppRoutes.REPORTS) { ReportsScreen(onBack = { navController.popBackStack() }) }
     composable(AppRoutes.CERTIFICATES) {
