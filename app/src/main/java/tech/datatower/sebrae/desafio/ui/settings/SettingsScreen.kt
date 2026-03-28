@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/settings/SettingsScreen.kt
+    Descrição: Tela de configurações da aplicação, com opções de tema, notificações e senha.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.settings
 
 import androidx.compose.foundation.clickable
@@ -47,11 +73,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
@@ -60,8 +86,6 @@ import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
 import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.UserRole
-import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
@@ -79,27 +103,13 @@ fun SettingsScreen(
     onBack: () -> Unit = {},
     onOpenUserManagement: () -> Unit = {},
 ) {
-  val context = LocalContext.current
-  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataConnectService =
-      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
-  val settings by
-      repository
-          .observeSettings()
-          .collectAsState(
-              initial =
-                  tech.datatower.sebrae.desafio.data.model.AppSettings(
-                      darkMode = false,
-                      pushEnabled = true,
-                      emailEnabled = false,
-                      language = "pt",
-                  )
-          )
+  val viewModel: SettingsViewModel = hiltViewModel()
+  val settings by viewModel.settings.collectAsState()
 
-  var darkMode by remember { mutableStateOf(settings.darkMode) }
-  var pushEnabled by remember { mutableStateOf(settings.pushEnabled) }
-  var emailEnabled by remember { mutableStateOf(settings.emailEnabled) }
-  var language by remember { mutableStateOf(settings.language) }
+  var darkMode by remember(settings.darkMode) { mutableStateOf(settings.darkMode) }
+  var pushEnabled by remember(settings.pushEnabled) { mutableStateOf(settings.pushEnabled) }
+  var emailEnabled by remember(settings.emailEnabled) { mutableStateOf(settings.emailEnabled) }
+  var language by remember(settings.language) { mutableStateOf(settings.language) }
   val scope = rememberCoroutineScope()
   val snackbarHostState = remember { SnackbarHostState() }
   var showPasswordDialog by rememberSaveable { mutableStateOf(false) }
@@ -118,14 +128,7 @@ fun SettingsScreen(
   val passwordChangedMessage = stringResource(R.string.settings_password_changed)
   val passwordErrorMessage = stringResource(R.string.settings_password_error)
 
-  LaunchedEffect(settings) {
-    darkMode = settings.darkMode
-    pushEnabled = settings.pushEnabled
-    emailEnabled = settings.emailEnabled
-    language = settings.language
-  }
-
-  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.SETTINGS) }
+  LaunchedEffect(Unit) { /* settings sync handled by ViewModel init */ }
 
   DetailScaffold(title = stringResource(R.string.settings_title), onBack = onBack) { innerPadding, _
     ->
@@ -175,7 +178,7 @@ fun SettingsScreen(
               checked = darkMode,
               onCheckedChange = {
                 darkMode = it
-                scope.launch { repository.updateDarkMode(it) }
+                viewModel.updateDarkMode(it)
               },
           )
           SettingsItem(
@@ -196,7 +199,7 @@ fun SettingsScreen(
               checked = pushEnabled,
               onCheckedChange = {
                 pushEnabled = it
-                scope.launch { repository.updatePushEnabled(it) }
+                viewModel.updatePushEnabled(it)
               },
           )
           SettingsToggleItem(
@@ -206,7 +209,7 @@ fun SettingsScreen(
               checked = emailEnabled,
               onCheckedChange = {
                 emailEnabled = it
-                scope.launch { repository.updateEmailEnabled(it) }
+                viewModel.updateEmailEnabled(it)
               },
           )
         }
@@ -219,7 +222,7 @@ fun SettingsScreen(
               selectedLanguage = language,
               onLanguageSelected = {
                 language = it
-                scope.launch { repository.updateLanguage(it) }
+                viewModel.updateLanguage(it)
               },
           )
           if (canClearStorage) {
@@ -228,10 +231,8 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_item_storage),
                 subtitle = stringResource(R.string.settings_subtitle_storage),
                 onClick = {
-                  scope.launch {
-                    repository.clearStoragePreservingUsers()
-                    snackbarHostState.showSnackbar(storageClearedMessage)
-                  }
+                  viewModel.clearStoragePreservingUsers()
+                  scope.launch { snackbarHostState.showSnackbar(storageClearedMessage) }
                 },
             )
           }
