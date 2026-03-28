@@ -1,6 +1,31 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/home/RecentActivitiesScreen.kt
+    Descrição: Tela de listagem completa das atividades recentes registradas no sistema.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.home
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,16 +57,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.RealtimeNotificationRules
 import tech.datatower.sebrae.desafio.data.model.RecentActivity
-import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
 /**
@@ -55,16 +78,13 @@ fun RecentActivitiesScreen(
     currentUser: AppUser?,
     onBack: () -> Unit,
 ) {
-  val context = LocalContext.current
-  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataConnectService =
-      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
+  val viewModel: RecentActivitiesViewModel = hiltViewModel()
   val canSeeBackofficeRecents =
       remember(currentUser?.role) {
         RealtimeNotificationRules.canReceiveBackofficeNotifications(currentUser?.role)
       }
 
-  val allRecents by repository.observeRecentActivities().collectAsState(initial = emptyList())
+  val allRecents by viewModel.allRecents.collectAsState()
   var pageIndex by remember { mutableIntStateOf(0) }
   val pageSize = 10
   val pagedSource = if (canSeeBackofficeRecents) allRecents else emptyList()
@@ -74,19 +94,7 @@ fun RecentActivitiesScreen(
   val toIndex = minOf(fromIndex + pageSize, pagedSource.size)
   val pageItems = if (fromIndex < toIndex) pagedSource.subList(fromIndex, toIndex) else emptyList()
 
-  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.HOME) }
-
-  LaunchedEffect(currentUser?.id, currentUser?.role) {
-    dataConnectService.observeRecentActivitiesRealtimeForBackoffice(currentUser).collect { result ->
-      if (
-          result
-              is
-              tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService.Result.Error
-      ) {
-        Log.w("RecentActivitiesScreen", "Falha no listener de atividades: ${result.message}")
-      }
-    }
-  }
+  LaunchedEffect(currentUser?.id, currentUser?.role) { viewModel.observeRealtimeActivities(currentUser) }
 
   DetailScaffold(
       title = stringResource(R.string.recent_activities_title),
