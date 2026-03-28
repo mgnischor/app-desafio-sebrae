@@ -42,23 +42,25 @@ import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectSer
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseRemoteBootstrapper
 
 /**
- * Entry point Hilt para acesso às dependências singleton em contextos não-Hilt
- * (ex: composables que ainda usam AppGraph diretamente).
+ * Entry point Hilt para acesso às dependências singleton em contextos não-Hilt (ex: composables que
+ * ainda usam AppGraph diretamente).
  */
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface AppGraphEntryPoint {
   fun repository(): AppRepository
+
   fun dataConnectService(): FirebaseDataConnectService
+
   fun dao(): AppDao
 }
 
 /**
  * Ponto de acesso estático às dependências gerenciadas pelo Hilt.
  *
- * Atua como bridge para composables que acessam [AppRepository] e
- * [FirebaseDataConnectService] via `LocalContext`, mantendo compatibilidade
- * com o código existente enquanto o Hilt gerencia o ciclo de vida dos singletons.
+ * Atua como bridge para composables que acessam [AppRepository] e [FirebaseDataConnectService] via
+ * `LocalContext`, mantendo compatibilidade com o código existente enquanto o Hilt gerencia o ciclo
+ * de vida dos singletons.
  */
 object AppGraph {
   private const val TAG = "AppGraph"
@@ -67,7 +69,10 @@ object AppGraph {
   private val graphScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
   private fun entryPoint(context: Context): AppGraphEntryPoint =
-      EntryPointAccessors.fromApplication(context.applicationContext, AppGraphEntryPoint::class.java)
+      EntryPointAccessors.fromApplication(
+          context.applicationContext,
+          AppGraphEntryPoint::class.java,
+      )
 
   /** Retorna o [AppRepository] singleton provido pelo Hilt. */
   fun repository(context: Context): AppRepository = entryPoint(context).repository()
@@ -77,8 +82,8 @@ object AppGraph {
       entryPoint(context).dataConnectService()
 
   /**
-   * Pré-aquece os singletons pesados (Room + Firebase) antes do primeiro frame da UI
-   * e inicia as rotinas de bootstrap e sincronização remota em background.
+   * Pré-aquece os singletons pesados (Room + Firebase) antes do primeiro frame da UI e inicia as
+   * rotinas de bootstrap e sincronização remota em background.
    */
   fun warmUp(context: Context) {
     graphScope.launch {
