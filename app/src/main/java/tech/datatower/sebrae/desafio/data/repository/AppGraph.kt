@@ -2,127 +2,65 @@ package tech.datatower.sebrae.desafio.data.repository
 
 import android.content.Context
 import android.util.Log
-import androidx.room.Room
-import com.google.firebase.firestore.FirebaseFirestore
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.local.AppDao
-import tech.datatower.sebrae.desafio.data.local.AppDatabase
 import tech.datatower.sebrae.desafio.data.remote.NoOpRemoteBootstrapper
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseRemoteBootstrapper
-import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseSeedCredentialStore
 
-/** Objeto singleton que concentra responsabilidades de app graph. */
+/**
+ * Entry point Hilt para acesso às dependências singleton em contextos não-Hilt
+ * (ex: composables que ainda usam AppGraph diretamente).
+ */
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface AppGraphEntryPoint {
+  fun repository(): AppRepository
+  fun dataConnectService(): FirebaseDataConnectService
+  fun dao(): AppDao
+}
+
+/**
+ * Ponto de acesso estático às dependências gerenciadas pelo Hilt.
+ *
+ * Atua como bridge para composables que acessam [AppRepository] e
+ * [FirebaseDataConnectService] via `LocalContext`, mantendo compatibilidade
+ * com o código existente enquanto o Hilt gerencia o ciclo de vida dos singletons.
+ */
 object AppGraph {
   private const val TAG = "AppGraph"
   private const val FIREBASE_REMOTE_BOOTSTRAP_ENABLED = true
   private const val FIREBASE_AUTO_SEED_ALL_COLLECTIONS_FROM_LOCAL = false
   private val graphScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-  /**
-   * Executa a rotina de repository dentro do contexto deste componente.
-   *
-   * @param context Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `AppRepository`.
-   */
-  @Volatile private var repository: AppRepository? = null
-  @Volatile private var dataConnectService: FirebaseDataConnectService? = null
-  @Volatile private var seedCredentialStore: FirebaseSeedCredentialStore? = null
-  @Volatile private var appDaoRef: AppDao? = null
 
-  fun repository(context: Context): AppRepository {
-    return repository
-        ?: synchronized(this) {
-          repository ?: buildRepository(context.applicationContext).also { repository = it }
-        }
-  }
+  private fun entryPoint(context: Context): AppGraphEntryPoint =
+      EntryPointAccessors.fromApplication(context.applicationContext, AppGraphEntryPoint::class.java)
+
+  /** Retorna o [AppRepository] singleton provido pelo Hilt. */
+  fun repository(context: Context): AppRepository = entryPoint(context).repository()
+
+  /** Retorna o [FirebaseDataConnectService] singleton provido pelo Hilt. */
+  fun dataConnectService(context: Context): FirebaseDataConnectService =
+      entryPoint(context).dataConnectService()
 
   /**
-   * Fornece instância singleton do serviço Firebase Data Connect.
-   *
-   * Inicializa o Firestore e cria o serviço na primeira chamada.
+   * Pré-aquece os singletons pesados (Room + Firebase) antes do primeiro frame da UI
+   * e inicia as rotinas de bootstrap e sincronização remota em background.
    */
-  fun dataConnectService(context: Context, dao: AppDao): FirebaseDataConnectService {
-    appDaoRef = dao
-    return dataConnectService
-        ?: synchronized(this) {
-          val secureStore =
-              seedCredentialStore
-                  ?: FirebaseSeedCredentialStore(context.applicationContext).also {
-                    seedCredentialStore = it
-                  }
-
-          dataConnectService
-              ?: FirebaseDataConnectService(
-                      firestore = FirebaseFirestore.getInstance(),
-                      dao = dao,
-                      credentialStore = secureStore,
-                  )
-                  .also { dataConnectService = it }
-        }
-  }
-
-  /**
-   * Executa a rotina de data connect service dentro do contexto deste componente.
-   *
-   * @param context Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `FirebaseDataConnectService`.
-   */
-  fun dataConnectService(context: Context): FirebaseDataConnectService {
-    val dao =
-        appDaoRef
-            ?: run {
-              repository(context)
-              appDaoRef
-            }
-    checkNotNull(dao) { "AppDao indisponivel para inicializar FirebaseDataConnectService." }
-    return dataConnectService(context, dao)
-  }
-
-  /** Preloads heavy graph resources (Room + bootstrap flows) before first composition. */
   fun warmUp(context: Context) {
-    graphScope.launch { repository(context) }
-  }
-
-  /**
-   * Executa a rotina de build repository dentro do contexto deste componente.
-   *
-   * @param context Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `AppRepository`.
-   */
-  private fun buildRepository(context: Context): AppRepository {
-    val database =
-        Room.databaseBuilder(context, AppDatabase::class.java, "sebrae_local.db")
-            .fallbackToDestructiveMigration(true)
-            .build()
-
-    val sourceLabelResFlow = MutableStateFlow(R.string.stat_data_source)
-    val dao = database.appDao()
-    appDaoRef = dao
-    val remoteBootstrapper =
-        if (FIREBASE_REMOTE_BOOTSTRAP_ENABLED) {
-          FirebaseRemoteBootstrapper.create(context, dao)
-        } else {
-          NoOpRemoteBootstrapper
-        }
-
-    val repo =
-        AppRepository(
-            database = database,
-            dao = dao,
-            dataSourceLabelResFlow = sourceLabelResFlow,
-        )
-
     graphScope.launch {
+      val service = dataConnectService(context)
+      val dao = entryPoint(context).dao()
+
       if (FIREBASE_AUTO_SEED_ALL_COLLECTIONS_FROM_LOCAL) {
-        when (
-            val seedResult =
-                dataConnectService(context = context, dao = dao).seedAllCollectionsFromLocalCache()
-        ) {
+        when (val seedResult = service.seedAllCollectionsFromLocalCache()) {
           is FirebaseDataConnectService.Result.Success ->
               Log.d(TAG, "Seed automatico de collections concluido: ${seedResult.data}")
           is FirebaseDataConnectService.Result.Error ->
@@ -131,13 +69,15 @@ object AppGraph {
         }
       }
 
-      val hasRemoteData = remoteBootstrapper.bootstrapIntoLocalCache()
-      val startupSyncResult = dataConnectService(context = context, dao = dao).syncAllData()
-      if (hasRemoteData || startupSyncResult is FirebaseDataConnectService.Result.Success) {
-        sourceLabelResFlow.value = R.string.stat_data_source
-      }
-    }
+      val remoteBootstrapper =
+          if (FIREBASE_REMOTE_BOOTSTRAP_ENABLED) {
+            FirebaseRemoteBootstrapper.create(context.applicationContext, dao)
+          } else {
+            NoOpRemoteBootstrapper
+          }
 
-    return repo
+      remoteBootstrapper.bootstrapIntoLocalCache()
+      service.syncAllData()
+    }
   }
 }
