@@ -25,9 +25,7 @@ fun toBuildConfigString(value: String): String {
   return "\"$escapedValue\""
 }
 
-kotlin {
-  jvmToolchain(17)
-}
+kotlin { jvmToolchain(17) }
 
 android {
   namespace = "tech.datatower.sebrae.desafio"
