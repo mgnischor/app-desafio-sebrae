@@ -45,9 +45,7 @@ import javax.inject.Qualifier
 import javax.inject.Singleton
 
 /** Qualificador para o [MutableStateFlow] que guarda o rótulo da fonte de dados. */
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class DataSourceLabelFlow
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class DataSourceLabelFlow
 
 /** Módulo Hilt que fornece as dependências singleton da camada de dados. */
 @Module
@@ -61,9 +59,7 @@ object AppModule {
           .fallbackToDestructiveMigration(true)
           .build()
 
-  @Provides
-  @Singleton
-  fun provideAppDao(database: AppDatabase): AppDao = database.appDao()
+  @Provides @Singleton fun provideAppDao(database: AppDatabase): AppDao = database.appDao()
 
   @Provides
   @Singleton
@@ -77,7 +73,8 @@ object AppModule {
       database: AppDatabase,
       dao: AppDao,
       @DataSourceLabelFlow labelFlow: MutableStateFlow<Int>,
-  ): AppRepository = AppRepository(database = database, dao = dao, dataSourceLabelResFlow = labelFlow)
+  ): AppRepository =
+      AppRepository(database = database, dao = dao, dataSourceLabelResFlow = labelFlow)
 
   @Provides
   @Singleton
@@ -95,10 +92,12 @@ object AppModule {
       firestore: FirebaseFirestore,
       dao: AppDao,
       credentialStore: FirebaseSeedCredentialStore,
+      @ApplicationContext context: Context,
   ): FirebaseDataConnectService =
       FirebaseDataConnectService(
           firestore = firestore,
           dao = dao,
           credentialStore = credentialStore,
+          context = context,
       )
 }
