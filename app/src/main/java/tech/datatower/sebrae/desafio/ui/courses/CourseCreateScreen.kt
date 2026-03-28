@@ -62,8 +62,10 @@ import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
 import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Course
+import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
+import tech.datatower.sebrae.desafio.ui.components.SearchableDropdown
 
 /**
  * Executa a rotina de course create screen dentro do contexto deste componente.
@@ -78,6 +80,7 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val snackbarHostState = remember { SnackbarHostState() }
 
   val courses by viewModel.courses.collectAsState()
+  val teachers by viewModel.teachers.collectAsState()
   val saveState by viewModel.saveState.collectAsState()
   val isSaving = saveState is CourseCreateViewModel.SaveState.Saving
 
@@ -100,7 +103,7 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
 
   var title by rememberSaveable { mutableStateOf("") }
   var category by rememberSaveable { mutableStateOf("") }
-  var instructor by rememberSaveable { mutableStateOf("") }
+  var selectedTeacher by remember { mutableStateOf<Teacher?>(null) }
   var totalStudents by rememberSaveable { mutableStateOf("0") }
   var durationHours by rememberSaveable { mutableStateOf("0") }
   var completionRatePercent by rememberSaveable { mutableStateOf("0") }
@@ -110,126 +113,129 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val deniedMessage = stringResource(R.string.permission_denied)
 
   Box(modifier = Modifier.fillMaxSize()) {
-  DetailScaffold(title = stringResource(R.string.course_create_title), onBack = onBack) {
-      innerPadding,
-      _ ->
-    Column(
-        modifier =
-            Modifier.fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-      SnackbarHost(hostState = snackbarHostState)
-
-      OutlinedTextField(
-          value = title,
-          onValueChange = { title = it },
-          modifier = Modifier.fillMaxWidth(),
-          label = { Text(stringResource(R.string.course_create_title_label)) },
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = category,
-          onValueChange = { category = it },
-          modifier = Modifier.fillMaxWidth(),
-          label = { Text(stringResource(R.string.course_create_category)) },
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = instructor,
-          onValueChange = { instructor = it },
-          modifier = Modifier.fillMaxWidth(),
-          label = { Text(stringResource(R.string.course_create_instructor)) },
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = totalStudents,
-          onValueChange = { totalStudents = it.filter(Char::isDigit) },
-          modifier = Modifier.fillMaxWidth(),
-          label = { Text(stringResource(R.string.course_create_students)) },
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = durationHours,
-          onValueChange = { durationHours = it.filter(Char::isDigit) },
-          modifier = Modifier.fillMaxWidth(),
-          label = { Text(stringResource(R.string.course_create_duration)) },
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = completionRatePercent,
-          onValueChange = { completionRatePercent = it.filter(Char::isDigit) },
-          modifier = Modifier.fillMaxWidth(),
-          label = { Text(stringResource(R.string.course_create_completion)) },
-          singleLine = true,
-      )
-
-      Text(
-          text = stringResource(R.string.course_create_published),
-          style = MaterialTheme.typography.labelLarge,
-      )
-      FilterChip(
-          selected = isPublished,
-          onClick = { isPublished = true },
-          label = { Text(stringResource(R.string.course_create_yes)) },
-      )
-      FilterChip(
-          selected = !isPublished,
-          onClick = { isPublished = false },
-          label = { Text(stringResource(R.string.course_create_no)) },
-      )
-
-      Button(
-          onClick = {
-            val students = totalStudents.toIntOrNull()
-            val hours = durationHours.toIntOrNull()
-            val completion = completionRatePercent.toIntOrNull()
-
-            if (title.isBlank() || category.isBlank() || instructor.isBlank()) {
-              scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
-              return@Button
-            }
-            if (students == null || hours == null || completion == null || completion !in 0..100) {
-              scope.launch { snackbarHostState.showSnackbar(invalidNumericMessage) }
-              return@Button
-            }
-
-            if (
-                !AccessPolicy.can(
-                    currentUser?.role,
-                    ProtectedResource.Courses,
-                    ProtectedAction.Create,
-                )
-            ) {
-              scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
-              return@Button
-            }
-
-            val nextId = (courses.maxOfOrNull { it.id } ?: 0) + 1
-            viewModel.saveCourse(
-                requester = currentUser,
-                course =
-                    Course(
-                        id = nextId,
-                        title = title.trim(),
-                        category = category.trim(),
-                        instructor = instructor.trim(),
-                        totalStudents = students,
-                        durationHours = hours,
-                        completionRate = completion / 100f,
-                        isPublished = isPublished,
-                    ),
-            )
-          },
-          enabled = !isSaving,
-          modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+    DetailScaffold(title = stringResource(R.string.course_create_title), onBack = onBack) {
+        innerPadding,
+        _ ->
+      Column(
+          modifier =
+              Modifier.fillMaxSize()
+                  .padding(innerPadding)
+                  .padding(horizontal = 20.dp)
+                  .verticalScroll(rememberScrollState()),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
       ) {
-        Text(stringResource(R.string.course_create_save))
+        SnackbarHost(hostState = snackbarHostState)
+
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.course_create_title_label)) },
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = category,
+            onValueChange = { category = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.course_create_category)) },
+            singleLine = true,
+        )
+        SearchableDropdown(
+            label = stringResource(R.string.course_create_instructor),
+            items = teachers,
+            selected = selectedTeacher,
+            itemLabel = { it.name },
+            onItemSelected = { selectedTeacher = it },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedTextField(
+            value = totalStudents,
+            onValueChange = { totalStudents = it.filter(Char::isDigit) },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.course_create_students)) },
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = durationHours,
+            onValueChange = { durationHours = it.filter(Char::isDigit) },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.course_create_duration)) },
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = completionRatePercent,
+            onValueChange = { completionRatePercent = it.filter(Char::isDigit) },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.course_create_completion)) },
+            singleLine = true,
+        )
+
+        Text(
+            text = stringResource(R.string.course_create_published),
+            style = MaterialTheme.typography.labelLarge,
+        )
+        FilterChip(
+            selected = isPublished,
+            onClick = { isPublished = true },
+            label = { Text(stringResource(R.string.course_create_yes)) },
+        )
+        FilterChip(
+            selected = !isPublished,
+            onClick = { isPublished = false },
+            label = { Text(stringResource(R.string.course_create_no)) },
+        )
+
+        Button(
+            onClick = {
+              val students = totalStudents.toIntOrNull()
+              val hours = durationHours.toIntOrNull()
+              val completion = completionRatePercent.toIntOrNull()
+
+              if (title.isBlank() || category.isBlank() || selectedTeacher == null) {
+                scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
+                return@Button
+              }
+              if (
+                  students == null || hours == null || completion == null || completion !in 0..100
+              ) {
+                scope.launch { snackbarHostState.showSnackbar(invalidNumericMessage) }
+                return@Button
+              }
+
+              if (
+                  !AccessPolicy.can(
+                      currentUser?.role,
+                      ProtectedResource.Courses,
+                      ProtectedAction.Create,
+                  )
+              ) {
+                scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
+                return@Button
+              }
+
+              val nextId = (courses.maxOfOrNull { it.id } ?: 0) + 1
+              viewModel.saveCourse(
+                  requester = currentUser,
+                  course =
+                      Course(
+                          id = nextId,
+                          title = title.trim(),
+                          category = category.trim(),
+                          instructor = selectedTeacher!!.name,
+                          totalStudents = students,
+                          durationHours = hours,
+                          completionRate = completion / 100f,
+                          isPublished = isPublished,
+                      ),
+              )
+            },
+            enabled = !isSaving,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        ) {
+          Text(stringResource(R.string.course_create_save))
+        }
       }
     }
-  }
-  LoadingOverlay(isVisible = isSaving, message = stringResource(R.string.loading_saving))
+    LoadingOverlay(isVisible = isSaving, message = stringResource(R.string.loading_saving))
   }
 }
