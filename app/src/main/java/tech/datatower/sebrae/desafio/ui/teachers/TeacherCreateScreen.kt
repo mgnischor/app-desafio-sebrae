@@ -107,111 +107,111 @@ fun TeacherCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val deniedMessage = stringResource(R.string.permission_denied)
 
   Box(modifier = Modifier.fillMaxSize()) {
-  DetailScaffold(title = stringResource(R.string.teacher_create_title), onBack = onBack) {
-      innerPadding,
-      _ ->
-    Column(
-        modifier =
-            Modifier.fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-      SnackbarHost(hostState = snackbarHostState)
-
-      OutlinedTextField(
-          value = name,
-          onValueChange = { name = it },
-          label = { Text(stringResource(R.string.teacher_create_name)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = email,
-          onValueChange = { email = it },
-          label = { Text(stringResource(R.string.teacher_create_email)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = specialty,
-          onValueChange = { specialty = it },
-          label = { Text(stringResource(R.string.teacher_create_specialty)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = activeCourses,
-          onValueChange = { activeCourses = it.filter(Char::isDigit) },
-          label = { Text(stringResource(R.string.teacher_create_active_courses)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = totalStudents,
-          onValueChange = { totalStudents = it.filter(Char::isDigit) },
-          label = { Text(stringResource(R.string.teacher_create_total_students)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-      OutlinedTextField(
-          value = rating,
-          onValueChange = { rating = it.filter { ch -> ch.isDigit() || ch == '.' } },
-          label = { Text(stringResource(R.string.teacher_create_rating)) },
-          modifier = Modifier.fillMaxWidth(),
-          singleLine = true,
-      )
-
-      Button(
-          onClick = {
-            val active = activeCourses.toIntOrNull()
-            val students = totalStudents.toIntOrNull()
-            val score = rating.toFloatOrNull()
-
-            if (name.isBlank() || email.isBlank() || specialty.isBlank()) {
-              scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
-              return@Button
-            }
-            if (active == null || students == null || score == null || score !in 0f..5f) {
-              scope.launch { snackbarHostState.showSnackbar(invalidNumericMessage) }
-              return@Button
-            }
-
-            if (
-                !AccessPolicy.can(
-                    currentUser?.role,
-                    ProtectedResource.Teachers,
-                    ProtectedAction.Create,
-                )
-            ) {
-              scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
-              return@Button
-            }
-
-            val nextId = (teachers.maxOfOrNull { it.id } ?: 0) + 1
-            viewModel.saveTeacher(
-                requester = currentUser,
-                teacher =
-                    Teacher(
-                        id = nextId,
-                        name = name.trim(),
-                        email = email.trim(),
-                        specialty = specialty.trim(),
-                        activeCourses = active,
-                        totalStudents = students,
-                        rating = score,
-                        isActive = true,
-                    ),
-            )
-          },
-          enabled = !isSaving,
-          modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+    DetailScaffold(title = stringResource(R.string.teacher_create_title), onBack = onBack) {
+        innerPadding,
+        _ ->
+      Column(
+          modifier =
+              Modifier.fillMaxSize()
+                  .padding(innerPadding)
+                  .padding(horizontal = 20.dp)
+                  .verticalScroll(rememberScrollState()),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
       ) {
-        Text(stringResource(R.string.teacher_create_save))
+        SnackbarHost(hostState = snackbarHostState)
+
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text(stringResource(R.string.teacher_create_name)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text(stringResource(R.string.teacher_create_email)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = specialty,
+            onValueChange = { specialty = it },
+            label = { Text(stringResource(R.string.teacher_create_specialty)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = activeCourses,
+            onValueChange = { activeCourses = it.filter(Char::isDigit) },
+            label = { Text(stringResource(R.string.teacher_create_active_courses)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = totalStudents,
+            onValueChange = { totalStudents = it.filter(Char::isDigit) },
+            label = { Text(stringResource(R.string.teacher_create_total_students)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = rating,
+            onValueChange = { rating = it.filter { ch -> ch.isDigit() || ch == '.' } },
+            label = { Text(stringResource(R.string.teacher_create_rating)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+
+        Button(
+            onClick = {
+              val active = activeCourses.toIntOrNull()
+              val students = totalStudents.toIntOrNull()
+              val score = rating.toFloatOrNull()
+
+              if (name.isBlank() || email.isBlank() || specialty.isBlank()) {
+                scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
+                return@Button
+              }
+              if (active == null || students == null || score == null || score !in 0f..5f) {
+                scope.launch { snackbarHostState.showSnackbar(invalidNumericMessage) }
+                return@Button
+              }
+
+              if (
+                  !AccessPolicy.can(
+                      currentUser?.role,
+                      ProtectedResource.Teachers,
+                      ProtectedAction.Create,
+                  )
+              ) {
+                scope.launch { snackbarHostState.showSnackbar(deniedMessage) }
+                return@Button
+              }
+
+              val nextId = (teachers.maxOfOrNull { it.id } ?: 0) + 1
+              viewModel.saveTeacher(
+                  requester = currentUser,
+                  teacher =
+                      Teacher(
+                          id = nextId,
+                          name = name.trim(),
+                          email = email.trim(),
+                          specialty = specialty.trim(),
+                          activeCourses = active,
+                          totalStudents = students,
+                          rating = score,
+                          isActive = true,
+                      ),
+              )
+            },
+            enabled = !isSaving,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        ) {
+          Text(stringResource(R.string.teacher_create_save))
+        }
       }
     }
-  }
-  LoadingOverlay(isVisible = isSaving, message = stringResource(R.string.loading_saving))
+    LoadingOverlay(isVisible = isSaving, message = stringResource(R.string.loading_saving))
   }
 }
