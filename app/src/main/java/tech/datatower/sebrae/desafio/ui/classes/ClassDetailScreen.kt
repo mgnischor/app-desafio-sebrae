@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/classes/ClassDetailScreen.kt
+    Descrição: Tela de detalhes de uma turma, exibindo alunos matriculados e informações gerais.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.classes
 
 import androidx.compose.foundation.layout.Arrangement
@@ -15,48 +41,32 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.flowOf
+import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.R
 import tech.datatower.sebrae.desafio.data.model.ClassStatus
 import tech.datatower.sebrae.desafio.data.model.StudentStatus
-import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 
 /**
  * Executa a rotina de class detail screen dentro do contexto deste componente.
  *
- * @param classId Valor de entrada utilizado por esta opera??o.
- * @param onBack Valor de entrada utilizado por esta opera??o.
+ * @param classId Valor de entrada utilizado por esta operação.
+ * @param onBack Valor de entrada utilizado por esta operação.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClassDetailScreen(
-    classId: Int,
     onBack: () -> Unit = {},
 ) {
-  val context = LocalContext.current
-  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataConnectService =
-      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
-  val schoolClass by repository.observeClassById(classId).collectAsState(initial = null)
-  val studentsFlow =
-      remember(schoolClass?.name) {
-        val className = schoolClass?.name
-        if (className == null) flowOf(emptyList()) else repository.observeStudentsByClass(className)
-      }
-  val students by studentsFlow.collectAsState(initial = emptyList())
-
-  LaunchedEffect(classId) { dataConnectService.syncScope(ScreenDataScope.CLASS_DETAIL) }
+  val viewModel: ClassDetailViewModel = hiltViewModel()
+  val schoolClass by viewModel.schoolClass.collectAsState()
+  val students by viewModel.students.collectAsState()
 
   DetailScaffold(title = stringResource(R.string.class_detail_title), onBack = onBack) {
       innerPadding,
@@ -168,8 +178,8 @@ fun ClassDetailScreen(
 /**
  * Executa a rotina de class status label dentro do contexto deste componente.
  *
- * @param status Valor de entrada utilizado por esta opera??o.
- * @return Resultado produzido pela opera??o em formato `String`.
+ * @param status Valor de entrada utilizado por esta operação.
+ * @return Resultado produzido pela operação em formato `String`.
  */
 @Composable
 private fun classStatusLabel(status: ClassStatus): String =
@@ -182,8 +192,8 @@ private fun classStatusLabel(status: ClassStatus): String =
 /**
  * Executa a rotina de student status label dentro do contexto deste componente.
  *
- * @param status Valor de entrada utilizado por esta opera??o.
- * @return Resultado produzido pela opera??o em formato `String`.
+ * @param status Valor de entrada utilizado por esta operação.
+ * @return Resultado produzido pela operação em formato `String`.
  */
 @Composable
 private fun studentStatusLabel(status: StudentStatus): String =
