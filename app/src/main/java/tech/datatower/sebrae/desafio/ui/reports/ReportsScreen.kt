@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/reports/ReportsScreen.kt
+    Descrição: Tela de relatórios da instituição, com métricas e indicadores de desempenho.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.reports
 
 import androidx.compose.foundation.background
@@ -21,22 +47,18 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.R
-import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 import java.util.Locale
@@ -44,34 +66,15 @@ import java.util.Locale
 /**
  * Executa a rotina de reports screen dentro do contexto deste componente.
  *
- * @param onBack Valor de entrada utilizado por esta opera??o.
+ * @param onBack Valor de entrada utilizado por esta operação.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportsScreen(onBack: () -> Unit = {}) {
-  val context = LocalContext.current
-  val repository = remember(context) { AppGraph.repository(context.applicationContext) }
-  val dataConnectService =
-      remember(context) { AppGraph.dataConnectService(context.applicationContext) }
-  val summary by
-      repository
-          .observeReportSummary()
-          .collectAsState(
-              initial =
-                  tech.datatower.sebrae.desafio.data.repository.ReportSummary(
-                      activeStudents = 0,
-                      activeCourses = 0,
-                      totalClasses = 0,
-                      completionRate = 0f,
-                      certificates = 0,
-                      averageTeacherRating = 0f,
-                  )
-          )
-  val courseCompletion by
-      repository.observeCourseCompletionMetrics().collectAsState(initial = emptyList())
-  val monthly by repository.observeMonthlyEnrollmentMetrics().collectAsState(initial = emptyList())
-
-  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.REPORTS) }
+  val viewModel: ReportsViewModel = hiltViewModel()
+  val summary by viewModel.summary.collectAsState()
+  val courseCompletion by viewModel.courseCompletion.collectAsState()
+  val monthly by viewModel.monthlyEnrollments.collectAsState()
 
   DetailScaffold(title = stringResource(R.string.reports_title), onBack = onBack) { innerPadding, _
     ->
@@ -136,7 +139,7 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
 /**
  * Executa a rotina de section header dentro do contexto deste componente.
  *
- * @param text Valor de entrada utilizado por esta opera??o.
+ * @param text Valor de entrada utilizado por esta operação.
  */
 @Composable
 private fun SectionHeader(text: String) {
@@ -151,9 +154,9 @@ private fun SectionHeader(text: String) {
 /**
  * Executa a rotina de kpi card dentro do contexto deste componente.
  *
- * @param value Valor de entrada utilizado por esta opera??o.
- * @param label Valor de entrada utilizado por esta opera??o.
- * @param modifier Valor de entrada utilizado por esta opera??o.
+ * @param value Valor de entrada utilizado por esta operação.
+ * @param label Valor de entrada utilizado por esta operação.
+ * @param modifier Valor de entrada utilizado por esta operação.
  */
 @Composable
 private fun KpiCard(value: String, label: String, modifier: Modifier = Modifier) {
@@ -189,7 +192,7 @@ private fun KpiCard(value: String, label: String, modifier: Modifier = Modifier)
 /**
  * Executa a rotina de course completion report dentro do contexto deste componente.
  *
- * @param items Valor de entrada utilizado por esta opera??o.
+ * @param items Valor de entrada utilizado por esta operação.
  */
 @Composable
 private fun CourseCompletionReport(
@@ -236,7 +239,7 @@ private fun CourseCompletionReport(
 /**
  * Executa a rotina de enrollment monthly report dentro do contexto deste componente.
  *
- * @param items Valor de entrada utilizado por esta opera??o.
+ * @param items Valor de entrada utilizado por esta operação.
  */
 @Composable
 private fun EnrollmentMonthlyReport(
