@@ -165,7 +165,15 @@ fun CalendarScreen(currentUser: AppUser? = null, onBack: () -> Unit = {}) {
         CalendarEventCreateCard(
             onDismiss = { showCreateSheet = false },
             onSave = { evtTitle, evtCourse, evtDate, evtTime, evtLocation, evtType ->
-              viewModel.createEvent(currentUser, evtTitle, evtCourse, evtDate, evtTime, evtLocation, evtType)
+              viewModel.createEvent(
+                  currentUser,
+                  evtTitle,
+                  evtCourse,
+                  evtDate,
+                  evtTime,
+                  evtLocation,
+                  evtType,
+              )
               showCreateSheet = false
             },
         )
