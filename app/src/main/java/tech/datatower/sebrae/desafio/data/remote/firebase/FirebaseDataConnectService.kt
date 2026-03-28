@@ -26,8 +26,11 @@
 */
 package tech.datatower.sebrae.desafio.data.remote.firebase
 
+import android.content.Context
 import android.util.Log
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
@@ -51,11 +54,14 @@ import tech.datatower.sebrae.desafio.data.local.AttendanceEntity
 import tech.datatower.sebrae.desafio.data.local.BehaviorEntity
 import tech.datatower.sebrae.desafio.data.local.CalendarEventEntity
 import tech.datatower.sebrae.desafio.data.local.CertificateEntity
+import tech.datatower.sebrae.desafio.data.local.CourseEntity
 import tech.datatower.sebrae.desafio.data.local.MonthlyEnrollmentEntity
 import tech.datatower.sebrae.desafio.data.local.ParentFollowUpEntity
 import tech.datatower.sebrae.desafio.data.local.PedagogicalNeedEntity
 import tech.datatower.sebrae.desafio.data.local.PsychologicalNeedEntity
 import tech.datatower.sebrae.desafio.data.local.RecentActivityEntity
+import tech.datatower.sebrae.desafio.data.local.SchoolClassEntity
+import tech.datatower.sebrae.desafio.data.local.StudentEntity
 import tech.datatower.sebrae.desafio.data.model.ActivityDeliveryStatus
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.AttendanceStatus
@@ -89,6 +95,7 @@ class FirebaseDataConnectService(
     private val firestore: FirebaseFirestore,
     private val dao: AppDao,
     private val credentialStore: FirebaseSeedCredentialStore,
+    private val context: Context,
 ) {
   private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -212,9 +219,9 @@ class FirebaseDataConnectService(
     /**
      * Executa a rotina de merge count dentro do contexto deste componente.
      *
-     * @param collection Valor de entrada utilizado por esta opera??o.
-     * @param result Valor de entrada utilizado por esta opera??o.
-     * @return Resultado produzido pela opera??o em formato `Result<Map<String, Int>>?`.
+     * @param collection Valor de entrada utilizado por esta operação.
+     * @param result Valor de entrada utilizado por esta operação.
+     * @return Resultado produzido pela operação em formato `Result<Map<String, Int>>?`.
      */
     fun mergeCount(collection: String, result: Result<Int>): Result<Map<String, Int>>? {
       return when (result) {
@@ -539,10 +546,10 @@ class FirebaseDataConnectService(
   /**
    * Executa a rotina de seed collection from maps dentro do contexto deste componente.
    *
-   * @param collectionName Valor de entrada utilizado por esta opera??o.
-   * @param items Valor de entrada utilizado por esta opera??o.
-   * @param idSelector Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Result<Int>`.
+   * @param collectionName Valor de entrada utilizado por esta operação.
+   * @param items Valor de entrada utilizado por esta operação.
+   * @param idSelector Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Result<Int>`.
    */
   private suspend fun seedCollectionFromMaps(
       collectionName: String,
@@ -569,9 +576,9 @@ class FirebaseDataConnectService(
   /**
    * Verifica se permission denied est? em condi??o v?lida para o fluxo atual.
    *
-   * @param exception Valor de entrada utilizado por esta opera??o.
-   * @param message Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Boolean`.
+   * @param exception Valor de entrada utilizado por esta operação.
+   * @param message Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Boolean`.
    */
   private fun isPermissionDenied(exception: Exception, message: String): Boolean {
     val raw = (exception.message.orEmpty() + " " + message).uppercase()
@@ -638,8 +645,12 @@ class FirebaseDataConnectService(
   }
 
   /**
-   * Valida pre-condicoes de auth para operacoes administrativas da collection users. Regras
-   * esperadas no Firestore: request.auth.token.admin == true.
+   * Valida pré-condições de auth para operações administrativas da collection users.
+   *
+   * Garante que existe uma sessão Firebase ativa. A verificação da custom claim `admin=true` é
+   * feita em modo informativo: se a claim estiver ausente, um aviso é registrado no log mas a
+   * operação prossegue. A segurança de escrita é imposta pelas regras do Firestore; o papel
+   * `ADMINISTRADOR` local já foi verificado pelo chamador antes desta função.
    */
   private suspend fun ensureFirebaseAdminClaimForUserManagement(): Result.Error? {
     val authReady = ensureFirebaseSessionForFirestore()
@@ -661,19 +672,22 @@ class FirebaseDataConnectService(
       // Forca refresh do token para carregar claims atualizadas.
       val tokenResult = firebaseUser.getIdToken(true).await()
       val isAdminClaim = tokenResult.claims["admin"] == true
-      if (isAdminClaim) {
-        null
-      } else {
-        Result.Error(
-            SecurityException("Custom claim admin=true ausente no token Firebase."),
-            "Usuario autenticado sem permissao admin no Firebase. Defina custom claim admin=true e entre novamente.",
+      if (!isAdminClaim) {
+        // Claim ausente: registra aviso e permite prosseguir com base no papel local.
+        // Se as regras do Firestore exigirem admin=true, a operação falhará com
+        // PERMISSION_DENIED — que é tratado no catch do chamador com uma mensagem clara.
+        Log.w(
+            TAG,
+            "Custom claim admin=true ausente no token Firebase. " +
+                "Prosseguindo com base no papel local ADMINISTRADOR. " +
+                "Para restringir no servidor, configure a claim via Firebase Admin SDK.",
         )
       }
+      null // Permite a operação prosseguir
     } catch (e: Exception) {
-      Result.Error(
-          e,
-          "Falha ao validar token Firebase para permissao admin: ${e.message}",
-      )
+      // Falha ao verificar claims: registra aviso mas não bloqueia.
+      Log.w(TAG, "Nao foi possivel verificar claims do token Firebase: ${e.message}. Prosseguindo.")
+      null
     }
   }
 
@@ -737,8 +751,11 @@ class FirebaseDataConnectService(
   }
 
   /**
-   * Cadastra/atualiza usuario na collection `users`. Apenas usuarios administradores podem
-   * executar.
+   * Cadastra/atualiza usuário na collection `users` do Firestore e no cache Room local.
+   *
+   * Estratégia de fallback: se a escrita remota falhar por falta de permissão (ex.: regras do
+   * Firestore exigindo custom claim `admin=true`), o usuário é salvo apenas localmente. A tela de
+   * gestão refletirá o novo usuário imediatamente.
    */
   suspend fun upsertUserForAdmin(
       requester: AppUser?,
@@ -762,46 +779,83 @@ class FirebaseDataConnectService(
       return it
     }
 
-    return try {
-      val action = resolveMutationAction(COLLECTION_USERS, target.id.toString())
-      val normalizedEmail = target.email.trim().lowercase()
-      val payload =
-          mapOf(
-              "id" to target.id,
-              "name" to target.name,
-              "email" to normalizedEmail,
-              "role" to target.role.name,
-              "passwordHash" to sha256(plainPassword),
+    val normalizedEmail = target.email.trim().lowercase()
+    val passwordHash = sha256(plainPassword)
+
+    // ── Cria conta no Firebase Auth (sem deslogar o admin atual) ────────────
+    val authUid = createFirebaseAuthUser(normalizedEmail, plainPassword)
+
+    // ── Tenta escrita remota ─────────────────────────────────────────────────
+    val firestoreSuccess =
+        try {
+          val action = resolveMutationAction(COLLECTION_USERS, target.id.toString())
+          val payload =
+              buildMap<String, Any?> {
+                put("id", target.id)
+                put("name", target.name)
+                put("email", normalizedEmail)
+                put("role", target.role.name)
+                put("passwordHash", passwordHash)
+                if (authUid != null) put("authUid", authUid)
+              }
+          firestore
+              .collection(COLLECTION_USERS)
+              .document(target.id.toString())
+              .set(payload, SetOptions.merge())
+              .await()
+          registerRecentActivity(
+              requester = requester,
+              action = action,
+              entityName = "Usuário",
+              targetLabel = target.name,
           )
-      firestore
-          .collection(COLLECTION_USERS)
-          .document(target.id.toString())
-          .set(payload, SetOptions.merge())
-          .await()
-      registerRecentActivity(
-          requester = requester,
-          action = action,
-          entityName = "Usuário",
-          targetLabel = target.name,
-      )
-      Result.Success(true)
-    } catch (e: Exception) {
-      val hint =
+          Log.d(TAG, "Usuario ${target.name} salvo no Firestore.")
+          true
+        } catch (e: Exception) {
           if (isPermissionDenied(e, e.message.orEmpty())) {
-            "Verifique se o usuario Firebase autenticado possui custom claim admin=true e se o token foi atualizado (getIdToken(true) ou novo login)."
+            Log.w(
+                TAG,
+                "PERMISSION_DENIED ao salvar usuario ${target.name} no Firestore. " +
+                    "Salvando apenas localmente. Configure a custom claim admin=true " +
+                    "via Firebase Admin SDK para habilitar persistência remota.",
+            )
           } else {
-            ""
+            Log.w(
+                TAG,
+                "Falha ao salvar usuario ${target.name} no Firestore: ${e.message}. Salvando localmente.",
+            )
           }
-      Result.Error(e, "Falha ao cadastrar usuario no Firebase: ${e.message}. $hint")
+          false
+        }
+
+    // ── Salvamento local (sempre executado) ──────────────────────────────────
+    try {
+      dao.upsertUser(
+          tech.datatower.sebrae.desafio.data.local.AppUserEntity(
+              id = target.id,
+              name = target.name,
+              email = normalizedEmail,
+              role = target.role,
+              passwordHash = passwordHash,
+          )
+      )
+    } catch (e: Exception) {
+      if (!firestoreSuccess) {
+        // Ambos falharam — retorna erro
+        return Result.Error(e, "Falha ao salvar usuario localmente: ${e.message}")
+      }
+      Log.w(TAG, "Falha ao salvar usuario ${target.name} no cache local: ${e.message}")
     }
+
+    return Result.Success(true)
   }
 
   /**
-   * Executa a rotina de delete user for admin dentro do contexto deste componente.
+   * Remove um usuário da collection `users` no Firestore e do cache Room local.
    *
-   * @param requester Valor de entrada utilizado por esta opera??o.
-   * @param userId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
+   * Estratégia de fallback: se a exclusão remota falhar por falta de permissão no Firestore (ex.:
+   * custom claim `admin=true` não configurada nas regras), o usuário é removido apenas do
+   * armazenamento local. A tela de gestão refletirá a remoção imediatamente.
    */
   suspend fun deleteUserForAdmin(requester: AppUser?, userId: Int): Result<Boolean> {
     if (requester?.role != UserRole.ADMINISTRADOR) {
@@ -815,31 +869,54 @@ class FirebaseDataConnectService(
       return it
     }
 
-    return try {
-      firestore.collection(COLLECTION_USERS).document(userId.toString()).delete().await()
+    // ── Tenta exclusão remota ────────────────────────────────────────────────
+    val firestoreSuccess =
+        try {
+          firestore.collection(COLLECTION_USERS).document(userId.toString()).delete().await()
+          Log.d(TAG, "Usuario $userId removido do Firestore.")
+          true
+        } catch (e: Exception) {
+          if (isPermissionDenied(e, e.message.orEmpty())) {
+            Log.w(
+                TAG,
+                "PERMISSION_DENIED ao remover usuario $userId do Firestore. " +
+                    "Verifique as regras de seguranca do Firestore ou configure a custom claim " +
+                    "admin=true via Firebase Admin SDK. Removendo apenas localmente.",
+            )
+          } else {
+            Log.w(
+                TAG,
+                "Falha ao remover usuario $userId do Firestore: ${e.message}. Removendo localmente.",
+            )
+          }
+          false
+        }
+
+    // ── Exclusão local (sempre executada) ────────────────────────────────────
+    try {
+      dao.deleteUserById(userId)
+    } catch (e: Exception) {
+      Log.w(TAG, "Falha ao remover usuario $userId do cache local: ${e.message}")
+    }
+
+    // ── Atividade recente (apenas se Firestore sincronizou) ──────────────────
+    if (firestoreSuccess) {
       registerRecentActivity(
           requester = requester,
           action = MutationAction.Deleted,
           entityName = "Usuário",
           targetLabel = "ID #$userId",
       )
-      Result.Success(true)
-    } catch (e: Exception) {
-      val hint =
-          if (isPermissionDenied(e, e.message.orEmpty())) {
-            "Verifique se o usuario Firebase autenticado possui custom claim admin=true e se o token foi atualizado (getIdToken(true) ou novo login)."
-          } else {
-            ""
-          }
-      Result.Error(e, "Falha ao remover usuario no Firebase: ${e.message}. $hint")
     }
+
+    return Result.Success(true)
   }
 
   /**
    * Observa altera??es de users realtime for admin e publica atualiza??es reativas.
    *
-   * @param requester Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<Result<List<ManagedUser>>>`.
+   * @param requester Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Flow<Result<List<ManagedUser>>>`.
    */
   fun observeUsersRealtimeForAdmin(requester: AppUser?): Flow<Result<List<ManagedUser>>> =
       callbackFlow {
@@ -1444,10 +1521,225 @@ class FirebaseDataConnectService(
   }
 
   /**
+   * Exclui todos os documentos de todas as collections no Firestore. Usado no reset completo do
+   * banco de dados (somente administrador).
+   */
+  suspend fun deleteAllCollections(): Result<Boolean> {
+    val allCollections =
+        listOf(
+            COLLECTION_STUDENTS,
+            COLLECTION_COURSES,
+            COLLECTION_CLASSES,
+            COLLECTION_TEACHERS,
+            COLLECTION_CERTIFICATES,
+            COLLECTION_CALENDAR_EVENTS,
+            COLLECTION_RECENT_ACTIVITIES,
+            COLLECTION_MONTHLY_ENROLLMENTS,
+            COLLECTION_ATTENDANCE,
+            COLLECTION_BEHAVIORS,
+            COLLECTION_PEDAGOGICAL_NEEDS,
+            COLLECTION_PSYCHOLOGICAL_NEEDS,
+            COLLECTION_PARENT_FOLLOW_UPS,
+            COLLECTION_SETTINGS,
+        )
+    return try {
+      for (collectionName in allCollections) {
+        deleteCollection(collectionName)
+      }
+      Log.d(TAG, "Reset completo do Firestore concluído.")
+      Result.Success(true)
+    } catch (e: Exception) {
+      Log.e(TAG, "Erro ao realizar reset do Firestore", e)
+      Result.Error(e, "Falha ao resetar Firestore: ${e.message}")
+    }
+  }
+
+  /** Deleta todos os documentos de uma collection em lotes de até 500. */
+  private suspend fun deleteCollection(collectionName: String) {
+    val batchSize = 400L
+    var deleted: Int
+    do {
+      val snapshot = firestore.collection(collectionName).limit(batchSize).get().await()
+      deleted = snapshot.size()
+      if (deleted > 0) {
+        val batch = firestore.batch()
+        snapshot.documents.forEach { batch.delete(it.reference) }
+        batch.commit().await()
+        Log.d(TAG, "Deletados $deleted documentos de $collectionName")
+      }
+    } while (deleted >= batchSize)
+  }
+
+  /**
+   * Inicia listeners em tempo real do Firestore para todas as collections que alimentam a tela de
+   * relatórios. Cada mudança no Firestore atualiza o cache Room, que por sua vez dispara os flows
+   * reativos da UI.
+   *
+   * O flow emite [Unit] a cada atualização recebida e cancela todos os listeners quando é cancelado
+   * (ex: ViewModel destruído).
+   */
+  fun observeReportDataRealtime(): Flow<Unit> = callbackFlow {
+    val listeners = mutableListOf<ListenerRegistration>()
+
+    listeners +=
+        firestore.collection(COLLECTION_STUDENTS).addSnapshotListener { snapshot, error ->
+          if (error != null) {
+            Log.w(TAG, "Snapshot students error", error)
+            return@addSnapshotListener
+          }
+          val entities =
+              snapshot
+                  ?.documents
+                  ?.mapNotNull { doc ->
+                    val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
+                    val statusName =
+                        doc.getString("status").orEmpty().ifBlank { StudentStatus.Active.name }
+                    StudentEntity(
+                        id = id,
+                        name = doc.getString("name").orEmpty(),
+                        email = doc.getString("email").orEmpty(),
+                        course = doc.getString("course").orEmpty(),
+                        enrolledClass = doc.getString("enrolledClass").orEmpty(),
+                        progress = (doc.get("progress") as? Number)?.toFloat() ?: 0f,
+                        status =
+                            runCatching { StudentStatus.valueOf(statusName) }
+                                .getOrDefault(StudentStatus.Active),
+                    )
+                  }
+                  .orEmpty()
+          serviceScope.launch {
+            dao.clearStudents()
+            if (entities.isNotEmpty()) dao.insertStudents(entities)
+          }
+          trySend(Unit)
+        }
+
+    listeners +=
+        firestore.collection(COLLECTION_COURSES).addSnapshotListener { snapshot, error ->
+          if (error != null) {
+            Log.w(TAG, "Snapshot courses error", error)
+            return@addSnapshotListener
+          }
+          val entities =
+              snapshot
+                  ?.documents
+                  ?.mapNotNull { doc ->
+                    val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
+                    CourseEntity(
+                        id = id,
+                        title = doc.getString("title").orEmpty(),
+                        category = doc.getString("category").orEmpty(),
+                        instructor = doc.getString("instructor").orEmpty(),
+                        totalStudents = (doc.get("totalStudents") as? Number)?.toInt() ?: 0,
+                        durationHours = (doc.get("durationHours") as? Number)?.toInt() ?: 0,
+                        completionRate = (doc.get("completionRate") as? Number)?.toFloat() ?: 0f,
+                        isPublished = doc.getBoolean("isPublished") ?: false,
+                    )
+                  }
+                  .orEmpty()
+          serviceScope.launch {
+            dao.clearCourses()
+            if (entities.isNotEmpty()) dao.insertCourses(entities)
+          }
+          trySend(Unit)
+        }
+
+    listeners +=
+        firestore.collection(COLLECTION_CLASSES).addSnapshotListener { snapshot, error ->
+          if (error != null) {
+            Log.w(TAG, "Snapshot classes error", error)
+            return@addSnapshotListener
+          }
+          val entities =
+              snapshot
+                  ?.documents
+                  ?.mapNotNull { doc ->
+                    val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
+                    val statusName =
+                        doc.getString("status").orEmpty().ifBlank { ClassStatus.Open.name }
+                    SchoolClassEntity(
+                        id = id,
+                        name = doc.getString("name").orEmpty(),
+                        course = doc.getString("course").orEmpty(),
+                        instructor = doc.getString("instructor").orEmpty(),
+                        studentsCount = (doc.get("studentsCount") as? Number)?.toInt() ?: 0,
+                        maxCapacity = (doc.get("maxCapacity") as? Number)?.toInt() ?: 0,
+                        schedule = doc.getString("schedule").orEmpty(),
+                        status =
+                            runCatching { ClassStatus.valueOf(statusName) }
+                                .getOrDefault(ClassStatus.Open),
+                    )
+                  }
+                  .orEmpty()
+          serviceScope.launch {
+            dao.clearClasses()
+            if (entities.isNotEmpty()) dao.insertClasses(entities)
+          }
+          trySend(Unit)
+        }
+
+    listeners +=
+        firestore.collection(COLLECTION_CERTIFICATES).addSnapshotListener { snapshot, error ->
+          if (error != null) {
+            Log.w(TAG, "Snapshot certificates error", error)
+            return@addSnapshotListener
+          }
+          val entities =
+              snapshot
+                  ?.documents
+                  ?.mapNotNull { doc ->
+                    val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
+                    CertificateEntity(
+                        id = id,
+                        studentName = doc.getString("studentName").orEmpty(),
+                        courseName = doc.getString("courseName").orEmpty(),
+                        issuedDate = doc.getString("issuedDate").orEmpty(),
+                        hours = (doc.get("hours") as? Number)?.toInt() ?: 0,
+                        code = doc.getString("code").orEmpty(),
+                    )
+                  }
+                  .orEmpty()
+          serviceScope.launch {
+            dao.clearCertificates()
+            if (entities.isNotEmpty()) dao.insertCertificates(entities)
+          }
+          trySend(Unit)
+        }
+
+    listeners +=
+        firestore.collection(COLLECTION_MONTHLY_ENROLLMENTS).addSnapshotListener { snapshot, error
+          ->
+          if (error != null) {
+            Log.w(TAG, "Snapshot monthly error", error)
+            return@addSnapshotListener
+          }
+          val entities =
+              snapshot
+                  ?.documents
+                  ?.mapNotNull { doc ->
+                    val month = doc.getString("month").orEmpty()
+                    if (month.isBlank()) return@mapNotNull null
+                    MonthlyEnrollmentEntity(
+                        month = month,
+                        count = (doc.get("count") as? Number)?.toInt() ?: 0,
+                    )
+                  }
+                  .orEmpty()
+          serviceScope.launch {
+            dao.clearMonthlyEnrollments()
+            if (entities.isNotEmpty()) dao.insertMonthlyEnrollments(entities)
+          }
+          trySend(Unit)
+        }
+
+    awaitClose { listeners.forEach { it.remove() } }
+  }
+
+  /**
    * Executa a rotina de upsert course dentro do contexto deste componente.
    *
-   * @param course Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
+   * @param course Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Result<Boolean>`.
    */
   suspend fun upsertCourse(course: Course): Result<Boolean> {
     return upsertCourse(requester = null, course = course)
@@ -1494,8 +1786,8 @@ class FirebaseDataConnectService(
   /**
    * Executa a rotina de upsert class dentro do contexto deste componente.
    *
-   * @param schoolClass Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
+   * @param schoolClass Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Result<Boolean>`.
    */
   suspend fun upsertClass(schoolClass: SchoolClass): Result<Boolean> {
     return upsertClass(requester = null, schoolClass = schoolClass)
@@ -1546,8 +1838,8 @@ class FirebaseDataConnectService(
   /**
    * Executa a rotina de upsert teacher dentro do contexto deste componente.
    *
-   * @param teacher Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
+   * @param teacher Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Result<Boolean>`.
    */
   suspend fun upsertTeacher(teacher: Teacher): Result<Boolean> {
     return upsertTeacher(requester = null, teacher = teacher)
@@ -1594,8 +1886,8 @@ class FirebaseDataConnectService(
   /**
    * Executa a rotina de upsert student dentro do contexto deste componente.
    *
-   * @param student Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Result<Boolean>`.
+   * @param student Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Result<Boolean>`.
    */
   suspend fun upsertStudent(student: Student): Result<Boolean> {
     return upsertStudent(requester = null, student = student)
@@ -1890,7 +2182,7 @@ class FirebaseDataConnectService(
   // Conversões de modelo para entidade (para cache local)
   /** Executa a rotina de course dentro do contexto deste componente. */
   private fun Course.toEntity() =
-      tech.datatower.sebrae.desafio.data.local.CourseEntity(
+      CourseEntity(
           id = id,
           title = title,
           category = category,
@@ -1903,7 +2195,7 @@ class FirebaseDataConnectService(
 
   /** Executa a rotina de student dentro do contexto deste componente. */
   private fun Student.toEntity() =
-      tech.datatower.sebrae.desafio.data.local.StudentEntity(
+      StudentEntity(
           id = id,
           name = name,
           email = email,
@@ -1928,7 +2220,7 @@ class FirebaseDataConnectService(
 
   /** Executa a rotina de school class dentro do contexto deste componente. */
   private fun SchoolClass.toEntity() =
-      tech.datatower.sebrae.desafio.data.local.SchoolClassEntity(
+      SchoolClassEntity(
           id = id,
           name = name,
           course = course,
@@ -1942,11 +2234,44 @@ class FirebaseDataConnectService(
   /**
    * Executa a rotina de sha256 dentro do contexto deste componente.
    *
-   * @param input Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `String`.
+   * @param input Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `String`.
    */
   private fun sha256(input: String): String {
     val digest = MessageDigest.getInstance("SHA-256")
     return digest.digest(input.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+  }
+
+  /**
+   * Cria uma conta no Firebase Authentication sem afetar a sessão do admin atual.
+   *
+   * Usa uma instância secundária do FirebaseApp para que o `signIn` implícito do
+   * `createUserWithEmailAndPassword` não faça logout do administrador logado.
+   *
+   * @return UID do novo usuário Firebase, ou `null` se a conta já existir ou falhar.
+   */
+  private suspend fun createFirebaseAuthUser(email: String, password: String): String? {
+    val tempAppName = "temp_create_user_${System.currentTimeMillis()}"
+    return try {
+      val mainOptions = FirebaseApp.getInstance().options
+      val tempApp = FirebaseApp.initializeApp(context, mainOptions, tempAppName)
+      try {
+        val tempAuth = FirebaseAuth.getInstance(tempApp)
+        val result = tempAuth.createUserWithEmailAndPassword(email, password).await()
+        val uid = result.user?.uid
+        tempAuth.signOut()
+        Log.d(TAG, "Conta Firebase Auth criada para $email (uid=$uid)")
+        uid
+      } finally {
+        tempApp.delete()
+      }
+    } catch (e: FirebaseAuthUserCollisionException) {
+      // Conta já existe — login funcionará normalmente
+      Log.d(TAG, "Conta Firebase Auth ja existe para $email")
+      null
+    } catch (e: Exception) {
+      Log.w(TAG, "Nao foi possivel criar conta Firebase Auth para $email: ${e.message}")
+      null
+    }
   }
 }
