@@ -1,6 +1,7 @@
 package tech.datatower.sebrae.desafio.ui.classes
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,6 +42,7 @@ import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectSer
 import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
+import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 
 /**
  * Executa a rotina de class create screen dentro do contexto deste componente.
@@ -75,7 +77,9 @@ fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val saveErrorMessage = stringResource(R.string.class_create_error_save)
   val deniedMessage = stringResource(R.string.permission_denied)
   val relationshipMessage = stringResource(R.string.class_create_error_relationship)
+  var isSaving by remember { mutableStateOf(false) }
 
+  Box(modifier = Modifier.fillMaxSize()) {
   DetailScaffold(title = stringResource(R.string.class_create_title), onBack = onBack) {
       innerPadding,
       _ ->
@@ -188,6 +192,7 @@ fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
             }
 
             scope.launch {
+              isSaving = true
               val nextId = (classes.maxOfOrNull { it.id } ?: 0) + 1
               when (
                   val result =
@@ -214,12 +219,16 @@ fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
                     snackbarHostState.showSnackbar(result.message.ifBlank { saveErrorMessage })
                 FirebaseDataConnectService.Result.Loading -> Unit
               }
+              isSaving = false
             }
           },
+          enabled = !isSaving,
           modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       ) {
         Text(stringResource(R.string.class_create_save))
       }
     }
+  }
+  LoadingOverlay(isVisible = isSaving, message = stringResource(R.string.loading_saving))
   }
 }
