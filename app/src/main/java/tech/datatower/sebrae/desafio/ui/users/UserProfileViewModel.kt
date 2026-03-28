@@ -72,66 +72,66 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-    private val userId: Int = checkNotNull(savedStateHandle[AppRoutes.USER_ID_ARG])
+  private val userId: Int = checkNotNull(savedStateHandle[AppRoutes.USER_ID_ARG])
 
-    /** Estado de carregamento e resultado do perfil. */
-    sealed class ProfileState {
-        data object Loading : ProfileState()
-        data class Success(val data: UserProfileData) : ProfileState()
-        data class Error(val message: String) : ProfileState()
+  /** Estado de carregamento e resultado do perfil. */
+  sealed class ProfileState {
+    data object Loading : ProfileState()
+
+    data class Success(val data: UserProfileData) : ProfileState()
+
+    data class Error(val message: String) : ProfileState()
+  }
+
+  private val _state = MutableStateFlow<ProfileState>(ProfileState.Loading)
+  val state: StateFlow<ProfileState> = _state.asStateFlow()
+
+  init {
+    viewModelScope.launch {
+      dataConnectService.syncScope(ScreenDataScope.TEACHERS)
+      dataConnectService.syncScope(ScreenDataScope.STUDENTS)
+      dataConnectService.syncScope(ScreenDataScope.CLASSES)
     }
+    observeProfile()
+  }
 
-    private val _state = MutableStateFlow<ProfileState>(ProfileState.Loading)
-    val state: StateFlow<ProfileState> = _state.asStateFlow()
+  private fun observeProfile() {
+    viewModelScope.launch {
+      combine(
+              repository.observeUserById(userId),
+              repository.observeTeachers(),
+              repository.observeStudents(),
+              repository.observeClasses(),
+          ) { user, teachers, students, classes ->
+            if (user == null) {
+              return@combine ProfileState.Error("Usuário não encontrado.")
+            }
 
-    init {
-        viewModelScope.launch {
-            dataConnectService.syncScope(ScreenDataScope.TEACHERS)
-            dataConnectService.syncScope(ScreenDataScope.STUDENTS)
-            dataConnectService.syncScope(ScreenDataScope.CLASSES)
-        }
-        observeProfile()
-    }
+            // Vincula pelo e-mail — mesma pessoa pode ser instrutor e aluno
+            val teacher = teachers.firstOrNull { it.email.equals(user.email, ignoreCase = true) }
+            val student = students.firstOrNull { it.email.equals(user.email, ignoreCase = true) }
 
-    private fun observeProfile() {
-        viewModelScope.launch {
-            combine(
-                repository.observeUserById(userId),
-                repository.observeTeachers(),
-                repository.observeStudents(),
-                repository.observeClasses(),
-            ) { user, teachers, students, classes ->
-                if (user == null) {
-                    return@combine ProfileState.Error("Usuário não encontrado.")
-                }
-
-                // Vincula pelo e-mail — mesma pessoa pode ser instrutor e aluno
-                val teacher = teachers.firstOrNull {
-                    it.email.equals(user.email, ignoreCase = true)
-                }
-                val student = students.firstOrNull {
-                    it.email.equals(user.email, ignoreCase = true)
-                }
-
-                val classesTaught = teacher?.let { t ->
-                    classes.filter { it.instructor.equals(t.name, ignoreCase = true) }
+            val classesTaught =
+                teacher?.let { t ->
+                  classes.filter { it.instructor.equals(t.name, ignoreCase = true) }
                 } ?: emptyList()
 
-                val classesEnrolled = student?.let { s ->
-                    classes.filter { it.name.equals(s.enrolledClass, ignoreCase = true) }
+            val classesEnrolled =
+                student?.let { s ->
+                  classes.filter { it.name.equals(s.enrolledClass, ignoreCase = true) }
                 } ?: emptyList()
 
-                ProfileState.Success(
-                    UserProfileData(
-                        user = user,
-                        teacherProfile = teacher,
-                        classesTaught = classesTaught,
-                        studentProfile = student,
-                        classesEnrolled = classesEnrolled,
-                    )
+            ProfileState.Success(
+                UserProfileData(
+                    user = user,
+                    teacherProfile = teacher,
+                    classesTaught = classesTaught,
+                    studentProfile = student,
+                    classesEnrolled = classesEnrolled,
                 )
-            }.collect { _state.value = it }
-        }
+            )
+          }
+          .collect { _state.value = it }
     }
+  }
 }
-
