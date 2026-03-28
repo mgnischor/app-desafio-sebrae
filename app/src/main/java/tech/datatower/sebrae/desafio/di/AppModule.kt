@@ -35,7 +35,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.MutableStateFlow
+import tech.datatower.sebrae.desafio.BuildConfig
 import tech.datatower.sebrae.desafio.R
+import tech.datatower.sebrae.desafio.data.connectivity.ConnectivityObserver
+import tech.datatower.sebrae.desafio.data.connectivity.NetworkConnectivityObserver
 import tech.datatower.sebrae.desafio.data.local.AppDao
 import tech.datatower.sebrae.desafio.data.local.AppDatabase
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
@@ -78,6 +81,11 @@ object AppModule {
 
   @Provides
   @Singleton
+  fun provideConnectivityObserver(@ApplicationContext context: Context): ConnectivityObserver =
+      NetworkConnectivityObserver(context)
+
+  @Provides
+  @Singleton
   fun provideFirebaseFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
 
   @Provides
@@ -99,5 +107,7 @@ object AppModule {
           dao = dao,
           credentialStore = credentialStore,
           context = context,
+          seedEmail = BuildConfig.FIREBASE_SEED_EMAIL,
+          seedPassword = BuildConfig.FIREBASE_SEED_PASSWORD,
       )
 }
