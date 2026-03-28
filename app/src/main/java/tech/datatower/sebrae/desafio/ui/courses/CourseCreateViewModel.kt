@@ -37,50 +37,65 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Course
+import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
 @HiltViewModel
-class CourseCreateViewModel @Inject constructor(
+class CourseCreateViewModel
+@Inject
+constructor(
     private val repository: AppRepository,
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-    val courses: StateFlow<List<Course>> = repository.observeCourses()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+  val courses: StateFlow<List<Course>> =
+      repository
+          .observeCourses()
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    sealed class SaveState {
-        data object Idle : SaveState()
-        data object Saving : SaveState()
-        data object Success : SaveState()
-        data class Error(val message: String) : SaveState()
+  val teachers: StateFlow<List<Teacher>> =
+      repository
+          .observeTeachers()
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+  sealed class SaveState {
+    data object Idle : SaveState()
+
+    data object Saving : SaveState()
+
+    data object Success : SaveState()
+
+    data class Error(val message: String) : SaveState()
+  }
+
+  private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
+  val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
+
+  init {
+    viewModelScope.launch {
+      dataConnectService.syncScope(ScreenDataScope.COURSES)
+      dataConnectService.syncScope(ScreenDataScope.TEACHERS)
     }
+  }
 
-    private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
-    val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            dataConnectService.syncScope(ScreenDataScope.COURSES)
-        }
+  fun saveCourse(requester: AppUser?, course: Course) {
+    viewModelScope.launch {
+      _saveState.value = SaveState.Saving
+      _saveState.value =
+          when (
+              val result = dataConnectService.upsertCourse(requester = requester, course = course)
+          ) {
+            is FirebaseDataConnectService.Result.Success -> SaveState.Success
+            is FirebaseDataConnectService.Result.Error -> SaveState.Error(result.message)
+            FirebaseDataConnectService.Result.Loading -> SaveState.Idle
+          }
     }
+  }
 
-    fun saveCourse(requester: AppUser?, course: Course) {
-        viewModelScope.launch {
-            _saveState.value = SaveState.Saving
-            _saveState.value = when (
-                val result = dataConnectService.upsertCourse(requester = requester, course = course)
-            ) {
-                is FirebaseDataConnectService.Result.Success -> SaveState.Success
-                is FirebaseDataConnectService.Result.Error -> SaveState.Error(result.message)
-                FirebaseDataConnectService.Result.Loading -> SaveState.Idle
-            }
-        }
-    }
-
-    fun resetSaveState() {
-        _saveState.value = SaveState.Idle
-    }
+  fun resetSaveState() {
+    _saveState.value = SaveState.Idle
+  }
 }
