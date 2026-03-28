@@ -2,6 +2,7 @@ package tech.datatower.sebrae.desafio.ui.classes
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -65,6 +66,7 @@ import tech.datatower.sebrae.desafio.data.repository.AppGraph
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.EmptyState
 import tech.datatower.sebrae.desafio.ui.components.ListSearchHeader
+import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 import tech.datatower.sebrae.desafio.ui.components.StatusChip
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
@@ -103,9 +105,13 @@ fun ClassesScreen(
   val allClasses by repository.observeClasses().collectAsState(initial = emptyList())
   var query by rememberSaveable { mutableStateOf("") }
   var isRefreshing by rememberSaveable { mutableStateOf(false) }
+  var isInitialLoading by remember { mutableStateOf(true) }
   val listState = rememberLazyListState()
 
-  LaunchedEffect(Unit) { dataConnectService.syncScope(ScreenDataScope.CLASSES) }
+  LaunchedEffect(Unit) {
+    dataConnectService.syncScope(ScreenDataScope.CLASSES)
+    isInitialLoading = false
+  }
 
   val filtered by
       remember(query, allClasses) {
@@ -123,6 +129,7 @@ fun ClassesScreen(
         }
       }
 
+  Box(modifier = Modifier.fillMaxSize()) {
   DetailScaffold(title = stringResource(R.string.classes_title), onBack = onBack) { innerPadding, _
     ->
     /** Executa a rotina de refresh classes dentro do contexto deste componente. */
@@ -238,6 +245,11 @@ fun ClassesScreen(
         }
       }
     }
+  }
+  LoadingOverlay(
+      isVisible = isInitialLoading,
+      message = stringResource(R.string.loading_syncing),
+  )
   }
 }
 
