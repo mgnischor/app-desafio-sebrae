@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/data/repository/AppRepository.kt
+    Descrição: Repositório principal de acesso a dados locais (Room) e remotos (Firebase).
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.data.repository
 
 import androidx.compose.material.icons.Icons
@@ -80,16 +106,16 @@ data class MonthlyEnrollmentMetric(
     val count: Int,
 )
 
-/** Centraliza opera??es de dados relacionadas a app. */
+/** Centraliza operações de dados relacionadas a app. */
 class AppRepository(
     private val database: AppDatabase,
     private val dao: AppDao,
     private val dataSourceLabelResFlow: Flow<Int> = flowOf(R.string.stat_data_source),
 ) {
   /**
-   * Observa altera??es de courses e publica atualiza??es reativas.
+   * Observa alterações de courses e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<List<Course>>`.
+   * @return Resultado produzido pela operação em formato `Flow<List<Course>>`.
    */
   fun observeCourses(): Flow<List<Course>> =
       combine(dao.observeCourses(), dao.observeStudents()) { courseEntities, studentEntities ->
@@ -102,10 +128,10 @@ class AppRepository(
       }
 
   /**
-   * Observa altera??es de course by id e publica atualiza??es reativas.
+   * Observa alterações de course by id e publica atualizações reativas.
    *
-   * @param courseId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<Course?>`.
+   * @param courseId Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Flow<Course?>`.
    */
   fun observeCourseById(courseId: Int): Flow<Course?> =
       combine(dao.observeCourseById(courseId), dao.observeStudents()) {
@@ -118,9 +144,9 @@ class AppRepository(
       }
 
   /**
-   * Observa altera??es de classes e publica atualiza??es reativas.
+   * Observa alterações de classes e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<List<SchoolClass>>`.
+   * @return Resultado produzido pela operação em formato `Flow<List<SchoolClass>>`.
    */
   fun observeClasses(): Flow<List<SchoolClass>> =
       combine(dao.observeClasses(), dao.observeStudents()) { classEntities, studentEntities ->
@@ -133,10 +159,10 @@ class AppRepository(
       }
 
   /**
-   * Observa altera??es de class by id e publica atualiza??es reativas.
+   * Observa alterações de class by id e publica atualizações reativas.
    *
-   * @param classId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<SchoolClass?>`.
+   * @param classId Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Flow<SchoolClass?>`.
    */
   fun observeClassById(classId: Int): Flow<SchoolClass?> =
       combine(dao.observeClassById(classId), dao.observeStudents()) { classEntity, studentEntities
@@ -148,77 +174,77 @@ class AppRepository(
       }
 
   /**
-   * Observa altera??es de classes by course e publica atualiza??es reativas.
+   * Observa alterações de classes by course e publica atualizações reativas.
    *
-   * @param courseName Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<List<SchoolClass>>`.
+   * @param courseName Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Flow<List<SchoolClass>>`.
    */
   fun observeClassesByCourse(courseName: String): Flow<List<SchoolClass>> =
       dao.observeClassesByCourse(courseName).map { items -> items.map { it.toModel() } }
 
   /**
-   * Observa altera??es de classes by teacher e publica atualiza??es reativas.
+   * Observa alterações de classes by teacher e publica atualizações reativas.
    *
-   * @param teacherName Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<List<SchoolClass>>`.
+   * @param teacherName Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Flow<List<SchoolClass>>`.
    */
   fun observeClassesByTeacher(teacherName: String): Flow<List<SchoolClass>> =
       dao.observeClassesByTeacher(teacherName).map { items -> items.map { it.toModel() } }
 
   /**
-   * Observa altera??es de teachers e publica atualiza??es reativas.
+   * Observa alterações de teachers e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<List<Teacher>>`.
+   * @return Resultado produzido pela operação em formato `Flow<List<Teacher>>`.
    */
   fun observeTeachers(): Flow<List<Teacher>> =
       dao.observeTeachers().map { items -> items.map { it.toModel() } }
 
   /**
-   * Observa altera??es de teacher by id e publica atualiza??es reativas.
+   * Observa alterações de teacher by id e publica atualizações reativas.
    *
-   * @param teacherId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<Teacher?>`.
+   * @param teacherId Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Flow<Teacher?>`.
    */
   fun observeTeacherById(teacherId: Int): Flow<Teacher?> =
       dao.observeTeacherById(teacherId).map { it?.toModel() }
 
   /**
-   * Observa altera??es de students e publica atualiza??es reativas.
+   * Observa alterações de students e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<List<Student>>`.
+   * @return Resultado produzido pela operação em formato `Flow<List<Student>>`.
    */
   fun observeStudents(): Flow<List<Student>> =
       dao.observeStudents().map { items -> items.map { it.toModel() } }
 
   /**
-   * Observa altera??es de students by class e publica atualiza??es reativas.
+   * Observa alterações de students by class e publica atualizações reativas.
    *
-   * @param className Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<List<Student>>`.
+   * @param className Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Flow<List<Student>>`.
    */
   fun observeStudentsByClass(className: String): Flow<List<Student>> =
       dao.observeStudentsByClass(className).map { items -> items.map { it.toModel() } }
 
   /**
-   * Observa altera??es de certificates e publica atualiza??es reativas.
+   * Observa alterações de certificates e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<List<Certificate>>`.
+   * @return Resultado produzido pela operação em formato `Flow<List<Certificate>>`.
    */
   fun observeCertificates(): Flow<List<Certificate>> =
       dao.observeCertificates().map { items -> items.map { it.toModel() } }
 
   /**
-   * Observa altera??es de calendar events e publica atualiza??es reativas.
+   * Observa alterações de calendar events e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<List<CalendarEvent>>`.
+   * @return Resultado produzido pela operação em formato `Flow<List<CalendarEvent>>`.
    */
   fun observeCalendarEvents(): Flow<List<CalendarEvent>> =
       dao.observeCalendarEvents().map { items -> items.map { it.toModel() } }
 
   /**
-   * Observa altera??es de recent activities e publica atualiza??es reativas.
+   * Observa alterações de recent activities e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<List<RecentActivity>>`.
+   * @return Resultado produzido pela operação em formato `Flow<List<RecentActivity>>`.
    */
   fun observeRecentActivities(): Flow<List<RecentActivity>> =
       dao.observeRecentActivities().map { items -> items.map { it.toModel() } }
@@ -228,9 +254,9 @@ class AppRepository(
       dao.observeRecentActivitiesLimited(limit).map { items -> items.map { it.toModel() } }
 
   /**
-   * Observa altera??es de home quick stats e publica atualiza??es reativas.
+   * Observa alterações de home quick stats e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<List<QuickStat>>`.
+   * @return Resultado produzido pela operação em formato `Flow<List<QuickStat>>`.
    */
   fun observeHomeQuickStats(): Flow<List<QuickStat>> =
       combine(
@@ -257,9 +283,9 @@ class AppRepository(
       }
 
   /**
-   * Observa altera??es de report summary e publica atualiza??es reativas.
+   * Observa alterações de report summary e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<ReportSummary>`.
+   * @return Resultado produzido pela operação em formato `Flow<ReportSummary>`.
    */
   fun observeReportSummary(): Flow<ReportSummary> =
       combine(
@@ -293,9 +319,9 @@ class AppRepository(
       }
 
   /**
-   * Observa altera??es de course completion metrics e publica atualiza??es reativas.
+   * Observa alterações de course completion metrics e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<List<CourseCompletionMetric>>`.
+   * @return Resultado produzido pela operação em formato `Flow<List<CourseCompletionMetric>>`.
    */
   fun observeCourseCompletionMetrics(): Flow<List<CourseCompletionMetric>> =
       dao.observeCourses().map { courses ->
@@ -305,9 +331,9 @@ class AppRepository(
       }
 
   /**
-   * Observa altera??es de monthly enrollment metrics e publica atualiza??es reativas.
+   * Observa alterações de monthly enrollment metrics e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<List<MonthlyEnrollmentMetric>>`.
+   * @return Resultado produzido pela operação em formato `Flow<List<MonthlyEnrollmentMetric>>`.
    */
   fun observeMonthlyEnrollmentMetrics(): Flow<List<MonthlyEnrollmentMetric>> =
       dao.observeMonthlyEnrollments().map { items ->
@@ -315,10 +341,10 @@ class AppRepository(
       }
 
   /**
-   * Observa altera??es de student monitoring snapshot e publica atualiza??es reativas.
+   * Observa alterações de student monitoring snapshot e publica atualizações reativas.
    *
-   * @param studentId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<StudentMonitoringSnapshot?>`.
+   * @param studentId Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Flow<StudentMonitoringSnapshot?>`.
    */
   fun observeStudentMonitoringSnapshot(studentId: Int): Flow<StudentMonitoringSnapshot?> =
       combine(
@@ -352,9 +378,9 @@ class AppRepository(
       }
 
   /**
-   * Observa altera??es de settings e publica atualiza??es reativas.
+   * Observa alterações de settings e publica atualizações reativas.
    *
-   * @return Resultado produzido pela opera??o em formato `Flow<AppSettings>`.
+   * @return Resultado produzido pela operação em formato `Flow<AppSettings>`.
    */
   fun observeSettings(): Flow<AppSettings> =
       dao.observeSettings().map {
@@ -371,10 +397,10 @@ class AppRepository(
       }
 
   /**
-   * Observa altera??es de registered users for admin e publica atualiza??es reativas.
+   * Observa alterações de registered users for admin e publica atualizações reativas.
    *
-   * @param requester Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<List<AppUser>>`.
+   * @param requester Valor de entrada utilizado por esta operação.
+   * @return Resultado produzido pela operação em formato `Flow<List<AppUser>>`.
    */
   fun observeRegisteredUsersForAdmin(requester: AppUser?): Flow<List<AppUser>> {
     return if (requester?.role == UserRole.ADMINISTRADOR) {
@@ -387,9 +413,9 @@ class AppRepository(
   /**
    * Executa a rotina de upsert registered user for admin dentro do contexto deste componente.
    *
-   * @param requester Valor de entrada utilizado por esta opera??o.
-   * @param user Valor de entrada utilizado por esta opera??o.
-   * @param plainPassword Valor de entrada utilizado por esta opera??o.
+   * @param requester Valor de entrada utilizado por esta operação.
+   * @param user Valor de entrada utilizado por esta operação.
+   * @param plainPassword Valor de entrada utilizado por esta operação.
    */
   suspend fun upsertRegisteredUserForAdmin(
       requester: AppUser?,
@@ -408,7 +434,7 @@ class AppRepository(
   /**
    * Executa a rotina de update dark mode dentro do contexto deste componente.
    *
-   * @param enabled Valor de entrada utilizado por esta opera??o.
+   * @param enabled Valor de entrada utilizado por esta operação.
    */
   suspend fun updateDarkMode(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
@@ -418,7 +444,7 @@ class AppRepository(
   /**
    * Executa a rotina de update push enabled dentro do contexto deste componente.
    *
-   * @param enabled Valor de entrada utilizado por esta opera??o.
+   * @param enabled Valor de entrada utilizado por esta operação.
    */
   suspend fun updatePushEnabled(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
@@ -428,7 +454,7 @@ class AppRepository(
   /**
    * Executa a rotina de update email enabled dentro do contexto deste componente.
    *
-   * @param enabled Valor de entrada utilizado por esta opera??o.
+   * @param enabled Valor de entrada utilizado por esta operação.
    */
   suspend fun updateEmailEnabled(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
@@ -438,7 +464,7 @@ class AppRepository(
   /**
    * Executa a rotina de update language dentro do contexto deste componente.
    *
-   * @param language Valor de entrada utilizado por esta opera??o.
+   * @param language Valor de entrada utilizado por esta operação.
    */
   suspend fun updateLanguage(language: String) {
     val current = dao.observeSettingsOnce()
@@ -1244,7 +1270,7 @@ private fun AppUserEntity.toModel() = AppUser(id = id, name = name, email = emai
 /**
  * Executa a rotina de app user dentro do contexto deste componente.
  *
- * @param passwordHash Valor de entrada utilizado por esta opera??o.
+ * @param passwordHash Valor de entrada utilizado por esta operação.
  */
 private fun AppUser.toEntity(passwordHash: String) =
     AppUserEntity(id = id, name = name, email = email, role = role, passwordHash = passwordHash)
@@ -1252,8 +1278,8 @@ private fun AppUser.toEntity(passwordHash: String) =
 /**
  * Executa a rotina de sha256 dentro do contexto deste componente.
  *
- * @param input Valor de entrada utilizado por esta opera??o.
- * @return Resultado produzido pela opera??o em formato `String`.
+ * @param input Valor de entrada utilizado por esta operação.
+ * @return Resultado produzido pela operação em formato `String`.
  */
 private fun sha256(input: String): String {
   val digest = MessageDigest.getInstance("SHA-256")
