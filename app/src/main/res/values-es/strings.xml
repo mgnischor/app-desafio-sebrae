@@ -299,7 +299,50 @@
     <string name="stat_data_source">datos locales</string>
     <string name="stat_data_source_cloud">datos sincronizados</string>
 
+    <!-- Settings – Restablecer base de datos -->
+    <string name="settings_item_reset_database">Restablecer base de datos</string>
+    <string name="settings_subtitle_reset_database">Borrar todos los datos locales y de Firebase</string>
+    <string name="settings_reset_database_confirm_title">Confirmar restablecimiento completo</string>
+    <string name="settings_reset_database_confirm_message">Esta acción borrará de forma irreversible todos los datos operativos locales y de Firebase — cursos, alumnos, grupos, certificados e informes. Los usuarios registrados serán conservados. ¿Desea continuar?</string>
+    <string name="settings_reset_database_action">Restablecer todo</string>
+    <string name="settings_reset_database_success">Base de datos restablecida con éxito.</string>
+    <string name="settings_reset_database_cancel">Cancelar</string>
+
     <!-- Loading overlay -->
     <string name="loading_syncing">Sincronizando datos…</string>
     <string name="loading_saving">Guardando…</string>
+
+    <!-- Componente SearchableDropdown -->
+    <string name="dropdown_search">Buscar</string>
+    <string name="dropdown_empty">Sin resultados</string>
+    <string name="dropdown_select">Seleccionar…</string>
+
+    <!-- Pantalla de perfil de usuario -->
+    <string name="user_profile_title">Perfil del Usuario</string>
+    <string name="user_profile_section_access">Datos de Acceso</string>
+    <string name="user_profile_section_teacher">Vínculo como Instructor</string>
+    <string name="user_profile_section_student">Vínculo como Alumno</string>
+    <string name="user_profile_label_name">Nombre</string>
+    <string name="user_profile_label_email">Correo electrónico</string>
+    <string name="user_profile_label_role">Rol de acceso</string>
+    <string name="user_profile_label_specialty">Especialidad</string>
+    <string name="user_profile_label_active_courses">Cursos activos</string>
+    <string name="user_profile_label_total_students">Alumnos atendidos</string>
+    <string name="user_profile_label_rating">Evaluación</string>
+    <string name="user_profile_label_teacher_status">Estado</string>
+    <string name="user_profile_label_course">Curso</string>
+    <string name="user_profile_label_class">Grupo</string>
+    <string name="user_profile_label_progress">Progreso</string>
+    <string name="user_profile_label_student_status">Situación</string>
+    <string name="user_profile_classes_taught">Grupos que imparte:</string>
+    <string name="user_profile_classes_enrolled">Grupos en los que está matriculado:</string>
+    <string name="user_profile_no_links">Este usuario aún no tiene vínculo como instructor o alumno.</string>
+    <string name="user_profile_view_button">Ver perfil</string>
+
+    <!-- Pantallas de creación — etiquetas actualizadas (desplegables) -->
+    <string name="class_create_course">Curso</string>
+    <string name="class_create_instructor">Instructor</string>
+    <string name="course_create_instructor">Instructor</string>
+    <string name="student_create_course">Curso</string>
+    <string name="student_create_class">Grupo</string>
 </resources>

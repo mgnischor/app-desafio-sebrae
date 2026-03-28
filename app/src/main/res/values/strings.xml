@@ -371,6 +371,13 @@
     <string name="class_create_error_relationship" translatable="false">Curso ou instrutor inválido para a turma.</string>
     <string name="calendar_create_error" translatable="false">Não foi possível salvar o evento.</string>
     <string name="settings_storage_cleared" translatable="false">Cache e dados operacionais foram limpos.</string>
+    <string name="settings_item_reset_database">Resetar banco de dados</string>
+    <string name="settings_subtitle_reset_database">Apagar todos os dados locais e do Firebase</string>
+    <string name="settings_reset_database_confirm_title">Confirmar reset completo</string>
+    <string name="settings_reset_database_confirm_message">Esta ação apagará de forma irreversível todos os dados operacionais locais e do Firebase — cursos, alunos, turmas, certificados e relatórios. Os usuários cadastrados serão preservados. Deseja continuar?</string>
+    <string name="settings_reset_database_action">Resetar tudo</string>
+    <string name="settings_reset_database_success">Base de dados resetada com sucesso.</string>
+    <string name="settings_reset_database_cancel">Cancelar</string>
     <string name="settings_change_password_title" translatable="false">Alterar senha</string>
     <string name="settings_current_password" translatable="false">Senha atual</string>
     <string name="settings_new_password" translatable="false">Nova senha (mínimo 8 caracteres)</string>
@@ -385,4 +392,31 @@
     <!-- Loading overlay -->
     <string name="loading_syncing">Sincronizando dados…</string>
     <string name="loading_saving">Salvando…</string>
+
+    <!-- Componente SearchableDropdown -->
+    <string name="dropdown_search">Buscar</string>
+    <string name="dropdown_empty">Nenhum resultado</string>
+    <string name="dropdown_select">Selecione…</string>
+
+    <!-- User Profile Screen -->
+    <string name="user_profile_title">Perfil do Usuário</string>
+    <string name="user_profile_section_access">Dados de Acesso</string>
+    <string name="user_profile_section_teacher">Vínculo como Instrutor</string>
+    <string name="user_profile_section_student">Vínculo como Aluno</string>
+    <string name="user_profile_label_name">Nome</string>
+    <string name="user_profile_label_email">E-mail</string>
+    <string name="user_profile_label_role">Perfil de acesso</string>
+    <string name="user_profile_label_specialty">Especialidade</string>
+    <string name="user_profile_label_active_courses">Cursos ativos</string>
+    <string name="user_profile_label_total_students">Alunos atendidos</string>
+    <string name="user_profile_label_rating">Avaliação</string>
+    <string name="user_profile_label_teacher_status">Status</string>
+    <string name="user_profile_label_course">Curso</string>
+    <string name="user_profile_label_class">Turma</string>
+    <string name="user_profile_label_progress">Progresso</string>
+    <string name="user_profile_label_student_status">Situação</string>
+    <string name="user_profile_classes_taught">Turmas que ministra:</string>
+    <string name="user_profile_classes_enrolled">Turmas matriculado:</string>
+    <string name="user_profile_no_links">Este usuário ainda não possui vínculo como instrutor ou aluno.</string>
+    <string name="user_profile_view_button">Ver perfil</string>
 </resources>

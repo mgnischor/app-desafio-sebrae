@@ -299,7 +299,50 @@
     <string name="stat_data_source">local data</string>
     <string name="stat_data_source_cloud">synced data</string>
 
+    <!-- Settings – Reset database -->
+    <string name="settings_item_reset_database">Reset database</string>
+    <string name="settings_subtitle_reset_database">Erase all local and Firebase data</string>
+    <string name="settings_reset_database_confirm_title">Confirm full reset</string>
+    <string name="settings_reset_database_confirm_message">This action will irreversibly erase all local and Firebase operational data — courses, students, classes, certificates and reports. Registered users will be preserved. Do you want to continue?</string>
+    <string name="settings_reset_database_action">Reset all</string>
+    <string name="settings_reset_database_success">Database reset successfully.</string>
+    <string name="settings_reset_database_cancel">Cancel</string>
+
     <!-- Loading overlay -->
     <string name="loading_syncing">Syncing data…</string>
     <string name="loading_saving">Saving…</string>
+
+    <!-- SearchableDropdown component -->
+    <string name="dropdown_search">Search</string>
+    <string name="dropdown_empty">No results</string>
+    <string name="dropdown_select">Select…</string>
+
+    <!-- User Profile Screen -->
+    <string name="user_profile_title">User Profile</string>
+    <string name="user_profile_section_access">Access Data</string>
+    <string name="user_profile_section_teacher">Linked as Instructor</string>
+    <string name="user_profile_section_student">Linked as Student</string>
+    <string name="user_profile_label_name">Name</string>
+    <string name="user_profile_label_email">Email</string>
+    <string name="user_profile_label_role">Access role</string>
+    <string name="user_profile_label_specialty">Specialty</string>
+    <string name="user_profile_label_active_courses">Active courses</string>
+    <string name="user_profile_label_total_students">Students served</string>
+    <string name="user_profile_label_rating">Rating</string>
+    <string name="user_profile_label_teacher_status">Status</string>
+    <string name="user_profile_label_course">Course</string>
+    <string name="user_profile_label_class">Class</string>
+    <string name="user_profile_label_progress">Progress</string>
+    <string name="user_profile_label_student_status">Situation</string>
+    <string name="user_profile_classes_taught">Classes taught:</string>
+    <string name="user_profile_classes_enrolled">Enrolled classes:</string>
+    <string name="user_profile_no_links">This user is not yet linked as an instructor or student.</string>
+    <string name="user_profile_view_button">View profile</string>
+
+    <!-- Create Screens — updated labels (dropdowns) -->
+    <string name="class_create_course">Course</string>
+    <string name="class_create_instructor">Instructor</string>
+    <string name="course_create_instructor">Instructor</string>
+    <string name="student_create_course">Course</string>
+    <string name="student_create_class">Class</string>
 </resources>
