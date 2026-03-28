@@ -42,27 +42,29 @@ import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
 @HiltViewModel
-class RecentActivitiesViewModel @Inject constructor(
+class RecentActivitiesViewModel
+@Inject
+constructor(
     private val repository: AppRepository,
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-    val allRecents: StateFlow<List<RecentActivity>> = repository.observeRecentActivities()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+  val allRecents: StateFlow<List<RecentActivity>> =
+      repository
+          .observeRecentActivities()
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun syncHome() {
-        viewModelScope.launch {
-            dataConnectService.syncScope(ScreenDataScope.HOME)
-        }
-    }
+  fun syncHome() {
+    viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.HOME) }
+  }
 
-    fun observeRealtimeActivities(user: AppUser?) {
-        viewModelScope.launch {
-            dataConnectService.observeRecentActivitiesRealtimeForBackoffice(user).collect { result ->
-                if (result is FirebaseDataConnectService.Result.Error) {
-                    Log.w("RecentActivitiesViewModel", "Falha no listener de atividades: ${result.message}")
-                }
-            }
+  fun observeRealtimeActivities(user: AppUser?) {
+    viewModelScope.launch {
+      dataConnectService.observeRecentActivitiesRealtimeForBackoffice(user).collect { result ->
+        if (result is FirebaseDataConnectService.Result.Error) {
+          Log.w("RecentActivitiesViewModel", "Falha no listener de atividades: ${result.message}")
         }
+      }
     }
+  }
 }
