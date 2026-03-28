@@ -298,4 +298,8 @@
     <string name="status_graduated_student">Graduated</string>
     <string name="stat_data_source">local data</string>
     <string name="stat_data_source_cloud">synced data</string>
+
+    <!-- Loading overlay -->
+    <string name="loading_syncing">Syncing data…</string>
+    <string name="loading_saving">Saving…</string>
 </resources>
