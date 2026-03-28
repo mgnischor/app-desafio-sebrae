@@ -1,3 +1,29 @@
+/*
+    Desafio SEBRAE - Gestão Educacional Transformadora
+
+    Arquivo: /app/src/main/java/tech/datatower/sebrae/desafio/ui/login/LoginScreen.kt
+    Descrição: Tela de autenticação do usuário, com campos de e-mail e senha.
+    Autor: Miguel Nischor <miguel@nischor.com.br>
+
+    AVISO DE LICENÇA – USO DEMONSTRATIVO
+
+    Este software é propriedade exclusiva de seu(s) autor(es) e está protegido pelas leis de
+    direitos autorais e demais legislações aplicáveis.
+
+    Sua utilização está estritamente limitada para fins demonstrativos no contexto do evento
+    “Prêmio Educador Transformador” do SEBRAE. Qualquer uso fora desse escopo, incluindo, mas
+    não se limitando a, reprodução, distribuição, modificação, engenharia reversa,
+    sublicenciamento, comercialização ou qualquer outra forma de exploração, é expressamente
+    proibido sem autorização prévia e por escrito do(s) detentor(es) dos direitos.
+
+    Este licenciamento não concede quaisquer direitos de propriedade intelectual ao usuário,
+    sendo permitido apenas o acesso e uso temporário para apresentação e avaliação durante o
+    referido evento.
+
+    O descumprimento destes termos poderá resultar em medidas legais cabíveis.
+
+    Todos os direitos reservados.
+*/
 package tech.datatower.sebrae.desafio.ui.login
 
 import androidx.compose.foundation.Image
@@ -35,10 +61,11 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,9 +85,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
+import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.R
-import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 
@@ -79,26 +105,30 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
   var email by rememberSaveable { mutableStateOf("") }
   var password by rememberSaveable { mutableStateOf("") }
   var passwordVisible by rememberSaveable { mutableStateOf(false) }
-  var isLoading by remember { mutableStateOf(false) }
+
+  val viewModel: LoginViewModel = hiltViewModel()
+  val loginState by viewModel.loginState.collectAsState()
+  val isLoading = loginState is LoginViewModel.LoginState.Loading
 
   val snackbarHostState = remember { SnackbarHostState() }
-  val scope = rememberCoroutineScope()
   val passwordFocusRequester = remember { FocusRequester() }
 
   val errorMessage = stringResource(R.string.login_error_invalid_credentials)
-  /** Executa a rotina de attempt login dentro do contexto deste componente. */
-  fun attemptLogin() {
-    scope.launch {
-      isLoading = true
-      when (val result = AuthManager.loginWithFirebase(email, password)) {
-        is AuthManager.FirebaseLoginResult.Success -> onLoginSuccess()
-        is AuthManager.FirebaseLoginResult.Error -> {
-          snackbarHostState.showSnackbar(result.message.ifBlank { errorMessage })
-        }
+  LaunchedEffect(loginState) {
+    when (val state = loginState) {
+      is LoginViewModel.LoginState.Success -> {
+        viewModel.resetState()
+        onLoginSuccess()
       }
-      isLoading = false
+      is LoginViewModel.LoginState.Error -> {
+        snackbarHostState.showSnackbar(state.message.ifBlank { errorMessage })
+        viewModel.resetState()
+      }
+      else -> Unit
     }
   }
+  /** Executa a rotina de attempt login dentro do contexto deste componente. */
+  fun attemptLogin() { viewModel.login(email, password) }
 
   Scaffold(
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
