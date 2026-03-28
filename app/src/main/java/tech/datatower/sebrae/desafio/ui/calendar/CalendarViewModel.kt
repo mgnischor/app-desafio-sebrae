@@ -46,64 +46,72 @@ import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
 @HiltViewModel
-class CalendarViewModel @Inject constructor(
+class CalendarViewModel
+@Inject
+constructor(
     private val repository: AppRepository,
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-    val events: StateFlow<List<CalendarEvent>> = repository.observeCalendarEvents()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+  val events: StateFlow<List<CalendarEvent>> =
+      repository
+          .observeCalendarEvents()
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val groupedEvents: StateFlow<List<Map.Entry<String, List<CalendarEvent>>>> = events
-        .map { list -> list.groupBy { it.date }.entries.toList() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+  val groupedEvents: StateFlow<List<Map.Entry<String, List<CalendarEvent>>>> =
+      events
+          .map { list -> list.groupBy { it.date }.entries.toList() }
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    sealed class ActionResult {
-        data object Idle : ActionResult()
-        data object Success : ActionResult()
-        data class Error(val message: String) : ActionResult()
+  sealed class ActionResult {
+    data object Idle : ActionResult()
+
+    data object Success : ActionResult()
+
+    data class Error(val message: String) : ActionResult()
+  }
+
+  private val _actionResult = MutableStateFlow<ActionResult>(ActionResult.Idle)
+  val actionResult: StateFlow<ActionResult> = _actionResult.asStateFlow()
+
+  init {
+    viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.CALENDAR) }
+  }
+
+  fun createEvent(
+      requester: AppUser?,
+      title: String,
+      course: String,
+      date: String,
+      time: String,
+      location: String,
+      type: EventType,
+  ) {
+    viewModelScope.launch {
+      val nextId = (events.value.maxOfOrNull { it.id } ?: 0) + 1
+      val result =
+          dataConnectService.upsertCalendarEvent(
+              requester = requester,
+              event =
+                  CalendarEventEntity(
+                      id = nextId,
+                      title = title,
+                      course = course,
+                      date = date,
+                      time = time,
+                      location = location,
+                      type = type,
+                  ),
+          )
+      _actionResult.value =
+          when (result) {
+            is FirebaseDataConnectService.Result.Error -> ActionResult.Error(result.message)
+            else -> ActionResult.Success
+          }
     }
+  }
 
-    private val _actionResult = MutableStateFlow<ActionResult>(ActionResult.Idle)
-    val actionResult: StateFlow<ActionResult> = _actionResult.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            dataConnectService.syncScope(ScreenDataScope.CALENDAR)
-        }
-    }
-
-    fun createEvent(
-        requester: AppUser?,
-        title: String,
-        course: String,
-        date: String,
-        time: String,
-        location: String,
-        type: EventType,
-    ) {
-        viewModelScope.launch {
-            val nextId = (events.value.maxOfOrNull { it.id } ?: 0) + 1
-            val result = dataConnectService.upsertCalendarEvent(
-                requester = requester,
-                event = CalendarEventEntity(
-                    id = nextId,
-                    title = title,
-                    course = course,
-                    date = date,
-                    time = time,
-                    location = location,
-                    type = type,
-                ),
-            )
-            _actionResult.value = when (result) {
-                is FirebaseDataConnectService.Result.Error -> ActionResult.Error(result.message)
-                else -> ActionResult.Success
-            }
-        }
-    }
-
-    fun clearActionResult() {
-        _actionResult.value = ActionResult.Idle
-    }
+  fun clearActionResult() {
+    _actionResult.value = ActionResult.Idle
+  }
 }
