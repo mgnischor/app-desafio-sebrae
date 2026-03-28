@@ -152,83 +152,84 @@ fun CoursesScreen(
       }
 
   Box(modifier = Modifier.fillMaxSize()) {
-  DetailScaffold(title = stringResource(R.string.courses_title), onBack = onBack) { innerPadding, _
-    ->
-    /** Executa a rotina de refresh courses dentro do contexto deste componente. */
-    fun refreshCourses() = viewModel.refresh()
+    DetailScaffold(title = stringResource(R.string.courses_title), onBack = onBack) {
+        innerPadding,
+        _ ->
+      /** Executa a rotina de refresh courses dentro do contexto deste componente. */
+      fun refreshCourses() = viewModel.refresh()
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        floatingActionButton = {
-          if (canCreateCourse) {
-            FloatingActionButton(
-                onClick = onCreateCourse,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ) {
-              Icon(
-                  imageVector = Icons.Outlined.Add,
-                  contentDescription = stringResource(R.string.courses_add_content_description),
-              )
+      Scaffold(
+          snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+          floatingActionButton = {
+            if (canCreateCourse) {
+              FloatingActionButton(
+                  onClick = onCreateCourse,
+                  containerColor = MaterialTheme.colorScheme.primary,
+                  contentColor = MaterialTheme.colorScheme.onPrimary,
+              ) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = stringResource(R.string.courses_add_content_description),
+                )
+              }
             }
-          }
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { fabPadding ->
-      PullToRefreshBox(
-          isRefreshing = isRefreshing,
-          onRefresh = ::refreshCourses,
-          modifier = Modifier.fillMaxSize().padding(innerPadding).padding(fabPadding),
-      ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            state = listState,
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+          },
+          containerColor = MaterialTheme.colorScheme.background,
+      ) { fabPadding ->
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = ::refreshCourses,
+            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(fabPadding),
         ) {
-          item {
-            ListSearchHeader(
-                query = query,
-                onQueryChange = { query = it },
-                placeholder = stringResource(R.string.courses_search_placeholder),
-                resultCount = filtered.size,
-                resultLabel = stringResource(R.string.courses_result_label),
-            )
-          }
-
-          if (filtered.isEmpty()) {
+          LazyColumn(
+              modifier = Modifier.fillMaxSize(),
+              state = listState,
+              contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+              verticalArrangement = Arrangement.spacedBy(10.dp),
+          ) {
             item {
-              EmptyState(
-                  icon = Icons.AutoMirrored.Outlined.MenuBook,
-                  message = stringResource(R.string.courses_empty_state),
+              ListSearchHeader(
+                  query = query,
+                  onQueryChange = { query = it },
+                  placeholder = stringResource(R.string.courses_search_placeholder),
+                  resultCount = filtered.size,
+                  resultLabel = stringResource(R.string.courses_result_label),
               )
             }
-          } else {
-            items(
-                items = filtered,
-                key = { it.id },
-                contentType = { "course" },
-            ) { course ->
-              CourseCard(
-                  course = course,
-                  onClick = { onOpenCourseDetail(course.id) },
-                  canDeactivate = canDeactivateCourse,
-                  canReactivate = canReactivateCourse,
-                  canDelete = canDeleteCourse,
-                  onDeactivate = { viewModel.deactivateCourse(currentUser, course) },
-                  onReactivate = { viewModel.reactivateCourse(currentUser, course) },
-                  onDelete = { viewModel.deleteCourse(currentUser, course.id) },
-              )
+
+            if (filtered.isEmpty()) {
+              item {
+                EmptyState(
+                    icon = Icons.AutoMirrored.Outlined.MenuBook,
+                    message = stringResource(R.string.courses_empty_state),
+                )
+              }
+            } else {
+              items(
+                  items = filtered,
+                  key = { it.id },
+                  contentType = { "course" },
+              ) { course ->
+                CourseCard(
+                    course = course,
+                    onClick = { onOpenCourseDetail(course.id) },
+                    canDeactivate = canDeactivateCourse,
+                    canReactivate = canReactivateCourse,
+                    canDelete = canDeleteCourse,
+                    onDeactivate = { viewModel.deactivateCourse(currentUser, course) },
+                    onReactivate = { viewModel.reactivateCourse(currentUser, course) },
+                    onDelete = { viewModel.deleteCourse(currentUser, course.id) },
+                )
+              }
             }
           }
         }
       }
     }
-  }
-  LoadingOverlay(
-      isVisible = isInitialLoading,
-      message = stringResource(R.string.loading_syncing),
-  )
+    LoadingOverlay(
+        isVisible = isInitialLoading,
+        message = stringResource(R.string.loading_syncing),
+    )
   }
 }
 
