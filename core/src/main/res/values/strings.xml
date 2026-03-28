@@ -1,0 +1,431 @@
+<resources>
+    <string name="app_name">App Desafio SEBRAE</string>
+
+    <!-- General -->
+    <string name="back">Voltar</string>
+    <string name="unit_students">alunos</string>
+    <string name="unit_hours">h</string>
+    <string name="label_instructor">Instrutor: %s</string>
+    <string name="label_completion">%d%% conclusão</string>
+    <string name="status_label">Status: %s</string>
+    <string name="label_course">Curso: %s</string>
+    <string name="label_email">E-mail: %s</string>
+    <string name="label_progress">Progresso: %d%%</string>
+
+    <!-- Home / Menu -->
+    <string name="home_greeting_morning">Bom dia</string>
+    <string name="home_greeting_afternoon">Boa tarde</string>
+    <string name="home_greeting_evening">Boa noite</string>
+    <string name="home_subtitle">Gestão Educacional</string>
+    <string name="home_search_placeholder">Buscar cursos, alunos ou turmas…</string>
+    <string name="home_summary_description">Veja o resumo de hoje.</string>
+
+    <!-- Quick Stats -->
+    <string name="stat_students">Alunos</string>
+    <string name="stat_courses">Cursos</string>
+    <string name="stat_classes">Turmas</string>
+    <string name="stat_completion">Conclusão</string>
+
+    <!-- Menu Items -->
+    <string name="menu_students">Alunos</string>
+    <string name="menu_students_desc">Cadastro e acompanhamento</string>
+    <string name="menu_courses">Cursos</string>
+    <string name="menu_courses_desc">Conteúdos e trilhas</string>
+    <string name="menu_classes">Turmas</string>
+    <string name="menu_classes_desc">Organização de grupos</string>
+    <string name="menu_teachers">Instrutores</string>
+    <string name="menu_teachers_desc">Equipe docente</string>
+    <string name="menu_reports">Relatórios</string>
+    <string name="menu_reports_desc">Desempenho e métricas</string>
+    <string name="menu_certificates">Certificados</string>
+    <string name="menu_certificates_desc">Emissão e histórico</string>
+    <string name="menu_calendar">Calendário</string>
+    <string name="menu_calendar_desc">Agenda de aulas e eventos</string>
+    <string name="menu_settings">Configurações</string>
+    <string name="menu_settings_desc">Preferências do sistema</string>
+
+    <!-- Section titles -->
+    <string name="section_overview">Visão Geral</string>
+    <string name="section_modules">Módulos</string>
+    <string name="section_recent">Atividade Recente</string>
+
+    <!-- Recent activity -->
+    <string name="recent_empty">Nenhuma atividade recente.</string>
+    <string name="see_all">Ver tudo</string>
+    <string name="recent_activities_title" translatable="false">Atividades Recentes</string>
+    <string name="pagination_previous" translatable="false">Anterior</string>
+    <string name="pagination_next" translatable="false">Próxima</string>
+    <string name="pagination_page_indicator" translatable="false">Página %1$d de %2$d</string>
+    <string name="recent_new_student_title">Novo aluno matriculado</string>
+    <string name="recent_course_published_title">Curso publicado</string>
+    <string name="recent_certificate_issued_title">Certificado emitido</string>
+    <string name="recent_class_scheduled_title">Aula agendada</string>
+
+    <!-- Time labels -->
+    <string name="time_5min_ago">há 5 min</string>
+    <string name="time_1h_ago">há 1h</string>
+    <string name="time_3h_ago">há 3h</string>
+    <string name="time_yesterday">ontem</string>
+
+    <!-- Notifications -->
+    <string name="notifications">Notificações</string>
+    <string name="logout">Sair da conta</string>
+
+    <!-- Login -->
+    <string name="login_title">Bem-vindo de volta</string>
+    <string name="login_subtitle">Faça login para acessar o sistema</string>
+    <string name="login_label_email">E-mail</string>
+    <string name="login_label_password">Senha</string>
+    <string name="login_button">Entrar</string>
+    <string name="login_loading">Entrando…</string>
+    <string name="login_error_invalid_credentials">E-mail ou senha inválidos. Tente novamente.</string>
+    <string name="login_show_password">Mostrar senha</string>
+    <string name="login_hide_password">Ocultar senha</string>
+    <string name="login_hint_title">Credenciais de acesso</string>
+
+    <!-- User roles -->
+    <string name="role_professor">Professor</string>
+    <string name="role_coordenador">Coordenador</string>
+    <string name="role_administrador">Administrador</string>
+
+    <!-- Courses Screen -->
+    <string name="courses_title">Cursos</string>
+    <string name="courses_add_content_description">Novo curso</string>
+    <string name="courses_search_placeholder">Buscar curso, categoria ou instrutor...</string>
+    <string name="courses_result_label">cursos encontrados</string>
+    <string name="courses_empty_state">Nenhum curso encontrado.</string>
+    <string name="status_published">Publicado</string>
+    <string name="status_draft">Rascunho</string>
+
+    <!-- Course Detail Screen -->
+    <string name="course_detail_title">Detalhe do Curso</string>
+    <string name="course_not_found">Curso não encontrado.</string>
+    <string name="label_main_instructor">Instrutor principal: %s</string>
+    <string name="label_workload">Carga horária: %dh</string>
+    <string name="label_enrollments">Matrículas: %d</string>
+    <string name="label_average_completion">Conclusão média: %d%%</string>
+    <string name="label_linked_classes">Turmas vinculadas (%d)</string>
+    <string name="no_linked_classes">Nenhuma turma vinculada.</string>
+    <string name="label_schedule">Horário: %s</string>
+    <string name="label_students_count">Alunos: %d/%d</string>
+
+    <!-- Students Screen -->
+    <string name="students_title">Alunos</string>
+    <string name="students_add_content_description">Novo aluno</string>
+    <string name="students_search_placeholder">Buscar aluno, curso ou turma...</string>
+    <string name="students_result_label">alunos encontrados</string>
+    <string name="students_empty_state">Nenhum aluno encontrado.</string>
+    <string name="status_active">Ativo</string>
+    <string name="status_inactive">Inativo</string>
+    <string name="status_graduated">Formado</string>
+
+    <!-- Classes Screen -->
+    <string name="classes_title">Turmas</string>
+    <string name="classes_add_content_description">Nova turma</string>
+    <string name="classes_search_placeholder">Buscar turma, curso ou instrutor...</string>
+    <string name="classes_result_label">turmas encontradas</string>
+    <string name="classes_empty_state">Nenhuma turma encontrada.</string>
+    <string name="class_status_open">Aberta</string>
+    <string name="class_status_in_progress">Em andamento</string>
+    <string name="class_status_closed">Encerrada</string>
+
+    <!-- Class Detail Screen -->
+    <string name="class_detail_title">Detalhe da Turma</string>
+    <string name="class_not_found">Turma não encontrada.</string>
+    <string name="label_occupation">Ocupação: %d/%d</string>
+    <string name="label_class_students">Alunos da turma (%d)</string>
+    <string name="no_class_students">Nenhum aluno vinculado.</string>
+
+    <!-- Monitoring Screen -->
+    <string name="monitoring_title">Acompanhamento</string>
+    <string name="monitoring_student_not_found">Aluno não encontrado.</string>
+    <string name="monitoring_alerts_title">Alertas automáticos</string>
+    <string name="tab_attendance">Frequência</string>
+    <string name="tab_behavior">Comportamentos</string>
+    <string name="tab_pedagogical">Pedagógico</string>
+    <string name="tab_psychological">Psicológico</string>
+    <string name="tab_parents">Pais</string>
+
+    <string name="label_attendance_rate">Frequência %d%%</string>
+    <string name="label_average_grade">Média %.1f</string>
+
+    <string name="attendance_section_title">Cadastro de frequência</string>
+    <string name="attendance_rule_1">Status por dia/aula: Presente, Falta, Falta Justificada,
+        Atraso.</string>
+    <string name="attendance_rule_2">Falta justificada deve registrar motivo e protocolo.</string>
+    <string name="attendance_rule_3">Atraso registra minutos para gatilhos recorrentes.</string>
+    <string name="label_justification">Justificativa: %s</string>
+    <string name="attendance_status_present">Presente</string>
+    <string name="attendance_status_absent">Falta</string>
+    <string name="attendance_status_justified">Falta justificada</string>
+    <string name="attendance_status_late">Atraso %d min</string>
+
+    <string name="behavior_section_title">Cadastro de comportamento</string>
+    <string name="behavior_rule_1">Participação em escala de 1 a 5.</string>
+    <string name="behavior_rule_2">Entrega de atividade: no prazo, atrasada, não entregue.</string>
+    <string name="behavior_rule_3">Notas válidas entre 0 e 10.</string>
+    <string name="label_participation">Participação %d/5</string>
+    <string name="label_delivery">Entrega %s</string>
+    <string name="label_grade">Nota: %s</string>
+    <string name="delivery_on_time">no prazo</string>
+    <string name="delivery_late">com atraso</string>
+    <string name="delivery_missing">não entregue</string>
+
+    <string name="pedagogical_section_title">Necessidades pedagógicas</string>
+    <string name="pedagogical_rule_1">Tipos permitidos: laudo, atestado e necessidade especial.</string>
+    <string name="pedagogical_rule_2">Documentos com validade geram alerta de vencimento.</string>
+    <string name="pedagogical_rule_3">Registrar adaptações pedagógicas aplicadas ao aluno.</string>
+    <string name="pedagogical_type_report">Laudo</string>
+    <string name="pedagogical_type_medical">Atestado</string>
+    <string name="pedagogical_type_special">Necessidade especial</string>
+    <string name="label_validity">Validade: %s</string>
+    <string name="label_not_applicable">Não se aplica</string>
+    <string name="label_accommodations">Adaptações: %s</string>
+
+    <string name="psychological_section_title">Necessidades psicológicas</string>
+    <string name="psychological_rule_1">Definir nível de sigilo por registro.</string>
+    <string name="psychological_rule_2">Registrar evolução e próximo passo do acompanhamento.</string>
+    <string name="psychological_rule_3">Revisão periódica obrigatória por responsável técnico.</string>
+    <string name="label_confidentiality">Sigilo: %s</string>
+    <string name="label_next_step">Próximo passo: %s</string>
+    <string name="label_review_at">Revisão em %s</string>
+    <string name="confidentiality_restricted">Restrito</string>
+    <string name="confidentiality_shared">Resumo compartilhado</string>
+
+    <!-- Teacher Detail Screen -->
+    <string name="teacher_detail_title">Detalhe do Instrutor</string>
+    <string name="teacher_not_found">Instrutor não encontrado.</string>
+    <string name="label_active_courses_count">Cursos ativos: %d</string>
+    <string name="label_total_students_count">Total de alunos: %d</string>
+    <string name="label_rating_value">Avaliação: %.1f</string>
+    <string name="label_taught_classes">Turmas ministradas (%d)</string>
+
+    <string name="parents_section_title">Acompanhamento dos pais</string>
+    <string name="parents_rule_1">Registrar canal de contato e responsável pelo registro.</string>
+    <string name="parents_rule_2">Status: pendente, aguardando resposta, concluído e não compareceu.</string>
+    <string name="parents_rule_3">Escalonamento automático após contatos sem retorno.</string>
+    <string name="label_responsible">Responsável: %s</string>
+    <string name="channel_meeting">Reunião</string>
+    <string name="channel_phone">Telefone</string>
+    <string name="channel_message">Mensagem</string>
+    <string name="channel_email">E-mail</string>
+    <string name="follow_up_pending">Pendente</string>
+    <string name="follow_up_waiting">Aguardando resposta</string>
+    <string name="follow_up_completed">Concluído</string>
+    <string name="follow_up_no_show">Não compareceu</string>
+
+    <!-- Calendar Screen -->
+    <string name="calendar_title">Calendário</string>
+    <string name="calendar_add_content_description">Novo evento</string>
+    <string name="event_type_class">Aula</string>
+    <string name="event_type_exam">Prova</string>
+    <string name="event_type_meeting">Reunião</string>
+    <string name="event_type_other">Outro</string>
+    <string name="calendar_event_type_event" translatable="false">Evento</string>
+    <string name="calendar_form_title" translatable="false">Título</string>
+    <string name="calendar_form_context" translatable="false">Curso/Contexto</string>
+    <string name="calendar_form_date" translatable="false">Data</string>
+    <string name="calendar_form_time" translatable="false">Horário</string>
+    <string name="calendar_form_location" translatable="false">Local</string>
+    <string name="calendar_form_cancel" translatable="false">Cancelar</string>
+    <string name="calendar_form_save" translatable="false">Salvar</string>
+
+    <!-- Certificates Screen -->
+    <string name="certificates_title">Certificados</string>
+    <string name="certificates_search_placeholder">Buscar por aluno, curso ou código...</string>
+    <string name="certificates_result_label">certificados encontrados</string>
+    <string name="certificates_empty_state">Nenhum certificado encontrado.</string>
+
+    <!-- Teachers Screen -->
+    <string name="teachers_title">Instrutores</string>
+    <string name="teachers_add_content_description">Novo instrutor</string>
+    <string name="teachers_search_placeholder">Buscar instrutor ou especialidade...</string>
+    <string name="teachers_result_label">instrutores encontrados</string>
+    <string name="teachers_empty_state">Nenhum instrutor encontrado.</string>
+    <string name="unit_active_courses">%d cursos ativos</string>
+
+    <!-- Create Screens -->
+    <string name="student_create_title">Novo aluno</string>
+    <string name="student_create_name">Nome</string>
+    <string name="student_create_email">E-mail</string>
+    <string name="student_create_course">Curso</string>
+    <string name="student_create_class">Turma</string>
+    <string name="student_create_progress">Progresso (%%)</string>
+    <string name="student_create_status">Status</string>
+    <string name="student_create_save">Salvar aluno</string>
+    <string name="student_create_error_required">Preencha os campos obrigatórios.</string>
+    <string name="student_create_error_progress">Progresso deve estar entre 0 e 100.</string>
+    <string name="student_create_success">Aluno salvo com sucesso.</string>
+    <string name="student_create_error_save">Falha ao salvar aluno.</string>
+
+    <string name="class_create_title">Nova turma</string>
+    <string name="class_create_name">Nome da turma</string>
+    <string name="class_create_course">Curso</string>
+    <string name="class_create_instructor">Instrutor</string>
+    <string name="class_create_students_count">Alunos matriculados</string>
+    <string name="class_create_capacity">Capacidade máxima</string>
+    <string name="class_create_schedule">Horário</string>
+    <string name="class_create_status">Status</string>
+    <string name="class_create_save">Salvar turma</string>
+    <string name="class_create_error_required">Preencha os campos obrigatórios.</string>
+    <string name="class_create_error_capacity">Revise alunos e capacidade da turma.</string>
+    <string name="class_create_success">Turma salva com sucesso.</string>
+    <string name="class_create_error_save">Falha ao salvar turma.</string>
+
+    <string name="teacher_create_title">Novo instrutor</string>
+    <string name="teacher_create_name">Nome</string>
+    <string name="teacher_create_email">E-mail</string>
+    <string name="teacher_create_specialty">Especialidade</string>
+    <string name="teacher_create_active_courses">Cursos ativos</string>
+    <string name="teacher_create_total_students">Total de alunos</string>
+    <string name="teacher_create_rating">Avaliação (0.0 a 5.0)</string>
+    <string name="teacher_create_save">Salvar instrutor</string>
+    <string name="teacher_create_error_required">Preencha os campos obrigatórios.</string>
+    <string name="teacher_create_error_numeric">Revise os campos numéricos.</string>
+    <string name="teacher_create_success">Instrutor salvo com sucesso.</string>
+    <string name="teacher_create_error_save">Falha ao salvar instrutor.</string>
+
+    <string name="course_create_title">Novo curso</string>
+    <string name="course_create_title_label">Título</string>
+    <string name="course_create_category">Categoria</string>
+    <string name="course_create_instructor">Instrutor</string>
+    <string name="course_create_students">Qtd. alunos</string>
+    <string name="course_create_duration">Carga horária (h)</string>
+    <string name="course_create_completion">Taxa de conclusão (%%)</string>
+    <string name="course_create_published">Publicado</string>
+    <string name="course_create_yes">Sim</string>
+    <string name="course_create_no">Não</string>
+    <string name="course_create_save">Salvar curso</string>
+    <string name="course_create_error_required">Preencha título, categoria e instrutor.</string>
+    <string name="course_create_error_numeric">Revise os campos numéricos.</string>
+    <string name="course_create_success">Curso salvo com sucesso.</string>
+    <string name="course_create_error_save">Falha ao salvar curso.</string>
+
+    <!-- Reports Screen -->
+    <string name="reports_title">Relatórios</string>
+    <string name="label_active_students">Alunos Ativos</string>
+    <string name="label_active_courses">Cursos Ativos</string>
+    <string name="label_completion_rate">Taxa de Conclusão</string>
+    <string name="label_average_rating">Avaliação Média</string>
+    <string name="label_completion_by_course">Taxa de Conclusão por Curso</string>
+    <string name="label_enrollments_by_month">Matrículas por Mês</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Configurações</string>
+    <string name="settings_section_account">Conta</string>
+    <string name="settings_item_profile">Perfil</string>
+    <string name="settings_subtitle_profile">Nome, e-mail, foto</string>
+    <string name="settings_item_security">Segurança</string>
+    <string name="settings_subtitle_security">Senha e autenticação</string>
+    <string name="settings_section_appearance">Aparência</string>
+    <string name="settings_item_dark_mode">Modo escuro</string>
+    <string name="settings_subtitle_dark_mode">Alternar tema claro/escuro</string>
+    <string name="settings_item_color_theme">Tema de cores</string>
+    <string name="settings_subtitle_color_theme">Azul profundo (padrão)</string>
+    <string name="settings_section_notifications">Notificações</string>
+    <string name="settings_item_push">Notificações push</string>
+    <string name="settings_subtitle_push">Alertas em tempo real</string>
+    <string name="settings_item_email_notif">Notificações por e-mail</string>
+    <string name="settings_subtitle_email_notif">Resumo diário por e-mail</string>
+    <string name="settings_section_system">Sistema</string>
+    <string name="settings_item_language">Idioma</string>
+    <string name="settings_subtitle_language">Português (Brasil)</string>
+    <string name="settings_item_storage">Armazenamento</string>
+    <string name="settings_subtitle_storage">Limpar cache e dados</string>
+    <string name="settings_item_about">Sobre</string>
+    <string name="settings_subtitle_about">Versão 1.0.0 · App Desafio SEBRAE</string>
+    <string name="settings_item_user_management">Usuários</string>
+    <string name="settings_subtitle_user_management">Cadastro e controle de acesso</string>
+
+    <string name="user_management_title">Gestão de Usuários</string>
+    <string name="user_management_access_denied">Apenas administradores podem acessar esta tela.</string>
+    <string name="user_management_new_user">Novo usuário</string>
+    <string name="user_management_name">Nome</string>
+    <string name="user_management_email">E-mail</string>
+    <string name="user_management_password">Senha</string>
+    <string name="user_management_role">Perfil de acesso</string>
+    <string name="user_management_save">Salvar usuário</string>
+    <string name="user_management_existing_users">Usuários cadastrados</string>
+    <string name="user_management_invalid_data">Preencha nome e e-mail válidos.</string>
+    <string name="user_management_created_success">Usuário cadastrado com sucesso.</string>
+    <string name="user_management_created_error">Não foi possível cadastrar o usuário.</string>
+    <string name="user_management_removed_success">Usuário removido com sucesso.</string>
+    <string name="user_management_removed_error">Não foi possível remover o usuário.</string>
+
+    <!-- Missing strings for translations -->
+    <string name="label_delay">Atraso</string>
+    <string name="label_minutes">min</string>
+    <string name="separator_bullet">•</string>
+    <string name="recent_activity_subtitle_student">%s — Turma %s</string>
+    <string name="recent_activity_subtitle_course">%s · Nível 2</string>
+    <string name="recent_activity_subtitle_certificate">%s — %s</string>
+    <string name="recent_activity_subtitle_class">%s · Quinta-feira</string>
+    <string name="status_open_state">Aberta</string>
+    <string name="status_in_progress_state">Em andamento</string>
+    <string name="status_closed_state">Encerrada</string>
+    <string name="status_active_student">Ativo</string>
+    <string name="status_inactive_student">Inativo</string>
+    <string name="status_graduated_student">Formado</string>
+    <string name="stat_data_source">dados locais</string>
+    <string name="stat_data_source_cloud">dados sincronizados</string>
+    <string name="permission_denied" translatable="false">Você não tem permissão para esta ação.</string>
+    <string name="class_create_error_relationship" translatable="false">Curso ou instrutor inválido
+        para a turma.</string>
+    <string name="calendar_create_error" translatable="false">Não foi possível salvar o evento.</string>
+    <string name="settings_storage_cleared" translatable="false">Cache e dados operacionais foram
+        limpos.</string>
+    <string name="settings_item_reset_database">Resetar banco de dados</string>
+    <string name="settings_subtitle_reset_database">Apagar todos os dados locais e do Firebase</string>
+    <string name="settings_reset_database_confirm_title">Confirmar reset completo</string>
+    <string name="settings_reset_database_confirm_message">Esta ação apagará de forma irreversível
+        todos os dados operacionais locais e do Firebase — cursos, alunos, turmas, certificados e
+        relatórios. Os usuários cadastrados serão preservados. Deseja continuar?</string>
+    <string name="settings_reset_database_action">Resetar tudo</string>
+    <string name="settings_reset_database_success">Base de dados resetada com sucesso.</string>
+    <string name="settings_reset_database_cancel">Cancelar</string>
+    <string name="settings_change_password_title" translatable="false">Alterar senha</string>
+    <string name="settings_current_password" translatable="false">Senha atual</string>
+    <string name="settings_new_password" translatable="false">Nova senha (mínimo 8 caracteres)</string>
+    <string name="settings_change_password_action" translatable="false">Atualizar senha</string>
+    <string name="settings_password_changed" translatable="false">Senha alterada com sucesso.</string>
+    <string name="settings_password_error" translatable="false">Não foi possível alterar a senha.</string>
+    <string name="action_deactivate" translatable="false">Desativar</string>
+    <string name="action_reactivate" translatable="false">Reativar</string>
+    <string name="action_delete" translatable="false">Excluir</string>
+    <string name="action_error" translatable="false">Não foi possível concluir a ação.</string>
+
+    <!-- Loading overlay -->
+    <string name="loading_syncing">Sincronizando dados…</string>
+    <string name="loading_saving">Salvando…</string>
+
+    <!-- Offline -->
+    <string name="offline_banner_message">Sem conexão — exibindo dados salvos localmente</string>
+
+    <!-- Componente SearchableDropdown -->
+    <string name="dropdown_search">Buscar</string>
+    <string name="dropdown_empty">Nenhum resultado</string>
+    <string name="dropdown_select">Selecione…</string>
+
+    <!-- User Profile Screen -->
+    <string name="user_profile_title">Perfil do Usuário</string>
+    <string name="user_profile_section_access">Dados de Acesso</string>
+    <string name="user_profile_section_teacher">Vínculo como Instrutor</string>
+    <string name="user_profile_section_student">Vínculo como Aluno</string>
+    <string name="user_profile_label_name">Nome</string>
+    <string name="user_profile_label_email">E-mail</string>
+    <string name="user_profile_label_role">Perfil de acesso</string>
+    <string name="user_profile_label_specialty">Especialidade</string>
+    <string name="user_profile_label_active_courses">Cursos ativos</string>
+    <string name="user_profile_label_total_students">Alunos atendidos</string>
+    <string name="user_profile_label_rating">Avaliação</string>
+    <string name="user_profile_label_teacher_status">Status</string>
+    <string name="user_profile_label_course">Curso</string>
+    <string name="user_profile_label_class">Turma</string>
+    <string name="user_profile_label_progress">Progresso</string>
+    <string name="user_profile_label_student_status">Situação</string>
+    <string name="user_profile_classes_taught">Turmas que ministra:</string>
+    <string name="user_profile_classes_enrolled">Turmas matriculado:</string>
+    <string name="user_profile_no_links">Este usuário ainda não possui vínculo como instrutor ou
+        aluno.</string>
+    <string name="user_profile_view_button">Ver perfil</string>
+</resources>
