@@ -38,6 +38,7 @@ object AppRoutes {
   const val COURSE_ID_ARG = "courseId"
   const val CLASS_ID_ARG = "classId"
   const val TEACHER_ID_ARG = "teacherId"
+  const val USER_ID_ARG = "userId"
 
   /** Rota da tela de login. */
   const val LOGIN = "login"
@@ -85,6 +86,9 @@ object AppRoutes {
   /** Rota da tela dedicada de gestão de usuários (admin-only). */
   const val USERS_MANAGEMENT = "users-management"
 
+  /** Rota da tela de perfil de um usuário específico. */
+  const val USER_PROFILE = "users/{$USER_ID_ARG}/profile"
+
   /**
    * Monta a rota de acompanhamento do aluno substituindo o argumento dinâmico.
    *
@@ -116,4 +120,12 @@ object AppRoutes {
    * @return Resultado produzido pela opera??o em formato `String`.
    */
   fun teacherDetail(teacherId: Int): String = "teachers/$teacherId"
+
+  /**
+   * Monta a rota de perfil de usuário substituindo o argumento dinâmico.
+   *
+   * @param userId Identificador do usuário selecionado.
+   * @return Rota final navegável para o perfil do usuário.
+   */
+  fun userProfile(userId: Int): String = "users/$userId/profile"
 }
