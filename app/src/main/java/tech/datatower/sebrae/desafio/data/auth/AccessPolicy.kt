@@ -49,6 +49,7 @@ enum class ProtectedAction {
   Delete,
   LaunchStudentRecord,
   ClearStorage,
+  ResetDatabase,
   ChangeOwnPassword,
 }
 
