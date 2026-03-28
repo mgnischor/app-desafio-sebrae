@@ -73,217 +73,215 @@ import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfileScreen(onBack: () -> Unit) {
-    val viewModel: UserProfileViewModel = hiltViewModel()
-    val state by viewModel.state.collectAsState()
+  val viewModel: UserProfileViewModel = hiltViewModel()
+  val state by viewModel.state.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        DetailScaffold(
-            title = stringResource(R.string.user_profile_title),
-            onBack = onBack,
-        ) { innerPadding, _ ->
-            when (val s = state) {
-                is UserProfileViewModel.ProfileState.Loading -> {
-                    LoadingOverlay(
-                        isVisible = true,
-                        message = stringResource(R.string.loading_syncing),
-                    )
-                }
-
-                is UserProfileViewModel.ProfileState.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(s.message, style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
-
-                is UserProfileViewModel.ProfileState.Success -> {
-                    val data = s.data
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .padding(horizontal = 20.dp)
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Spacer(Modifier.height(4.dp))
-
-                        // ── Dados de acesso ───────────────────────────────────
-                        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    Icon(Icons.Outlined.Person, contentDescription = null)
-                                    Text(
-                                        stringResource(R.string.user_profile_section_access),
-                                        style = MaterialTheme.typography.titleMedium,
-                                    )
-                                }
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
-                                ProfileInfoRow(
-                                    label = stringResource(R.string.user_profile_label_name),
-                                    value = data.user.name,
-                                )
-                                ProfileInfoRow(
-                                    label = stringResource(R.string.user_profile_label_email),
-                                    value = data.user.email,
-                                )
-                                ProfileInfoRow(
-                                    label = stringResource(R.string.user_profile_label_role),
-                                    value = roleLabel(data.user.role),
-                                )
-                            }
-                        }
-
-                        // ── Vínculo como Instrutor ────────────────────────────
-                        if (data.teacherProfile != null) {
-                            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                                Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        Icon(Icons.Outlined.School, contentDescription = null)
-                                        Text(
-                                            stringResource(R.string.user_profile_section_teacher),
-                                            style = MaterialTheme.typography.titleMedium,
-                                        )
-                                    }
-                                    HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
-                                    ProfileInfoRow(
-                                        label = stringResource(R.string.user_profile_label_specialty),
-                                        value = data.teacherProfile.specialty,
-                                    )
-                                    ProfileInfoRow(
-                                        label = stringResource(R.string.user_profile_label_active_courses),
-                                        value = data.teacherProfile.activeCourses.toString(),
-                                    )
-                                    ProfileInfoRow(
-                                        label = stringResource(R.string.user_profile_label_total_students),
-                                        value = data.teacherProfile.totalStudents.toString(),
-                                    )
-                                    ProfileInfoRow(
-                                        label = stringResource(R.string.user_profile_label_rating),
-                                        value = "${"%.1f".format(data.teacherProfile.rating)} / 5,0",
-                                    )
-                                    ProfileInfoRow(
-                                        label = stringResource(R.string.user_profile_label_teacher_status),
-                                        value = if (data.teacherProfile.isActive)
-                                            stringResource(R.string.status_active)
-                                        else
-                                            stringResource(R.string.status_inactive),
-                                    )
-
-                                    if (data.classesTaught.isNotEmpty()) {
-                                        Spacer(Modifier.height(8.dp))
-                                        Text(
-                                            stringResource(R.string.user_profile_classes_taught),
-                                            style = MaterialTheme.typography.labelLarge,
-                                        )
-                                        data.classesTaught.forEach { cls ->
-                                            Text(
-                                                "• ${cls.name} — ${cls.course}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                modifier = Modifier.padding(start = 8.dp),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // ── Vínculo como Aluno ────────────────────────────────
-                        if (data.studentProfile != null) {
-                            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                                Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        Icon(
-                                            Icons.AutoMirrored.Outlined.MenuBook,
-                                            contentDescription = null,
-                                        )
-                                        Text(
-                                            stringResource(R.string.user_profile_section_student),
-                                            style = MaterialTheme.typography.titleMedium,
-                                        )
-                                    }
-                                    HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
-                                    ProfileInfoRow(
-                                        label = stringResource(R.string.user_profile_label_course),
-                                        value = data.studentProfile.course,
-                                    )
-                                    ProfileInfoRow(
-                                        label = stringResource(R.string.user_profile_label_class),
-                                        value = data.studentProfile.enrolledClass,
-                                    )
-                                    ProfileInfoRow(
-                                        label = stringResource(R.string.user_profile_label_progress),
-                                        value = "${(data.studentProfile.progress * 100).toInt()}%",
-                                    )
-                                    ProfileInfoRow(
-                                        label = stringResource(R.string.user_profile_label_student_status),
-                                        value = when (data.studentProfile.status) {
-                                            tech.datatower.sebrae.desafio.data.model.StudentStatus.Active ->
-                                                stringResource(R.string.status_active)
-                                            tech.datatower.sebrae.desafio.data.model.StudentStatus.Inactive ->
-                                                stringResource(R.string.status_inactive)
-                                            tech.datatower.sebrae.desafio.data.model.StudentStatus.Graduated ->
-                                                stringResource(R.string.status_graduated)
-                                        },
-                                    )
-
-                                    if (data.classesEnrolled.isNotEmpty()) {
-                                        Spacer(Modifier.height(8.dp))
-                                        Text(
-                                            stringResource(R.string.user_profile_classes_enrolled),
-                                            style = MaterialTheme.typography.labelLarge,
-                                        )
-                                        data.classesEnrolled.forEach { cls ->
-                                            Text(
-                                                "• ${cls.name} — ${cls.course}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                modifier = Modifier.padding(start = 8.dp),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // ── Sem vínculos ──────────────────────────────────────
-                        if (data.teacherProfile == null && data.studentProfile == null) {
-                            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    text = stringResource(R.string.user_profile_no_links),
-                                    modifier = Modifier.padding(16.dp),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                            }
-                        }
-
-                        Spacer(Modifier.height(24.dp))
-                    }
-                }
-            }
+  Box(modifier = Modifier.fillMaxSize()) {
+    DetailScaffold(
+        title = stringResource(R.string.user_profile_title),
+        onBack = onBack,
+    ) { innerPadding, _ ->
+      when (val s = state) {
+        is UserProfileViewModel.ProfileState.Loading -> {
+          LoadingOverlay(
+              isVisible = true,
+              message = stringResource(R.string.loading_syncing),
+          )
         }
+
+        is UserProfileViewModel.ProfileState.Error -> {
+          Box(
+              modifier = Modifier.fillMaxSize().padding(innerPadding),
+              contentAlignment = Alignment.Center,
+          ) {
+            Text(s.message, style = MaterialTheme.typography.bodyLarge)
+          }
+        }
+
+        is UserProfileViewModel.ProfileState.Success -> {
+          val data = s.data
+          Column(
+              modifier =
+                  Modifier.fillMaxSize()
+                      .padding(innerPadding)
+                      .padding(horizontal = 20.dp)
+                      .verticalScroll(rememberScrollState()),
+              verticalArrangement = Arrangement.spacedBy(16.dp),
+          ) {
+            Spacer(Modifier.height(4.dp))
+
+            // ── Dados de acesso ───────────────────────────────────
+            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+              Column(
+                  modifier = Modifier.padding(16.dp),
+                  verticalArrangement = Arrangement.spacedBy(4.dp),
+              ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                  Icon(Icons.Outlined.Person, contentDescription = null)
+                  Text(
+                      stringResource(R.string.user_profile_section_access),
+                      style = MaterialTheme.typography.titleMedium,
+                  )
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+                ProfileInfoRow(
+                    label = stringResource(R.string.user_profile_label_name),
+                    value = data.user.name,
+                )
+                ProfileInfoRow(
+                    label = stringResource(R.string.user_profile_label_email),
+                    value = data.user.email,
+                )
+                ProfileInfoRow(
+                    label = stringResource(R.string.user_profile_label_role),
+                    value = roleLabel(data.user.role),
+                )
+              }
+            }
+
+            // ── Vínculo como Instrutor ────────────────────────────
+            if (data.teacherProfile != null) {
+              ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                  Row(
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.spacedBy(8.dp),
+                  ) {
+                    Icon(Icons.Outlined.School, contentDescription = null)
+                    Text(
+                        stringResource(R.string.user_profile_section_teacher),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                  }
+                  HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+                  ProfileInfoRow(
+                      label = stringResource(R.string.user_profile_label_specialty),
+                      value = data.teacherProfile.specialty,
+                  )
+                  ProfileInfoRow(
+                      label = stringResource(R.string.user_profile_label_active_courses),
+                      value = data.teacherProfile.activeCourses.toString(),
+                  )
+                  ProfileInfoRow(
+                      label = stringResource(R.string.user_profile_label_total_students),
+                      value = data.teacherProfile.totalStudents.toString(),
+                  )
+                  ProfileInfoRow(
+                      label = stringResource(R.string.user_profile_label_rating),
+                      value = "${"%.1f".format(data.teacherProfile.rating)} / 5,0",
+                  )
+                  ProfileInfoRow(
+                      label = stringResource(R.string.user_profile_label_teacher_status),
+                      value =
+                          if (data.teacherProfile.isActive) stringResource(R.string.status_active)
+                          else stringResource(R.string.status_inactive),
+                  )
+
+                  if (data.classesTaught.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.user_profile_classes_taught),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    data.classesTaught.forEach { cls ->
+                      Text(
+                          "• ${cls.name} — ${cls.course}",
+                          style = MaterialTheme.typography.bodySmall,
+                          modifier = Modifier.padding(start = 8.dp),
+                      )
+                    }
+                  }
+                }
+              }
+            }
+
+            // ── Vínculo como Aluno ────────────────────────────────
+            if (data.studentProfile != null) {
+              ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                  Row(
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.spacedBy(8.dp),
+                  ) {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.MenuBook,
+                        contentDescription = null,
+                    )
+                    Text(
+                        stringResource(R.string.user_profile_section_student),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                  }
+                  HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+                  ProfileInfoRow(
+                      label = stringResource(R.string.user_profile_label_course),
+                      value = data.studentProfile.course,
+                  )
+                  ProfileInfoRow(
+                      label = stringResource(R.string.user_profile_label_class),
+                      value = data.studentProfile.enrolledClass,
+                  )
+                  ProfileInfoRow(
+                      label = stringResource(R.string.user_profile_label_progress),
+                      value = "${(data.studentProfile.progress * 100).toInt()}%",
+                  )
+                  ProfileInfoRow(
+                      label = stringResource(R.string.user_profile_label_student_status),
+                      value =
+                          when (data.studentProfile.status) {
+                            tech.datatower.sebrae.desafio.data.model.StudentStatus.Active ->
+                                stringResource(R.string.status_active)
+                            tech.datatower.sebrae.desafio.data.model.StudentStatus.Inactive ->
+                                stringResource(R.string.status_inactive)
+                            tech.datatower.sebrae.desafio.data.model.StudentStatus.Graduated ->
+                                stringResource(R.string.status_graduated)
+                          },
+                  )
+
+                  if (data.classesEnrolled.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.user_profile_classes_enrolled),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    data.classesEnrolled.forEach { cls ->
+                      Text(
+                          "• ${cls.name} — ${cls.course}",
+                          style = MaterialTheme.typography.bodySmall,
+                          modifier = Modifier.padding(start = 8.dp),
+                      )
+                    }
+                  }
+                }
+              }
+            }
+
+            // ── Sem vínculos ──────────────────────────────────────
+            if (data.teacherProfile == null && data.studentProfile == null) {
+              ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = stringResource(R.string.user_profile_no_links),
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+              }
+            }
+
+            Spacer(Modifier.height(24.dp))
+          }
+        }
+      }
     }
+  }
 }
 
 /**
@@ -294,31 +292,29 @@ fun UserProfileScreen(onBack: () -> Unit) {
  */
 @Composable
 private fun ProfileInfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1.5f),
-        )
-    }
+  Row(
+      modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically,
+  ) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.weight(1f),
+    )
+    Text(
+        text = value,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.weight(1.5f),
+    )
+  }
 }
 
 /** Converte UserRole em label de exibição. */
-private fun roleLabel(role: UserRole): String = when (role) {
-    UserRole.PROFESSOR -> "Professor"
-    UserRole.COORDENADOR -> "Coordenador"
-    UserRole.ADMINISTRADOR -> "Administrador"
-}
-
+private fun roleLabel(role: UserRole): String =
+    when (role) {
+      UserRole.PROFESSOR -> "Professor"
+      UserRole.COORDENADOR -> "Coordenador"
+      UserRole.ADMINISTRADOR -> "Administrador"
+    }
