@@ -20,7 +20,7 @@ demanda. A UI nunca lê do Firestore diretamente — toda leitura é feita via R
 - **Arquivo**: `sebrae_local.db`
 - **Criação**: `Room.databaseBuilder` com `fallbackToDestructiveMigration(true)`
 - **Classe**: `AppDatabase` (extends `RoomDatabase`)
-- **Versão atual**: implícita via `@Database`
+- **Versão atual**: 7
 
 ### Type Converters (`AppConverters`)
 
@@ -47,6 +47,35 @@ são registrados em `AppConverters`:
 
 ## Tabelas Locais (Room Entities)
 
+> **Multi-tenancy**: todas as tabelas de dados (exceto `companies`, `user_companies`,
+> `settings` e `app_users`) possuem uma coluna `companyId` (`INTEGER NOT NULL DEFAULT 0`)
+> que identifica a empresa (escola) proprietária do registro. Consultas do DAO filtram
+> automaticamente por `companyId` para isolar dados entre empresas.
+
+### `companies`
+
+Cadastro de empresas (escolas) do sistema. Somente administradores podem criar e gerenciar.
+
+| Coluna | Tipo Kotlin | Tipo SQL | Restrições |
+|---|---|---|---|
+| `id` | `Int` | INTEGER | PRIMARY KEY |
+| `name` | `String` | TEXT | NOT NULL |
+| `cnpj` | `String` | TEXT | NOT NULL |
+| `isActive` | `Boolean` | INTEGER | NOT NULL (default true) |
+
+---
+
+### `user_companies`
+
+Tabela associativa N:N entre usuários e empresas. Define quais empresas cada usuário pode acessar.
+
+| Coluna | Tipo Kotlin | Tipo SQL | Restrições |
+|---|---|---|---|
+| `userId` | `Int` | INTEGER | PRIMARY KEY (composta) |
+| `companyId` | `Int` | INTEGER | PRIMARY KEY (composta) |
+
+---
+
 ### `courses`
 
 Armazena os cursos oferecidos pela instituição.
@@ -61,6 +90,7 @@ Armazena os cursos oferecidos pela instituição.
 | `durationHours` | `Int` | INTEGER | NOT NULL |
 | `completionRate` | `Float` | REAL | NOT NULL (0.0–1.0) |
 | `isPublished` | `Boolean` | INTEGER | NOT NULL |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 ---
 
@@ -78,6 +108,7 @@ Representa turmas vinculadas a cursos.
 | `maxCapacity` | `Int` | INTEGER | NOT NULL |
 | `schedule` | `String` | TEXT | NOT NULL |
 | `status` | `ClassStatus` | TEXT | NOT NULL — via TypeConverter |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 `ClassStatus`: `Open`, `InProgress`, `Closed`
 
@@ -97,6 +128,7 @@ Gerencia o cadastro de instrutores.
 | `totalStudents` | `Int` | INTEGER | NOT NULL |
 | `rating` | `Float` | REAL | NOT NULL (0.0–5.0) |
 | `isActive` | `Boolean` | INTEGER | NOT NULL |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 ---
 
@@ -113,6 +145,7 @@ Alunos matriculados no sistema.
 | `enrolledClass` | `String` | TEXT | NOT NULL |
 | `progress` | `Float` | REAL | NOT NULL (0.0–1.0) |
 | `status` | `StudentStatus` | TEXT | NOT NULL — via TypeConverter |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 `StudentStatus`: `Active`, `Inactive`, `Graduated`
 
@@ -130,6 +163,7 @@ Certificados emitidos para conclusão de cursos.
 | `issuedDate` | `String` | TEXT | NOT NULL |
 | `hours` | `Int` | INTEGER | NOT NULL |
 | `code` | `String` | TEXT | NOT NULL — código único de validação |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 ---
 
@@ -146,6 +180,7 @@ Eventos da agenda acadêmica.
 | `time` | `String` | TEXT | NOT NULL |
 | `location` | `String` | TEXT | NOT NULL |
 | `type` | `EventType` | TEXT | NOT NULL — via TypeConverter |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 `EventType`: `Class`, `Exam`, `Meeting`, `Other`
 
@@ -162,6 +197,7 @@ Feed de atividades recentes exibido na Home.
 | `subtitle` | `String` | TEXT | NOT NULL |
 | `iconKey` | `String` | TEXT | NOT NULL — chave para resolução de ícone |
 | `timeLabel` | `String` | TEXT | NOT NULL |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 ---
 
@@ -171,8 +207,10 @@ Métricas de matrículas mensais para o gráfico de relatórios.
 
 | Coluna | Tipo Kotlin | Tipo SQL | Restrições |
 |---|---|---|---|
-| `month` | `String` | TEXT | PRIMARY KEY (ex: "2025-03") |
+| `id` | `Int` | INTEGER | PRIMARY KEY AUTOINCREMENT |
+| `month` | `String` | TEXT | NOT NULL (ex: "2025-03") |
 | `count` | `Int` | INTEGER | NOT NULL |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 ---
 
@@ -188,6 +226,7 @@ Registros de frequência do diário de aula por aluno.
 | `status` | `AttendanceStatus` | TEXT | NOT NULL — via TypeConverter |
 | `minutesLate` | `Int` | INTEGER | NOT NULL |
 | `justification` | `String?` | TEXT | nullable |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 `AttendanceStatus`: `Present`, `Absent`, `JustifiedAbsence`, `Late`
 
@@ -207,6 +246,7 @@ Registros de comportamento e desempenho acadêmico por aluno por aula.
 | `delayMinutes` | `Int` | INTEGER | NOT NULL |
 | `grade` | `Float?` | REAL | nullable (0.0–10.0) |
 | `note` | `String` | TEXT | NOT NULL |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 `ActivityDeliveryStatus`: `OnTime`, `Late`, `Missing`
 
@@ -224,6 +264,7 @@ Necessidades pedagógicas formalizadas por aluno.
 | `description` | `String` | TEXT | NOT NULL |
 | `expiresAt` | `LocalDate?` | TEXT | nullable — via TypeConverter |
 | `accommodations` | `List<String>` | TEXT | NOT NULL — JSON via TypeConverter |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 `PedagogicalNeedType`: `Report`, `MedicalCertificate`, ... (outros tipos definidos no enum)
 
@@ -241,6 +282,7 @@ Necessidades psicológicas com controle de confidencialidade.
 | `confidentiality` | `ConfidentialityLevel` | TEXT | NOT NULL — via TypeConverter |
 | `nextStep` | `String` | TEXT | NOT NULL |
 | `reviewAt` | `LocalDate` | TEXT | NOT NULL — via TypeConverter |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 `ConfidentialityLevel`: controla quais papéis podem visualizar o registro
 
@@ -259,6 +301,7 @@ Registros de contato com responsáveis pelo aluno.
 | `outcome` | `ParentFollowUpStatus` | TEXT | NOT NULL — via TypeConverter |
 | `responsible` | `String` | TEXT | NOT NULL |
 | `notes` | `String` | TEXT | NOT NULL |
+| `companyId` | `Int` | INTEGER | NOT NULL DEFAULT 0 |
 
 `ParentContactChannel`: `Phone`, `Email`, `InPerson`, ... (canais de contato)
 `ParentFollowUpStatus`: `Resolved`, `Pending`, `FollowUpNeeded`, ...
@@ -298,6 +341,23 @@ Usuários da aplicação com hash de senha para autenticação local.
 ## Diagrama de Relacionamentos (Lógicos)
 
 ```
+companies (id)  ──< user_companies (companyId)
+app_users (id)  ──< user_companies (userId)
+
+companies (id)  ──< courses (companyId)
+companies (id)  ──< school_classes (companyId)
+companies (id)  ──< teachers (companyId)
+companies (id)  ──< students (companyId)
+companies (id)  ──< certificates (companyId)
+companies (id)  ──< calendar_events (companyId)
+companies (id)  ──< recent_activities (companyId)
+companies (id)  ──< monthly_enrollments (companyId)
+companies (id)  ──< attendance_records (companyId)
+companies (id)  ──< behavior_records (companyId)
+companies (id)  ──< pedagogical_needs (companyId)
+companies (id)  ──< psychological_needs (companyId)
+companies (id)  ──< parent_follow_ups (companyId)
+
 students (id) ──< attendance_records (studentId)
 students (id) ──< behavior_records (studentId)
 students (id) ──< pedagogical_needs (studentId)
@@ -312,7 +372,8 @@ school_classes.course ──> courses.title  (relação por nome — sem FK fís
 
 > **Nota**: os relacionamentos entre cursos, turmas e alunos são resolvidos em memória no
 > `AppRepository` via `RelationshipRules`, usando o nome como chave de junção. Não há
-> `FOREIGN KEY` declarada no schema Room.
+> `FOREIGN KEY` declarada no schema Room. O campo `companyId` é utilizado como filtro
+> lógico em todas as queries do DAO para garantir isolamento multi-tenant.
 
 ---
 
@@ -323,6 +384,8 @@ O Firestore espelha as mesmas entidades do banco local. As coleções são sincr
 
 | Coleção | Equivalente Room | Chave de documento |
 |---|---|---|
+| `companies` | `companies` | ID numérico como string |
+| `user_companies` | `user_companies` | `{userId}_{companyId}` |
 | `users` | `app_users` | `authUid` (Firebase Auth UID) ou auto-gerado |
 | `students` | `students` | ID numérico como string |
 | `courses` | `courses` | ID numérico como string |
@@ -331,13 +394,16 @@ O Firestore espelha as mesmas entidades do banco local. As coleções são sincr
 | `certificates` | `certificates` | ID numérico como string |
 | `calendar_events` | `calendar_events` | ID numérico como string |
 | `recent_activities` | `recent_activities` | ID numérico como string |
-| `monthly_enrollments` | `monthly_enrollments` | Mês como string (ex: `2025-03`) |
+| `monthly_enrollments` | `monthly_enrollments` | ID numérico como string |
 | `attendance` | `attendance_records` | auto-ID Firestore |
 | `behaviors` | `behavior_records` | auto-ID Firestore |
 | `pedagogical_needs` | `pedagogical_needs` | auto-ID Firestore |
 | `psychological_needs` | `psychological_needs` | auto-ID Firestore |
 | `parent_follow_ups` | `parent_follow_ups` | auto-ID Firestore |
 | `settings` | `settings` | UID do usuário |
+
+> **Nota**: todos os documentos das coleções de dados (exceto `companies`, `user_companies`,
+> `users` e `settings`) incluem um campo `companyId` (Number) para isolamento multi-tenant.
 
 ### Estrutura de documento `users` no Firestore
 
@@ -348,6 +414,39 @@ O Firestore espelha as mesmas entidades do banco local. As coleções são sincr
   "email": "coordenador@sebrae.edu.br",
   "role": "COORDENADOR",
   "id": 2
+}
+```
+
+### Estrutura de documento `companies` no Firestore
+
+```json
+{
+  "id": 1,
+  "name": "Escola SEBRAE Centro",
+  "cnpj": "12.345.678/0001-99",
+  "isActive": true
+}
+```
+
+### Estrutura de documento `user_companies` no Firestore
+
+```json
+{
+  "userId": 2,
+  "companyId": 1
+}
+```
+
+### Campo `companyId` em documentos de dados
+
+Todos os documentos de dados incluem `companyId` para isolamento por empresa:
+
+```json
+{
+  "id": 10,
+  "title": "Curso de Marketing Digital",
+  "category": "Marketing",
+  "companyId": 1
 }
 ```
 
