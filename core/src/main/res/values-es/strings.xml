@@ -74,7 +74,8 @@
     <string name="login_label_password">Contraseña</string>
     <string name="login_button">Entrar</string>
     <string name="login_loading">Entrando…</string>
-    <string name="login_error_invalid_credentials">Correo electrónico o contraseña inválidos. Inténtelo de nuevo.</string>
+    <string name="login_error_invalid_credentials">Correo electrónico o contraseña inválidos.
+        Inténtelo de nuevo.</string>
     <string name="login_show_password">Mostrar contraseña</string>
     <string name="login_hide_password">Ocultar contraseña</string>
     <string name="login_hint_title">Credenciales de acceso</string>
@@ -146,7 +147,8 @@
     <string name="label_average_grade">Promedio %.1f</string>
 
     <string name="attendance_section_title">Registro de asistencia</string>
-    <string name="attendance_rule_1">Estado por día/clase: Presente, Falta, Falta Justificada, Retraso.</string>
+    <string name="attendance_rule_1">Estado por día/clase: Presente, Falta, Falta Justificada,
+        Retraso.</string>
     <string name="attendance_rule_2">La falta justificada debe registrar motivo y protocolo.</string>
     <string name="attendance_rule_3">El retraso registra minutos para activadores recurrentes.</string>
     <string name="label_justification">Justificación: %s</string>
@@ -239,6 +241,7 @@
     <string name="label_average_rating">Evaluación Promedio</string>
     <string name="label_completion_by_course">Tasa de Finalización por Curso</string>
     <string name="label_enrollments_by_month">Matrículas por Mes</string>
+    <string name="label_status_distribution">Distribución de Estado</string>
 
     <!-- Settings Screen -->
     <string name="settings_title">Configuración</string>
@@ -268,7 +271,8 @@
     <string name="settings_subtitle_user_management">Registro y control de acceso</string>
 
     <string name="user_management_title">Gestión de Usuarios</string>
-    <string name="user_management_access_denied">Solo los administradores pueden acceder a esta pantalla.</string>
+    <string name="user_management_access_denied">Solo los administradores pueden acceder a esta
+        pantalla.</string>
     <string name="user_management_new_user">Nuevo usuario</string>
     <string name="user_management_name">Nombre</string>
     <string name="user_management_email">Correo electrónico</string>
@@ -303,7 +307,9 @@
     <string name="settings_item_reset_database">Restablecer base de datos</string>
     <string name="settings_subtitle_reset_database">Borrar todos los datos locales y de Firebase</string>
     <string name="settings_reset_database_confirm_title">Confirmar restablecimiento completo</string>
-    <string name="settings_reset_database_confirm_message">Esta acción borrará de forma irreversible todos los datos operativos locales y de Firebase — cursos, alumnos, grupos, certificados e informes. Los usuarios registrados serán conservados. ¿Desea continuar?</string>
+    <string name="settings_reset_database_confirm_message">Esta acción borrará de forma irreversible
+        todos los datos operativos locales y de Firebase — cursos, alumnos, grupos, certificados e
+        informes. Los usuarios registrados serán conservados. ¿Desea continuar?</string>
     <string name="settings_reset_database_action">Restablecer todo</string>
     <string name="settings_reset_database_success">Base de datos restablecida con éxito.</string>
     <string name="settings_reset_database_cancel">Cancelar</string>
@@ -345,4 +351,58 @@
     <string name="course_create_instructor">Instructor</string>
     <string name="student_create_course">Curso</string>
     <string name="student_create_class">Grupo</string>
+    <!-- Pantallas de creación -->
+    <string name="student_create_title">Nuevo alumno</string>
+    <string name="student_create_name">Nombre</string>
+    <string name="student_create_email">Correo electrónico</string>
+    <string name="student_create_progress">Progreso (%%)</string>
+    <string name="student_create_status">Estado</string>
+    <string name="student_create_save">Guardar alumno</string>
+    <string name="student_create_error_required">Complete los campos obligatorios.</string>
+    <string name="student_create_error_progress">El progreso debe estar entre 0 y 100.</string>
+    <string name="student_create_success">Alumno guardado con éxito.</string>
+    <string name="student_create_error_save">Error al guardar alumno.</string>
+
+    <string name="class_create_title">Nuevo grupo</string>
+    <string name="class_create_name">Nombre del grupo</string>
+    <string name="class_create_students_count">Alumnos matriculados</string>
+    <string name="class_create_capacity">Capacidad máxima</string>
+    <string name="class_create_schedule">Horario</string>
+    <string name="class_create_status">Estado</string>
+    <string name="class_create_save">Guardar grupo</string>
+    <string name="class_create_error_required">Complete los campos obligatorios.</string>
+    <string name="class_create_error_capacity">Revise el número de alumnos y la capacidad del grupo.</string>
+    <string name="class_create_success">Grupo guardado con éxito.</string>
+    <string name="class_create_error_save">Error al guardar el grupo.</string>
+
+    <string name="teacher_create_title">Nuevo instructor</string>
+    <string name="teacher_create_name">Nombre</string>
+    <string name="teacher_create_email">Correo electrónico</string>
+    <string name="teacher_create_specialty">Especialidad</string>
+    <string name="teacher_create_active_courses">Cursos activos</string>
+    <string name="teacher_create_total_students">Total de alumnos</string>
+    <string name="teacher_create_rating">Evaluación (0.0 a 5.0)</string>
+    <string name="teacher_create_save">Guardar instructor</string>
+    <string name="teacher_create_error_required">Complete los campos obligatorios.</string>
+    <string name="teacher_create_error_numeric">Revise los campos numéricos.</string>
+    <string name="teacher_create_success">Instructor guardado con éxito.</string>
+    <string name="teacher_create_error_save">Error al guardar instructor.</string>
+
+    <string name="course_create_title">Nuevo curso</string>
+    <string name="course_create_title_label">Título</string>
+    <string name="course_create_category">Categoría</string>
+    <string name="course_create_students">Cant. alumnos</string>
+    <string name="course_create_duration">Carga horaria (h)</string>
+    <string name="course_create_completion">Tasa de finalización (%%)</string>
+    <string name="course_create_published">Publicado</string>
+    <string name="course_create_yes">Sí</string>
+    <string name="course_create_no">No</string>
+    <string name="course_create_save">Guardar curso</string>
+    <string name="course_create_error_required">Complete título, categoría e instructor.</string>
+    <string name="course_create_error_numeric">Revise los campos numéricos.</string>
+    <string name="course_create_success">Curso guardado con éxito.</string>
+    <string name="course_create_error_save">Error al guardar el curso.</string>
+
+    <!-- Sin conexión -->
+    <string name="offline_banner_message">Sin conexión — mostrando datos guardados localmente</string>
 </resources>
