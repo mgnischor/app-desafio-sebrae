@@ -18,9 +18,7 @@ val localProperties =
     }
 
 val versionProps =
-    Properties().apply {
-      rootProject.file("version.properties").inputStream().use { load(it) }
-    }
+    Properties().apply { rootProject.file("version.properties").inputStream().use { load(it) } }
 
 val vMajor = versionProps["VERSION_MAJOR"].toString().toInt()
 val vMinor = versionProps["VERSION_MINOR"].toString().toInt()
@@ -86,6 +84,7 @@ dependencies {
   implementation(project(":feature:calendar"))
   implementation(project(":feature:certificates"))
   implementation(project(":feature:classes"))
+  implementation(project(":feature:companies"))
   implementation(project(":feature:courses"))
   implementation(project(":feature:home"))
   implementation(project(":feature:login"))
