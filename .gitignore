@@ -145,8 +145,8 @@ gradle-app.setting
 *.log
 captures/
 deploymentTargetDropDown.xml
-google-services.json
 local.properties
 misc.xml
 output-metadata.json
 render.experimental.xml
+!google-services.json
