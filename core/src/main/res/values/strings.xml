@@ -309,6 +309,7 @@
     <string name="label_average_rating">Avaliação Média</string>
     <string name="label_completion_by_course">Taxa de Conclusão por Curso</string>
     <string name="label_enrollments_by_month">Matrículas por Mês</string>
+    <string name="label_status_distribution">Distribuição de Status</string>
 
     <!-- Settings Screen -->
     <string name="settings_title">Configurações</string>
