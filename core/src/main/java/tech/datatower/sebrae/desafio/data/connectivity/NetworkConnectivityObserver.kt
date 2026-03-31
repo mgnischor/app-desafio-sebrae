@@ -26,6 +26,7 @@
 */
 package tech.datatower.sebrae.desafio.data.connectivity
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
@@ -42,6 +43,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
  * Emite [ConnectivityObserver.Status] sempre que o estado de rede muda, começando pelo estado atual
  * no momento da assinatura.
  */
+@SuppressLint("MissingPermission")
 class NetworkConnectivityObserver(
     context: Context,
 ) : ConnectivityObserver {
