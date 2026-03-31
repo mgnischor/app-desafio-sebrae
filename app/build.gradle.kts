@@ -17,6 +17,16 @@ val localProperties =
       }
     }
 
+val versionProps =
+    Properties().apply {
+      rootProject.file("version.properties").inputStream().use { load(it) }
+    }
+
+val vMajor = versionProps["VERSION_MAJOR"].toString().toInt()
+val vMinor = versionProps["VERSION_MINOR"].toString().toInt()
+val vPatch = versionProps["VERSION_PATCH"].toString().toInt()
+val vBuild = versionProps["VERSION_BUILD"].toString().toInt()
+
 val firebaseSeedEmail = (localProperties.getProperty("firebase.seed.email") ?: "").trim()
 val firebaseSeedPassword = (localProperties.getProperty("firebase.seed.password") ?: "").trim()
 
@@ -35,8 +45,8 @@ android {
     applicationId = "tech.datatower.sebrae.desafio"
     minSdk = 26
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = vMajor * 1000000 + vMinor * 10000 + vPatch * 100 + vBuild
+    versionName = "$vMajor.$vMinor.$vPatch" + if (vBuild > 0) ".$vBuild" else ""
     buildConfigField("boolean", "FIREBASE_REMOTE_BOOTSTRAP_ENABLED", "true")
     buildConfigField("String", "FIREBASE_SEED_EMAIL", toBuildConfigString(firebaseSeedEmail))
     buildConfigField(
