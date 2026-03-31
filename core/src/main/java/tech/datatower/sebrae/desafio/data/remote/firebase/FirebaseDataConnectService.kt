@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
 import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.local.AppDao
@@ -53,6 +54,7 @@ import tech.datatower.sebrae.desafio.data.local.AttendanceEntity
 import tech.datatower.sebrae.desafio.data.local.BehaviorEntity
 import tech.datatower.sebrae.desafio.data.local.CalendarEventEntity
 import tech.datatower.sebrae.desafio.data.local.CertificateEntity
+import tech.datatower.sebrae.desafio.data.local.CompanyEntity
 import tech.datatower.sebrae.desafio.data.local.CourseEntity
 import tech.datatower.sebrae.desafio.data.local.MonthlyEnrollmentEntity
 import tech.datatower.sebrae.desafio.data.local.ParentFollowUpEntity
@@ -61,10 +63,12 @@ import tech.datatower.sebrae.desafio.data.local.PsychologicalNeedEntity
 import tech.datatower.sebrae.desafio.data.local.RecentActivityEntity
 import tech.datatower.sebrae.desafio.data.local.SchoolClassEntity
 import tech.datatower.sebrae.desafio.data.local.StudentEntity
+import tech.datatower.sebrae.desafio.data.local.UserCompanyEntity
 import tech.datatower.sebrae.desafio.data.model.ActivityDeliveryStatus
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.AttendanceStatus
 import tech.datatower.sebrae.desafio.data.model.ClassStatus
+import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.model.ConfidentialityLevel
 import tech.datatower.sebrae.desafio.data.model.Course
 import tech.datatower.sebrae.desafio.data.model.EntityLifecycleRules
@@ -142,9 +146,14 @@ class FirebaseDataConnectService(
     private const val COLLECTION_PSYCHOLOGICAL_NEEDS = "psychological_needs"
     private const val COLLECTION_PARENT_FOLLOW_UPS = "parent_follow_ups"
     private const val COLLECTION_SETTINGS = "settings"
+    private const val COLLECTION_COMPANIES = "companies"
+    private const val COLLECTION_USER_COMPANIES = "user_companies"
 
     @Volatile private var authBootstrapDisabled = false
   }
+
+  /** Retorna o ID da empresa ativa do usuário logado, ou 0 se nenhuma estiver selecionada. */
+  private fun currentCompanyId(): Int = AuthManager.currentCompany.value?.id ?: 0
 
   /**
    * Cria/popula a collection `courses` no Firestore usando os dados locais já existentes no Room.
@@ -1151,6 +1160,7 @@ class FirebaseDataConnectService(
                 issuedDate = doc.getString("issuedDate").orEmpty(),
                 hours = (doc.get("hours") as? Number)?.toInt() ?: 0,
                 code = doc.getString("code").orEmpty(),
+                companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
             )
           }
       if (entities.isNotEmpty()) {
@@ -1179,6 +1189,7 @@ class FirebaseDataConnectService(
                 time = doc.getString("time").orEmpty(),
                 location = doc.getString("location").orEmpty(),
                 type = type,
+                companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
             )
           }
       if (entities.isNotEmpty()) {
@@ -1209,6 +1220,7 @@ class FirebaseDataConnectService(
                 subtitle = doc.getString("subtitle").orEmpty(),
                 iconKey = doc.getString("iconKey").orEmpty().ifBlank { "person" },
                 timeLabel = doc.getString("timeLabel").orEmpty(),
+                companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
             )
           }
       if (entities.isNotEmpty()) {
@@ -1231,6 +1243,7 @@ class FirebaseDataConnectService(
             MonthlyEnrollmentEntity(
                 month = month,
                 count = (doc.get("count") as? Number)?.toInt() ?: 0,
+                companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
             )
           }
       if (entities.isNotEmpty()) {
@@ -1264,6 +1277,7 @@ class FirebaseDataConnectService(
                 status = status,
                 minutesLate = (doc.get("minutesLate") as? Number)?.toInt() ?: 0,
                 justification = doc.getString("justification"),
+                companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
             )
           }
       if (entities.isNotEmpty()) {
@@ -1301,6 +1315,7 @@ class FirebaseDataConnectService(
                 delayMinutes = (doc.get("delayMinutes") as? Number)?.toInt() ?: 0,
                 grade = (doc.get("grade") as? Number)?.toFloat(),
                 note = doc.getString("note").orEmpty(),
+                companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
             )
           }
       if (entities.isNotEmpty()) {
@@ -1335,6 +1350,7 @@ class FirebaseDataConnectService(
                 description = doc.getString("description").orEmpty(),
                 expiresAt = expiresAt,
                 accommodations = accommodations,
+                companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
             )
           }
       if (entities.isNotEmpty()) {
@@ -1370,6 +1386,7 @@ class FirebaseDataConnectService(
                 confidentiality = confidentiality,
                 nextStep = doc.getString("nextStep").orEmpty(),
                 reviewAt = reviewAt,
+                companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
             )
           }
       if (entities.isNotEmpty()) {
@@ -1409,6 +1426,7 @@ class FirebaseDataConnectService(
                 outcome = outcome,
                 responsible = doc.getString("responsible").orEmpty(),
                 notes = doc.getString("notes").orEmpty(),
+                companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
             )
           }
       if (entities.isNotEmpty()) {
@@ -1439,6 +1457,162 @@ class FirebaseDataConnectService(
       Result.Success(true)
     } catch (e: Exception) {
       Result.Error(e, "Falha ao buscar configuracoes: ${e.message}")
+    }
+  }
+
+  /** Busca empresas do Firestore e atualiza o cache local. */
+  suspend fun fetchCompanies(): Result<Int> {
+    return try {
+      val snapshot = firestore.collection(COLLECTION_COMPANIES).get().await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
+            CompanyEntity(
+                id = id,
+                name = doc.getString("name").orEmpty(),
+                cnpj = doc.getString("cnpj").orEmpty(),
+                isActive = doc.getBoolean("isActive") ?: true,
+            )
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertCompanies(entities)
+      }
+      // Atualiza empresas do usuario no AuthManager
+      val currentUser = AuthManager.currentUser.value
+      if (currentUser != null) {
+        val activeCompanies = entities.filter { it.isActive }.map {
+          Company(id = it.id, name = it.name, cnpj = it.cnpj, isActive = it.isActive)
+        }
+        if (currentUser.role == UserRole.ADMINISTRADOR) {
+          AuthManager.setUserCompanies(activeCompanies.sortedBy { it.name })
+        }
+      }
+      Result.Success(entities.size)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar empresas: ${e.message}")
+    }
+  }
+
+  /** Busca vinculos usuario-empresa do Firestore e atualiza o cache local. */
+  suspend fun fetchUserCompanies(): Result<Int> {
+    return try {
+      val snapshot = firestore.collection(COLLECTION_USER_COMPANIES).get().await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            val userId = (doc.get("userId") as? Number)?.toInt() ?: return@mapNotNull null
+            val companyId = (doc.get("companyId") as? Number)?.toInt() ?: return@mapNotNull null
+            UserCompanyEntity(userId = userId, companyId = companyId)
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertUserCompanies(entities)
+      }
+      // Atualiza empresas do usuario no AuthManager para nao-admins
+      val currentUser = AuthManager.currentUser.value
+      if (currentUser != null && currentUser.role != UserRole.ADMINISTRADOR) {
+        val userCompanyIds = entities.filter { it.userId == currentUser.id }.map { it.companyId }.toSet()
+        if (userCompanyIds.isNotEmpty()) {
+          val companies = dao.observeCompanies().first().filter { it.id in userCompanyIds }.map {
+            Company(id = it.id, name = it.name, cnpj = it.cnpj, isActive = it.isActive)
+          }
+          AuthManager.setUserCompanies(companies.sortedBy { it.name })
+        }
+      }
+      Result.Success(entities.size)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao buscar vinculos usuario-empresa: ${e.message}")
+    }
+  }
+
+  /** Salva empresa no Firestore e cache local (somente administrador). */
+  suspend fun upsertCompanyForAdmin(
+      requester: AppUser?,
+      company: Company,
+  ): Result<Boolean> {
+    if (requester?.role != UserRole.ADMINISTRADOR) {
+      return Result.Error(
+          SecurityException("Apenas administrador pode gerenciar empresas."),
+          "Acesso negado para gerenciar empresas.",
+      )
+    }
+    return try {
+      val payload = mapOf(
+          "id" to company.id,
+          "name" to company.name,
+          "cnpj" to company.cnpj,
+          "isActive" to company.isActive,
+      )
+      firestore.collection(COLLECTION_COMPANIES).document(company.id.toString()).set(payload).await()
+      dao.insertCompanies(listOf(CompanyEntity(
+          id = company.id,
+          name = company.name,
+          cnpj = company.cnpj,
+          isActive = company.isActive,
+      )))
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao salvar empresa: ${e.message}")
+    }
+  }
+
+  /** Remove empresa do Firestore e cache local (somente administrador). */
+  suspend fun deleteCompanyForAdmin(requester: AppUser?, companyId: Int): Result<Boolean> {
+    if (requester?.role != UserRole.ADMINISTRADOR) {
+      return Result.Error(
+          SecurityException("Apenas administrador pode remover empresas."),
+          "Acesso negado para remover empresas.",
+      )
+    }
+    return try {
+      firestore.collection(COLLECTION_COMPANIES).document(companyId.toString()).delete().await()
+      dao.deleteCompanyById(companyId)
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao remover empresa: ${e.message}")
+    }
+  }
+
+  /** Vincula usuario a uma empresa no Firestore e cache local. */
+  suspend fun grantUserCompanyAccess(
+      requester: AppUser?,
+      userId: Int,
+      companyId: Int,
+  ): Result<Boolean> {
+    if (requester?.role != UserRole.ADMINISTRADOR) {
+      return Result.Error(
+          SecurityException("Apenas administrador pode gerenciar acessos."),
+          "Acesso negado.",
+      )
+    }
+    return try {
+      val docId = "${userId}_${companyId}"
+      val payload = mapOf("userId" to userId, "companyId" to companyId)
+      firestore.collection(COLLECTION_USER_COMPANIES).document(docId).set(payload).await()
+      dao.insertUserCompanies(listOf(UserCompanyEntity(userId = userId, companyId = companyId)))
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao vincular usuario a empresa: ${e.message}")
+    }
+  }
+
+  /** Remove vinculo usuario-empresa do Firestore e cache local. */
+  suspend fun revokeUserCompanyAccess(
+      requester: AppUser?,
+      userId: Int,
+      companyId: Int,
+  ): Result<Boolean> {
+    if (requester?.role != UserRole.ADMINISTRADOR) {
+      return Result.Error(
+          SecurityException("Apenas administrador pode gerenciar acessos."),
+          "Acesso negado.",
+      )
+    }
+    return try {
+      val docId = "${userId}_${companyId}"
+      firestore.collection(COLLECTION_USER_COMPANIES).document(docId).delete().await()
+      dao.deleteUserCompany(userId, companyId)
+      Result.Success(true)
+    } catch (e: Exception) {
+      Result.Error(e, "Falha ao remover vinculo usuario-empresa: ${e.message}")
     }
   }
 
@@ -1477,6 +1651,8 @@ class FirebaseDataConnectService(
       FirebaseSyncTask.PSYCHOLOGICAL_NEEDS -> fetchPsychologicalNeeds().toBooleanResult()
       FirebaseSyncTask.PARENT_FOLLOW_UPS -> fetchParentFollowUps().toBooleanResult()
       FirebaseSyncTask.SETTINGS -> fetchSettings()
+      FirebaseSyncTask.COMPANIES -> fetchCompanies().toBooleanResult()
+      FirebaseSyncTask.USER_COMPANIES -> fetchUserCompanies().toBooleanResult()
     }
   }
 
@@ -1594,6 +1770,7 @@ class FirebaseDataConnectService(
                         status =
                             runCatching { StudentStatus.valueOf(statusName) }
                                 .getOrDefault(StudentStatus.Active),
+                        companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                     )
                   }
                   .orEmpty()
@@ -1624,6 +1801,7 @@ class FirebaseDataConnectService(
                         durationHours = (doc.get("durationHours") as? Number)?.toInt() ?: 0,
                         completionRate = (doc.get("completionRate") as? Number)?.toFloat() ?: 0f,
                         isPublished = doc.getBoolean("isPublished") ?: false,
+                        companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                     )
                   }
                   .orEmpty()
@@ -1658,6 +1836,7 @@ class FirebaseDataConnectService(
                         status =
                             runCatching { ClassStatus.valueOf(statusName) }
                                 .getOrDefault(ClassStatus.Open),
+                        companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                     )
                   }
                   .orEmpty()
@@ -1686,6 +1865,7 @@ class FirebaseDataConnectService(
                         issuedDate = doc.getString("issuedDate").orEmpty(),
                         hours = (doc.get("hours") as? Number)?.toInt() ?: 0,
                         code = doc.getString("code").orEmpty(),
+                        companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                     )
                   }
                   .orEmpty()
@@ -1712,6 +1892,7 @@ class FirebaseDataConnectService(
                     MonthlyEnrollmentEntity(
                         month = month,
                         count = (doc.get("count") as? Number)?.toInt() ?: 0,
+                        companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                     )
                   }
                   .orEmpty()
@@ -1758,6 +1939,7 @@ class FirebaseDataConnectService(
               "durationHours" to course.durationHours,
               "completionRate" to course.completionRate,
               "isPublished" to course.isPublished,
+              "companyId" to currentCompanyId(),
           )
       firestore.collection(COLLECTION_COURSES).document(course.id.toString()).set(payload).await()
       dao.insertCourses(listOf(course.toEntity()))
@@ -1806,6 +1988,7 @@ class FirebaseDataConnectService(
               "maxCapacity" to schoolClass.maxCapacity,
               "schedule" to schoolClass.schedule,
               "status" to schoolClass.status.name,
+              "companyId" to currentCompanyId(),
           )
       firestore
           .collection(COLLECTION_CLASSES)
@@ -1858,6 +2041,7 @@ class FirebaseDataConnectService(
               "totalStudents" to teacher.totalStudents,
               "rating" to teacher.rating,
               "isActive" to teacher.isActive,
+              "companyId" to currentCompanyId(),
           )
       firestore.collection(COLLECTION_TEACHERS).document(teacher.id.toString()).set(payload).await()
       dao.insertTeachers(listOf(teacher.toEntity()))
@@ -1905,6 +2089,7 @@ class FirebaseDataConnectService(
               "enrolledClass" to student.enrolledClass,
               "progress" to student.progress,
               "status" to student.status.name,
+              "companyId" to currentCompanyId(),
           )
       firestore.collection(COLLECTION_STUDENTS).document(student.id.toString()).set(payload).await()
       dao.insertStudents(listOf(student.toEntity()))
@@ -1945,6 +2130,7 @@ class FirebaseDataConnectService(
               "time" to event.time,
               "location" to event.location,
               "type" to event.type.name,
+              "companyId" to currentCompanyId(),
           )
       firestore
           .collection(COLLECTION_CALENDAR_EVENTS)
@@ -2150,6 +2336,7 @@ class FirebaseDataConnectService(
             subtitle = draft.subtitle,
             iconKey = draft.iconKey,
             timeLabel = draft.timeLabel,
+            companyId = currentCompanyId(),
         )
 
     val payload =
@@ -2159,6 +2346,7 @@ class FirebaseDataConnectService(
             "subtitle" to entity.subtitle,
             "iconKey" to entity.iconKey,
             "timeLabel" to entity.timeLabel,
+            "companyId" to entity.companyId,
         )
 
     firestore
@@ -2171,7 +2359,7 @@ class FirebaseDataConnectService(
 
   // Conversões de modelo para entidade (para cache local)
   /** Executa a rotina de course dentro do contexto deste componente. */
-  private fun Course.toEntity() =
+  private fun Course.toEntity(companyId: Int = currentCompanyId()) =
       CourseEntity(
           id = id,
           title = title,
@@ -2181,10 +2369,11 @@ class FirebaseDataConnectService(
           durationHours = durationHours,
           completionRate = completionRate,
           isPublished = isPublished,
+          companyId = companyId,
       )
 
   /** Executa a rotina de student dentro do contexto deste componente. */
-  private fun Student.toEntity() =
+  private fun Student.toEntity(companyId: Int = currentCompanyId()) =
       StudentEntity(
           id = id,
           name = name,
@@ -2193,10 +2382,11 @@ class FirebaseDataConnectService(
           enrolledClass = enrolledClass,
           progress = progress,
           status = status,
+          companyId = companyId,
       )
 
   /** Executa a rotina de teacher dentro do contexto deste componente. */
-  private fun Teacher.toEntity() =
+  private fun Teacher.toEntity(companyId: Int = currentCompanyId()) =
       tech.datatower.sebrae.desafio.data.local.TeacherEntity(
           id = id,
           name = name,
@@ -2206,10 +2396,11 @@ class FirebaseDataConnectService(
           totalStudents = totalStudents,
           rating = rating,
           isActive = isActive,
+          companyId = companyId,
       )
 
   /** Executa a rotina de school class dentro do contexto deste componente. */
-  private fun SchoolClass.toEntity() =
+  private fun SchoolClass.toEntity(companyId: Int = currentCompanyId()) =
       SchoolClassEntity(
           id = id,
           name = name,
@@ -2219,6 +2410,7 @@ class FirebaseDataConnectService(
           maxCapacity = maxCapacity,
           schedule = schedule,
           status = status,
+          companyId = companyId,
       )
 
   /**
