@@ -175,7 +175,7 @@ class FirebaseDataConnectService(
         )
       }
 
-      val localCourses = dao.observeCourses().first()
+      val localCourses = dao.observeCourses(companyId = 0).first()
       if (localCourses.isEmpty()) {
         return Result.Error(
             exception = IllegalStateException("Cache local de courses está vazio."),
@@ -1007,6 +1007,7 @@ class FirebaseDataConnectService(
                             subtitle = doc.getString("subtitle").orEmpty(),
                             iconKey = doc.getString("iconKey").orEmpty().ifBlank { "calendar" },
                             timeLabel = doc.getString("timeLabel").orEmpty().ifBlank { "agora" },
+                            companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                         )
                       }
                       ?.sortedByDescending { it.id }
