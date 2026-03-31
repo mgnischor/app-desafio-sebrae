@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 import tech.datatower.sebrae.desafio.data.model.AppUser
+import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.model.UserRole
 import java.security.MessageDigest
 
@@ -42,6 +43,8 @@ object AuthManager {
 
   private const val TAG = "AuthManager"
   private const val USERS_COLLECTION = "users"
+  private const val COMPANIES_COLLECTION = "companies"
+  private const val USER_COMPANIES_COLLECTION = "user_companies"
 
   private val _users =
       MutableStateFlow(
@@ -75,6 +78,8 @@ object AuthManager {
       )
 
   private val _currentUser = MutableStateFlow<AppUser?>(null)
+  private val _currentCompany = MutableStateFlow<Company?>(null)
+  private val _userCompanies = MutableStateFlow<List<Company>>(emptyList())
 
   private val firebaseAuth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
   private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
@@ -90,6 +95,33 @@ object AuthManager {
 
   /** Fluxo reativo com o usuário atualmente autenticado, ou `null` se não houver sessão ativa. */
   val currentUser: StateFlow<AppUser?> = _currentUser.asStateFlow()
+
+  /** Fluxo reativo com todos os usuários conhecidos pelo sistema. */
+  val users: StateFlow<List<AppUser>> = _users.asStateFlow()
+
+  /** Fluxo reativo com a empresa atualmente selecionada pelo usuário. */
+  val currentCompany: StateFlow<Company?> = _currentCompany.asStateFlow()
+
+  /** Fluxo reativo com as empresas às quais o usuário autenticado tem acesso. */
+  val userCompanies: StateFlow<List<Company>> = _userCompanies.asStateFlow()
+
+  /** Define as empresas que o usuário tem acesso (chamado após login/sync). */
+  fun setUserCompanies(companies: List<Company>) {
+    _userCompanies.value = companies
+    if (_currentCompany.value == null && companies.isNotEmpty()) {
+      _currentCompany.value = companies.first()
+    }
+    if (_currentCompany.value != null && companies.none { it.id == _currentCompany.value?.id }) {
+      _currentCompany.value = companies.firstOrNull()
+    }
+  }
+
+  /** Troca a empresa ativa do usuário. */
+  fun switchCompany(company: Company) {
+    if (_userCompanies.value.any { it.id == company.id }) {
+      _currentCompany.value = company
+    }
+  }
 
   /** Login oficial do app via Firebase Auth e perfil em Firestore (collection `users`). */
   suspend fun loginWithFirebase(email: String, password: String): FirebaseLoginResult {
@@ -116,6 +148,7 @@ object AuthManager {
       } else {
         upsertLocalUser(profile)
         _currentUser.value = profile
+        loadUserCompaniesFromFirestore(profile)
         FirebaseLoginResult.Success(profile)
       }
     } catch (e: Exception) {
@@ -274,10 +307,45 @@ object AuthManager {
     return true
   }
 
+  /**
+   * Carrega as empresas do usuário a partir do Firestore após login bem-sucedido.
+   * Administradores recebem todas as empresas ativas; demais papéis recebem apenas as vinculadas.
+   */
+  private suspend fun loadUserCompaniesFromFirestore(user: AppUser) {
+    try {
+      val allCompanies = firestore.collection(COMPANIES_COLLECTION).get().await()
+      val companyMap = allCompanies.documents.mapNotNull { doc ->
+        val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
+        val name = doc.getString("name").orEmpty()
+        val cnpj = doc.getString("cnpj").orEmpty()
+        val isActive = doc.getBoolean("isActive") ?: true
+        if (isActive) Company(id = id, name = name, cnpj = cnpj, isActive = true) else null
+      }.associateBy { it.id }
+
+      val companies = if (user.role == UserRole.ADMINISTRADOR) {
+        companyMap.values.toList()
+      } else {
+        val userCompanyDocs = firestore.collection(USER_COMPANIES_COLLECTION)
+            .whereEqualTo("userId", user.id)
+            .get()
+            .await()
+        userCompanyDocs.documents.mapNotNull { doc ->
+          val companyId = (doc.get("companyId") as? Number)?.toInt() ?: return@mapNotNull null
+          companyMap[companyId]
+        }
+      }
+      setUserCompanies(companies.sortedBy { it.name })
+    } catch (e: Exception) {
+      Log.w(TAG, "Falha ao carregar empresas do usuario", e)
+    }
+  }
+
   /** Encerra a sessão atual, retornando o estado para não autenticado. */
   fun logout() {
     runCatching { firebaseAuth.signOut() }
     _currentUser.value = null
+    _currentCompany.value = null
+    _userCompanies.value = emptyList()
   }
 
   /** Retorna o hash SHA-256 hexadecimal da string fornecida. */
