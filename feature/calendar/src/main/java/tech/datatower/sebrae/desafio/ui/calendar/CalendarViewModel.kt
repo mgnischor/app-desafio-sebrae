@@ -107,6 +107,7 @@ constructor(
                       time = time,
                       location = location,
                       type = type,
+                      companyId = companyId.value ?: 0,
                   ),
           )
       _actionResult.value =
