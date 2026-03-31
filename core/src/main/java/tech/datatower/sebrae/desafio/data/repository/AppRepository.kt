@@ -45,6 +45,7 @@ import tech.datatower.sebrae.desafio.data.local.AttendanceEntity
 import tech.datatower.sebrae.desafio.data.local.BehaviorEntity
 import tech.datatower.sebrae.desafio.data.local.CalendarEventEntity
 import tech.datatower.sebrae.desafio.data.local.CertificateEntity
+import tech.datatower.sebrae.desafio.data.local.CompanyEntity
 import tech.datatower.sebrae.desafio.data.local.CourseEntity
 import tech.datatower.sebrae.desafio.data.local.ParentFollowUpEntity
 import tech.datatower.sebrae.desafio.data.local.PedagogicalNeedEntity
@@ -53,12 +54,14 @@ import tech.datatower.sebrae.desafio.data.local.RecentActivityEntity
 import tech.datatower.sebrae.desafio.data.local.SchoolClassEntity
 import tech.datatower.sebrae.desafio.data.local.StudentEntity
 import tech.datatower.sebrae.desafio.data.local.TeacherEntity
+import tech.datatower.sebrae.desafio.data.local.UserCompanyEntity
 import tech.datatower.sebrae.desafio.data.model.AppSettings
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.AttendanceRecord
 import tech.datatower.sebrae.desafio.data.model.BehaviorRecord
 import tech.datatower.sebrae.desafio.data.model.CalendarEvent
 import tech.datatower.sebrae.desafio.data.model.Certificate
+import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.model.Course
 import tech.datatower.sebrae.desafio.data.model.ParentFollowUp
 import tech.datatower.sebrae.desafio.data.model.PedagogicalNeed
@@ -108,13 +111,69 @@ class AppRepository(
     private val dao: AppDao,
     private val dataSourceLabelResFlow: Flow<Int> = flowOf(R.string.stat_data_source),
 ) {
-  /**
-   * Observa alterações de courses e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<List<Course>>`.
-   */
-  fun observeCourses(): Flow<List<Course>> =
-      combine(dao.observeCourses(), dao.observeStudents()) { courseEntities, studentEntities ->
+
+  // ── Company ─────────────────────────────────────────────────────────────
+
+  fun observeCompanies(): Flow<List<Company>> =
+      dao.observeCompanies().map { items -> items.map { it.toModel() } }
+
+  fun observeActiveCompanies(): Flow<List<Company>> =
+      dao.observeActiveCompanies().map { items -> items.map { it.toModel() } }
+
+  fun observeCompanyById(companyId: Int): Flow<Company?> =
+      dao.observeCompanyById(companyId).map { it?.toModel() }
+
+  fun observeCompaniesForUser(userId: Int): Flow<List<Company>> =
+      dao.observeCompaniesForUser(userId).map { items -> items.map { it.toModel() } }
+
+  suspend fun upsertCompanyForAdmin(requester: AppUser?, company: Company) {
+    if (requester?.role != UserRole.ADMINISTRADOR) {
+      throw SecurityException("Apenas administrador pode cadastrar empresas.")
+    }
+    dao.upsertCompany(company.toEntity())
+  }
+
+  suspend fun deleteCompanyForAdmin(requester: AppUser?, companyId: Int) {
+    if (requester?.role != UserRole.ADMINISTRADOR) {
+      throw SecurityException("Apenas administrador pode remover empresas.")
+    }
+    database.withTransaction {
+      dao.deleteUserCompaniesForCompany(companyId)
+      dao.deleteCompanyById(companyId)
+    }
+  }
+
+  // ── User ↔ Company ────────────────────────────────────────────────────
+
+  fun observeUserCompanies(userId: Int): Flow<List<UserCompanyEntity>> =
+      dao.observeUserCompanies(userId)
+
+  fun observeUserIdsByCompany(companyId: Int): Flow<Set<Int>> =
+      dao.observeUserIdsByCompany(companyId).map { it.toSet() }
+
+  suspend fun grantUserCompanyAccess(requester: AppUser?, userId: Int, companyId: Int) {
+    if (requester?.role != UserRole.ADMINISTRADOR) {
+      throw SecurityException("Apenas administrador pode conceder acesso a empresas.")
+    }
+    val existing = dao.getUserCompany(userId, companyId)
+    if (existing == null) {
+      dao.insertUserCompany(UserCompanyEntity(userId = userId, companyId = companyId))
+    }
+  }
+
+  suspend fun revokeUserCompanyAccess(requester: AppUser?, userId: Int, companyId: Int) {
+    if (requester?.role != UserRole.ADMINISTRADOR) {
+      throw SecurityException("Apenas administrador pode revogar acesso a empresas.")
+    }
+    dao.deleteUserCompany(userId, companyId)
+  }
+
+  // ── Courses (filtered by company) ─────────────────────────────────────
+
+  fun observeCourses(companyId: Int): Flow<List<Course>> =
+      combine(dao.observeCourses(companyId), dao.observeStudents(companyId)) {
+          courseEntities,
+          studentEntities ->
         val students = studentEntities.map { it.toModel() }
         val realByCourse = RelationshipRules.realStudentsByCourse(students)
         courseEntities.map { entity ->
@@ -123,14 +182,11 @@ class AppRepository(
         }
       }
 
-  /**
-   * Observa alterações de course by id e publica atualizações reativas.
-   *
-   * @param courseId Valor de entrada utilizado por esta operação.
-   * @return Resultado produzido pela operação em formato `Flow<Course?>`.
-   */
   fun observeCourseById(courseId: Int): Flow<Course?> =
-      combine(dao.observeCourseById(courseId), dao.observeStudents()) {
+      dao.observeCourseById(courseId).map { it?.toModel() }
+
+  fun observeCourseByIdWithStudents(courseId: Int, companyId: Int): Flow<Course?> =
+      combine(dao.observeCourseById(courseId), dao.observeStudents(companyId)) {
           courseEntity,
           studentEntities ->
         val model = courseEntity?.toModel() ?: return@combine null
@@ -139,13 +195,12 @@ class AppRepository(
         model.copy(totalStudents = realByCourse[model.title.trim()].orZero())
       }
 
-  /**
-   * Observa alterações de classes e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<List<SchoolClass>>`.
-   */
-  fun observeClasses(): Flow<List<SchoolClass>> =
-      combine(dao.observeClasses(), dao.observeStudents()) { classEntities, studentEntities ->
+  // ── Classes (filtered by company) ─────────────────────────────────────
+
+  fun observeClasses(companyId: Int): Flow<List<SchoolClass>> =
+      combine(dao.observeClasses(companyId), dao.observeStudents(companyId)) {
+          classEntities,
+          studentEntities ->
         val students = studentEntities.map { it.toModel() }
         val realByClass = RelationshipRules.realStudentsByClass(students)
         classEntities.map { entity ->
@@ -154,119 +209,70 @@ class AppRepository(
         }
       }
 
-  /**
-   * Observa alterações de class by id e publica atualizações reativas.
-   *
-   * @param classId Valor de entrada utilizado por esta operação.
-   * @return Resultado produzido pela operação em formato `Flow<SchoolClass?>`.
-   */
-  fun observeClassById(classId: Int): Flow<SchoolClass?> =
-      combine(dao.observeClassById(classId), dao.observeStudents()) { classEntity, studentEntities
-        ->
+  fun observeClassById(classId: Int, companyId: Int): Flow<SchoolClass?> =
+      combine(dao.observeClassById(classId), dao.observeStudents(companyId)) {
+          classEntity,
+          studentEntities ->
         val model = classEntity?.toModel() ?: return@combine null
         val realByClass =
             RelationshipRules.realStudentsByClass(studentEntities.map { it.toModel() })
         model.copy(studentsCount = realByClass[model.name.trim()].orZero())
       }
 
-  /**
-   * Observa alterações de classes by course e publica atualizações reativas.
-   *
-   * @param courseName Valor de entrada utilizado por esta operação.
-   * @return Resultado produzido pela operação em formato `Flow<List<SchoolClass>>`.
-   */
-  fun observeClassesByCourse(courseName: String): Flow<List<SchoolClass>> =
-      dao.observeClassesByCourse(courseName).map { items -> items.map { it.toModel() } }
+  fun observeClassesByCourse(companyId: Int, courseName: String): Flow<List<SchoolClass>> =
+      dao.observeClassesByCourse(companyId, courseName).map { items -> items.map { it.toModel() } }
 
-  /**
-   * Observa alterações de classes by teacher e publica atualizações reativas.
-   *
-   * @param teacherName Valor de entrada utilizado por esta operação.
-   * @return Resultado produzido pela operação em formato `Flow<List<SchoolClass>>`.
-   */
-  fun observeClassesByTeacher(teacherName: String): Flow<List<SchoolClass>> =
-      dao.observeClassesByTeacher(teacherName).map { items -> items.map { it.toModel() } }
+  fun observeClassesByTeacher(companyId: Int, teacherName: String): Flow<List<SchoolClass>> =
+      dao.observeClassesByTeacher(companyId, teacherName).map { items -> items.map { it.toModel() } }
 
-  /**
-   * Observa alterações de teachers e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<List<Teacher>>`.
-   */
-  fun observeTeachers(): Flow<List<Teacher>> =
-      dao.observeTeachers().map { items -> items.map { it.toModel() } }
+  // ── Teachers (filtered by company) ────────────────────────────────────
 
-  /**
-   * Observa alterações de teacher by id e publica atualizações reativas.
-   *
-   * @param teacherId Valor de entrada utilizado por esta operação.
-   * @return Resultado produzido pela operação em formato `Flow<Teacher?>`.
-   */
+  fun observeTeachers(companyId: Int): Flow<List<Teacher>> =
+      dao.observeTeachers(companyId).map { items -> items.map { it.toModel() } }
+
   fun observeTeacherById(teacherId: Int): Flow<Teacher?> =
       dao.observeTeacherById(teacherId).map { it?.toModel() }
 
-  /**
-   * Observa alterações de students e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<List<Student>>`.
-   */
-  fun observeStudents(): Flow<List<Student>> =
-      dao.observeStudents().map { items -> items.map { it.toModel() } }
+  // ── Students (filtered by company) ────────────────────────────────────
 
-  /**
-   * Observa alterações de students by class e publica atualizações reativas.
-   *
-   * @param className Valor de entrada utilizado por esta operação.
-   * @return Resultado produzido pela operação em formato `Flow<List<Student>>`.
-   */
-  fun observeStudentsByClass(className: String): Flow<List<Student>> =
-      dao.observeStudentsByClass(className).map { items -> items.map { it.toModel() } }
+  fun observeStudents(companyId: Int): Flow<List<Student>> =
+      dao.observeStudents(companyId).map { items -> items.map { it.toModel() } }
 
-  /**
-   * Observa alterações de certificates e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<List<Certificate>>`.
-   */
-  fun observeCertificates(): Flow<List<Certificate>> =
-      dao.observeCertificates().map { items -> items.map { it.toModel() } }
+  fun observeStudentsByClass(companyId: Int, className: String): Flow<List<Student>> =
+      dao.observeStudentsByClass(companyId, className).map { items -> items.map { it.toModel() } }
 
-  /**
-   * Observa alterações de calendar events e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<List<CalendarEvent>>`.
-   */
-  fun observeCalendarEvents(): Flow<List<CalendarEvent>> =
-      dao.observeCalendarEvents().map { items -> items.map { it.toModel() } }
+  // ── Certificates (filtered by company) ────────────────────────────────
 
-  /**
-   * Observa alterações de recent activities e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<List<RecentActivity>>`.
-   */
-  fun observeRecentActivities(): Flow<List<RecentActivity>> =
-      dao.observeRecentActivities().map { items -> items.map { it.toModel() } }
+  fun observeCertificates(companyId: Int): Flow<List<Certificate>> =
+      dao.observeCertificates(companyId).map { items -> items.map { it.toModel() } }
 
-  /** Observa atividades recentes com limite máximo de itens para telas de resumo. */
-  fun observeRecentActivities(limit: Int): Flow<List<RecentActivity>> =
-      dao.observeRecentActivitiesLimited(limit).map { items -> items.map { it.toModel() } }
+  // ── Calendar Events (filtered by company) ─────────────────────────────
 
-  /** Observa uma página de atividades recentes mapeada para o modelo de domínio. */
-  fun observeRecentActivitiesPaged(limit: Int, offset: Int): Flow<List<RecentActivity>> =
-      dao.observeRecentActivitiesPaged(limit, offset).map { items -> items.map { it.toModel() } }
+  fun observeCalendarEvents(companyId: Int): Flow<List<CalendarEvent>> =
+      dao.observeCalendarEvents(companyId).map { items -> items.map { it.toModel() } }
 
-  /** Observa o total de atividades recentes de forma reativa. */
-  fun observeRecentActivitiesCount(): Flow<Int> = dao.observeRecentActivitiesCount()
+  // ── Recent Activities (filtered by company) ───────────────────────────
 
-  /**
-   * Observa alterações de home quick stats e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<List<QuickStat>>`.
-   */
-  fun observeHomeQuickStats(): Flow<List<QuickStat>> =
+  fun observeRecentActivities(companyId: Int): Flow<List<RecentActivity>> =
+      dao.observeRecentActivities(companyId).map { items -> items.map { it.toModel() } }
+
+  fun observeRecentActivities(companyId: Int, limit: Int): Flow<List<RecentActivity>> =
+      dao.observeRecentActivitiesLimited(companyId, limit).map { items -> items.map { it.toModel() } }
+
+  fun observeRecentActivitiesPaged(companyId: Int, limit: Int, offset: Int): Flow<List<RecentActivity>> =
+      dao.observeRecentActivitiesPaged(companyId, limit, offset).map { items -> items.map { it.toModel() } }
+
+  fun observeRecentActivitiesCount(companyId: Int): Flow<Int> =
+      dao.observeRecentActivitiesCount(companyId)
+
+  // ── Home Quick Stats (filtered by company) ────────────────────────────
+
+  fun observeHomeQuickStats(companyId: Int): Flow<List<QuickStat>> =
       combine(
-          dao.observeStudentsByStatusCount(StudentStatus.Active),
-          dao.observePublishedCoursesCount(),
-          dao.observeClassesCount(),
-          dao.observeAverageCompletionRate(),
+          dao.observeStudentsByStatusCount(companyId, StudentStatus.Active),
+          dao.observePublishedCoursesCount(companyId),
+          dao.observeClassesCount(companyId),
+          dao.observeAverageCompletionRate(companyId),
           dataSourceLabelResFlow,
       ) { activeStudents, publishedCourses, classesCount, completionRate, dataSourceLabelRes ->
         listOf(
@@ -285,28 +291,25 @@ class AppRepository(
         )
       }
 
-  /**
-   * Observa alterações de report summary e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<ReportSummary>`.
-   */
-  fun observeReportSummary(): Flow<ReportSummary> =
+  // ── Report Summary (filtered by company) ──────────────────────────────
+
+  fun observeReportSummary(companyId: Int): Flow<ReportSummary> =
       combine(
           combine(
-              dao.observeStudentsByStatusCount(StudentStatus.Active),
-              dao.observePublishedCoursesCount(),
+              dao.observeStudentsByStatusCount(companyId, StudentStatus.Active),
+              dao.observePublishedCoursesCount(companyId),
           ) { activeStudents, activeCourses ->
             activeStudents to activeCourses
           },
           combine(
-              dao.observeClassesCount(),
-              dao.observeAverageCompletionRate(),
+              dao.observeClassesCount(companyId),
+              dao.observeAverageCompletionRate(companyId),
           ) { classesCount, completionRate ->
             classesCount to completionRate
           },
           combine(
-              dao.observeCertificatesCount(),
-              dao.observeAverageTeacherRating(),
+              dao.observeCertificatesCount(companyId),
+              dao.observeAverageTeacherRating(companyId),
           ) { certificates, rating ->
             certificates to rating
           },
@@ -321,38 +324,23 @@ class AppRepository(
         )
       }
 
-  /**
-   * Observa alterações de course completion metrics e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<List<CourseCompletionMetric>>`.
-   */
-  fun observeCourseCompletionMetrics(): Flow<List<CourseCompletionMetric>> =
-      dao.observeCourses().map { courses ->
+  fun observeCourseCompletionMetrics(companyId: Int): Flow<List<CourseCompletionMetric>> =
+      dao.observeCourses(companyId).map { courses ->
         courses
             .map { CourseCompletionMetric(name = it.title, rate = it.completionRate) }
             .sortedByDescending { it.rate }
       }
 
-  /**
-   * Observa alterações de monthly enrollment metrics e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<List<MonthlyEnrollmentMetric>>`.
-   */
-  fun observeMonthlyEnrollmentMetrics(): Flow<List<MonthlyEnrollmentMetric>> =
-      dao.observeMonthlyEnrollments().map { items ->
+  fun observeMonthlyEnrollmentMetrics(companyId: Int): Flow<List<MonthlyEnrollmentMetric>> =
+      dao.observeMonthlyEnrollments(companyId).map { items ->
         items.map { MonthlyEnrollmentMetric(month = it.month, count = it.count) }
       }
 
-  /**
-   * Observa alterações de status distribution metrics e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<List<StatusDistributionMetric>>`.
-   */
-  fun observeStatusDistribution(): Flow<List<StatusDistributionMetric>> =
+  fun observeStatusDistribution(companyId: Int): Flow<List<StatusDistributionMetric>> =
       combine(
-          dao.observeStudentsByStatusCount(StudentStatus.Active),
-          dao.observeStudentsByStatusCount(StudentStatus.Inactive),
-          dao.observeStudentsByStatusCount(StudentStatus.Graduated),
+          dao.observeStudentsByStatusCount(companyId, StudentStatus.Active),
+          dao.observeStudentsByStatusCount(companyId, StudentStatus.Inactive),
+          dao.observeStudentsByStatusCount(companyId, StudentStatus.Graduated),
       ) { active, inactive, graduated ->
         listOf(
             StatusDistributionMetric(StudentStatus.Active, active),
@@ -361,12 +349,8 @@ class AppRepository(
         )
       }
 
-  /**
-   * Observa alterações de student monitoring snapshot e publica atualizações reativas.
-   *
-   * @param studentId Valor de entrada utilizado por esta operação.
-   * @return Resultado produzido pela operação em formato `Flow<StudentMonitoringSnapshot?>`.
-   */
+  // ── Student Monitoring ────────────────────────────────────────────────
+
   fun observeStudentMonitoringSnapshot(studentId: Int): Flow<StudentMonitoringSnapshot?> =
       combine(
           dao.observeStudentById(studentId),
@@ -398,11 +382,8 @@ class AppRepository(
         }
       }
 
-  /**
-   * Observa alterações de settings e publica atualizações reativas.
-   *
-   * @return Resultado produzido pela operação em formato `Flow<AppSettings>`.
-   */
+  // ── Settings ──────────────────────────────────────────────────────────
+
   fun observeSettings(): Flow<AppSettings> =
       dao.observeSettings().map {
         if (it == null) {
@@ -417,18 +398,8 @@ class AppRepository(
         }
       }
 
-  /**
-   * Observa alterações de registered users for admin e publica atualizações reativas.
-   *
-   * @param requester Valor de entrada utilizado por esta operação.
-   * @return Resultado produzido pela operação em formato `Flow<List<AppUser>>`.
-   */
-  /**
-   * Observa alterações de um usuário específico por ID e publica atualizações reativas.
-   *
-   * @param userId Identificador do usuário desejado.
-   * @return Resultado produzido pela operação em formato `Flow<AppUser?>`.
-   */
+  // ── Users ─────────────────────────────────────────────────────────────
+
   fun observeUserById(userId: Int): Flow<AppUser?> =
       dao.observeUserById(userId).map { it?.toModel() }
 
@@ -440,13 +411,6 @@ class AppRepository(
     }
   }
 
-  /**
-   * Executa a rotina de upsert registered user for admin dentro do contexto deste componente.
-   *
-   * @param requester Valor de entrada utilizado por esta operação.
-   * @param user Valor de entrada utilizado por esta operação.
-   * @param plainPassword Valor de entrada utilizado por esta operação.
-   */
   suspend fun upsertRegisteredUserForAdmin(
       requester: AppUser?,
       user: AppUser,
@@ -461,41 +425,23 @@ class AppRepository(
     dao.upsertUser(user.toEntity(passwordHash = sha256(plainPassword)))
   }
 
-  /**
-   * Executa a rotina de update dark mode dentro do contexto deste componente.
-   *
-   * @param enabled Valor de entrada utilizado por esta operação.
-   */
+  // ── Settings updates ──────────────────────────────────────────────────
+
   suspend fun updateDarkMode(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(darkMode = enabled))
   }
 
-  /**
-   * Executa a rotina de update push enabled dentro do contexto deste componente.
-   *
-   * @param enabled Valor de entrada utilizado por esta operação.
-   */
   suspend fun updatePushEnabled(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(pushEnabled = enabled))
   }
 
-  /**
-   * Executa a rotina de update email enabled dentro do contexto deste componente.
-   *
-   * @param enabled Valor de entrada utilizado por esta operação.
-   */
   suspend fun updateEmailEnabled(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(emailEnabled = enabled))
   }
 
-  /**
-   * Executa a rotina de update language dentro do contexto deste componente.
-   *
-   * @param language Valor de entrada utilizado por esta operação.
-   */
   suspend fun updateLanguage(language: String) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(language = language))
@@ -541,7 +487,6 @@ class AppRepository(
     }
   }
 
-  /** Executa a rotina de default settings entity dentro do contexto deste componente. */
   private fun defaultSettingsEntity() =
       AppSettingsEntity(
           id = 1,
@@ -551,6 +496,12 @@ class AppRepository(
           language = "pt",
       )
 }
+
+private fun CompanyEntity.toModel() =
+    Company(id = id, name = name, cnpj = cnpj, isActive = isActive)
+
+private fun Company.toEntity() =
+    CompanyEntity(id = id, name = name, cnpj = cnpj, isActive = isActive)
 
 /** Executa a rotina de course entity dentro do contexto deste componente. */
 private fun CourseEntity.toModel() =
