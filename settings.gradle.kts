@@ -49,3 +49,5 @@ include(":feature:calendar")
 include(":feature:settings")
 
 include(":feature:users")
+
+include(":feature:companies")
