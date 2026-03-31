@@ -285,7 +285,7 @@ SideEffect {
   a sincronização Firebase falha
 - [ ] **Revisar acessibilidade (a11y)**: adicionar `contentDescription` em todos os ícones
   interativos e verificar contraste WCAG AA na paleta de cores
-- [ ] **Implementar gráficos interativos em Relatórios**: substituir listagem de métricas
+- [x] **Implementar gráficos interativos em Relatórios**: substituir listagem de métricas
   por gráfico de barras (matriculas mensais) e gráfico de pizza (distribuição de status)
   com biblioteca como Vico ou MPAndroidChart para Compose
 - [ ] **Adicionar animações de transição entre telas**: usar `AnimatedNavHost` com
