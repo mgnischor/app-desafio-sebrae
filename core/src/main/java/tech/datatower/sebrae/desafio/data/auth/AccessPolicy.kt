@@ -37,6 +37,7 @@ enum class ProtectedResource {
   Users,
   Calendar,
   Settings,
+  Companies,
 }
 
 /** Ações suportadas pelas regras de autorização da aplicação. */
@@ -99,6 +100,7 @@ object AccessPolicy {
       ProtectedResource.Settings ->
           action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
       ProtectedResource.Users -> false
+      ProtectedResource.Companies -> false
     }
   }
 
@@ -112,7 +114,8 @@ object AccessPolicy {
       ProtectedResource.Settings ->
           action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
       ProtectedResource.Teachers,
-      ProtectedResource.Users -> false
+      ProtectedResource.Users,
+      ProtectedResource.Companies -> false
     }
   }
 }
