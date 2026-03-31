@@ -103,6 +103,7 @@ fun SettingsScreen(
     currentUser: AppUser? = null,
     onBack: () -> Unit = {},
     onOpenUserManagement: () -> Unit = {},
+    onOpenCompanyManagement: () -> Unit = {},
 ) {
   val viewModel: SettingsViewModel = hiltViewModel()
   val settings by viewModel.settings.collectAsState()
@@ -168,6 +169,12 @@ fun SettingsScreen(
                 title = "Usuários",
                 subtitle = "Cadastro e controle de acesso",
                 onClick = onOpenUserManagement,
+            )
+            SettingsItem(
+                icon = Icons.Outlined.Storage,
+                title = "Empresas",
+                subtitle = "Cadastro e gestão de empresas",
+                onClick = onOpenCompanyManagement,
             )
           }
         }
