@@ -33,9 +33,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.local.CalendarEventEntity
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.CalendarEvent
@@ -53,9 +56,12 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
+  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
   val events: StateFlow<List<CalendarEvent>> =
-      repository
-          .observeCalendarEvents()
+      companyId
+          .filterNotNull()
+          .flatMapLatest { cid -> repository.observeCalendarEvents(cid) }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   val groupedEvents: StateFlow<List<Map.Entry<String, List<CalendarEvent>>>> =
