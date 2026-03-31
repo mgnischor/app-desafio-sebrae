@@ -38,6 +38,7 @@ import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import tech.datatower.sebrae.desafio.data.repository.CourseCompletionMetric
 import tech.datatower.sebrae.desafio.data.repository.MonthlyEnrollmentMetric
 import tech.datatower.sebrae.desafio.data.repository.ReportSummary
+import tech.datatower.sebrae.desafio.data.repository.StatusDistributionMetric
 import javax.inject.Inject
 
 @HiltViewModel
@@ -72,6 +73,11 @@ constructor(
   val monthlyEnrollments: StateFlow<List<MonthlyEnrollmentMetric>> =
       repository
           .observeMonthlyEnrollmentMetrics()
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+  val statusDistribution: StateFlow<List<StatusDistributionMetric>> =
+      repository
+          .observeStatusDistribution()
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   init {
