@@ -92,7 +92,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -135,16 +134,12 @@ fun HomeScreen(
     onLogout: () -> Unit = {},
 ) {
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
-  val context = LocalContext.current
   val viewModel: HomeViewModel = hiltViewModel()
 
   val allModules = rememberModules()
-  val moduleTitleMap =
-      remember(allModules, context) { allModules.associateBy { context.getString(it.titleRes) } }
-  val moduleDescriptionMap =
-      remember(allModules, context) {
-        allModules.associateBy { context.getString(it.descriptionRes) }
-      }
+  // Resolve string resources in composable scope for locale-awareness (proper Compose pattern)
+  val allTitles = allModules.map { stringResource(it.titleRes) }
+  val allDescriptions = allModules.map { stringResource(it.descriptionRes) }
   val modules = remember(allModules, user) { filterModulesByRole(allModules, user?.role) }
   val canSeeBackofficeRecents =
       remember(user?.role) {
@@ -157,20 +152,19 @@ fun HomeScreen(
   LaunchedEffect(user?.id, user?.role) { viewModel.observeRealtimeActivities(user) }
 
   val filteredModules by
-      remember(query, modules) {
+      remember(query, modules, allTitles, allDescriptions) {
         derivedStateOf {
           val normalizedQuery = query.trim()
           if (normalizedQuery.isBlank()) {
             modules
           } else {
-            modules.filter {
-              moduleTitleMap.keys.any { title ->
-                title.contains(normalizedQuery, ignoreCase = true) && moduleTitleMap[title] == it
-              } ||
-                  moduleDescriptionMap.keys.any { desc ->
-                    desc.contains(normalizedQuery, ignoreCase = true) &&
-                        moduleDescriptionMap[desc] == it
-                  }
+            modules.filter { module ->
+              val idx = allModules.indexOf(module)
+              if (idx < 0) false
+              else {
+                allTitles[idx].contains(normalizedQuery, ignoreCase = true) ||
+                    allDescriptions[idx].contains(normalizedQuery, ignoreCase = true)
+              }
             }
           }
         }
