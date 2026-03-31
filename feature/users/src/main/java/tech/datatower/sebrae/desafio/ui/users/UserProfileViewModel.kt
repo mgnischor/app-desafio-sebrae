@@ -34,7 +34,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.model.Student
@@ -97,39 +101,44 @@ constructor(
 
   private fun observeProfile() {
     viewModelScope.launch {
-      combine(
-              repository.observeUserById(userId),
-              repository.observeTeachers(),
-              repository.observeStudents(),
-              repository.observeClasses(),
-          ) { user, teachers, students, classes ->
-            if (user == null) {
-              return@combine ProfileState.Error("Usuário não encontrado.")
+      AuthManager.currentCompany
+          .map { it?.id }
+          .filterNotNull()
+          .flatMapLatest { cid ->
+            combine(
+                repository.observeUserById(userId),
+                repository.observeTeachers(cid),
+                repository.observeStudents(cid),
+                repository.observeClasses(cid),
+            ) { user, teachers, students, classes ->
+              if (user == null) {
+                return@combine ProfileState.Error("Usuário não encontrado.")
+              }
+
+              // Vincula pelo e-mail — mesma pessoa pode ser instrutor e aluno
+              val teacher = teachers.firstOrNull { it.email.equals(user.email, ignoreCase = true) }
+              val student = students.firstOrNull { it.email.equals(user.email, ignoreCase = true) }
+
+              val classesTaught =
+                  teacher?.let { t ->
+                    classes.filter { it.instructor.equals(t.name, ignoreCase = true) }
+                  } ?: emptyList()
+
+              val classesEnrolled =
+                  student?.let { s ->
+                    classes.filter { it.name.equals(s.enrolledClass, ignoreCase = true) }
+                  } ?: emptyList()
+
+              ProfileState.Success(
+                  UserProfileData(
+                      user = user,
+                      teacherProfile = teacher,
+                      classesTaught = classesTaught,
+                      studentProfile = student,
+                      classesEnrolled = classesEnrolled,
+                  )
+              )
             }
-
-            // Vincula pelo e-mail — mesma pessoa pode ser instrutor e aluno
-            val teacher = teachers.firstOrNull { it.email.equals(user.email, ignoreCase = true) }
-            val student = students.firstOrNull { it.email.equals(user.email, ignoreCase = true) }
-
-            val classesTaught =
-                teacher?.let { t ->
-                  classes.filter { it.instructor.equals(t.name, ignoreCase = true) }
-                } ?: emptyList()
-
-            val classesEnrolled =
-                student?.let { s ->
-                  classes.filter { it.name.equals(s.enrolledClass, ignoreCase = true) }
-                } ?: emptyList()
-
-            ProfileState.Success(
-                UserProfileData(
-                    user = user,
-                    teacherProfile = teacher,
-                    classesTaught = classesTaught,
-                    studentProfile = student,
-                    classesEnrolled = classesEnrolled,
-                )
-            )
           }
           .collect { _state.value = it }
     }
