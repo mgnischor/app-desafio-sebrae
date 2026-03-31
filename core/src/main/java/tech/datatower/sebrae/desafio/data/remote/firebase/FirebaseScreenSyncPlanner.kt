@@ -46,6 +46,7 @@ enum class ScreenDataScope {
   CALENDAR,
   REPORTS,
   SETTINGS,
+  COMPANIES,
   APP_STARTUP,
 }
 
@@ -65,6 +66,8 @@ enum class FirebaseSyncTask {
   PSYCHOLOGICAL_NEEDS,
   PARENT_FOLLOW_UPS,
   SETTINGS,
+  COMPANIES,
+  USER_COMPANIES,
 }
 
 /**
@@ -117,8 +120,12 @@ object FirebaseScreenSyncPlanner {
               FirebaseSyncTask.MONTHLY_ENROLLMENTS,
           )
       ScreenDataScope.SETTINGS -> setOf(FirebaseSyncTask.SETTINGS)
+      ScreenDataScope.COMPANIES ->
+          setOf(FirebaseSyncTask.COMPANIES, FirebaseSyncTask.USER_COMPANIES)
       ScreenDataScope.APP_STARTUP ->
           setOf(
+              FirebaseSyncTask.COMPANIES,
+              FirebaseSyncTask.USER_COMPANIES,
               FirebaseSyncTask.COURSES,
               FirebaseSyncTask.CLASSES,
               FirebaseSyncTask.STUDENTS,
