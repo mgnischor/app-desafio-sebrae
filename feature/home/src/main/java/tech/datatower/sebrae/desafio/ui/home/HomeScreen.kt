@@ -54,6 +54,7 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.InsertChart
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.UnfoldMore
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Search
@@ -98,7 +99,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.core.R
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.AppUser
+import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.model.MenuModule
 import tech.datatower.sebrae.desafio.data.model.QuickStat
 import tech.datatower.sebrae.desafio.data.model.RealtimeNotificationRules
@@ -131,10 +134,13 @@ fun HomeScreen(
     onModuleClick: (String) -> Unit = {},
     onOpenRecentActivities: () -> Unit = {},
     onNotificationsClick: () -> Unit = {},
+    onOpenCompanySelector: () -> Unit = {},
     onLogout: () -> Unit = {},
 ) {
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
   val viewModel: HomeViewModel = hiltViewModel()
+  val currentCompany by AuthManager.currentCompany.collectAsState()
+  val userCompanies by AuthManager.userCompanies.collectAsState()
 
   val allModules = rememberModules()
   // Resolve string resources in composable scope for locale-awareness (proper Compose pattern)
@@ -192,6 +198,9 @@ fun HomeScreen(
         HomeTopBar(
             scrollBehavior = scrollBehavior,
             notificationCount = notificationCount,
+            companyName = currentCompany?.name,
+            showCompanySwitcher = userCompanies.size > 1,
+            onCompanySwitcherClick = onOpenCompanySelector,
             onNotificationsClick = onNotificationsClick,
             onLogout = onLogout,
         )
@@ -302,6 +311,9 @@ fun HomeScreen(
 private fun HomeTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     notificationCount: Int,
+    companyName: String? = null,
+    showCompanySwitcher: Boolean = false,
+    onCompanySwitcherClick: () -> Unit = {},
     onNotificationsClick: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -330,11 +342,34 @@ private fun HomeTopBar(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = stringResource(R.string.home_subtitle),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (companyName != null) {
+              Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  modifier = if (showCompanySwitcher) {
+                    Modifier.clip(RoundedCornerShape(4.dp)).clickable { onCompanySwitcherClick() }
+                  } else Modifier,
+              ) {
+                Text(
+                    text = companyName,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (showCompanySwitcher) {
+                  Icon(
+                      imageVector = Icons.Outlined.UnfoldMore,
+                      contentDescription = null,
+                      modifier = Modifier.size(14.dp),
+                      tint = MaterialTheme.colorScheme.primary,
+                  )
+                }
+              }
+            } else {
+              Text(
+                  text = stringResource(R.string.home_subtitle),
+                  style = MaterialTheme.typography.labelSmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
           }
         }
       },
