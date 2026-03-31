@@ -1,0 +1,29 @@
+{
+    "project_info": {
+        "project_number": "432808237362",
+        "project_id": "desafiosebrae-9a73f",
+        "storage_bucket": "desafiosebrae-9a73f.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:432808237362:android:32016c279b32b93ed61f2b",
+                "android_client_info": {
+                    "package_name": "tech.datatower.sebrae.desafio"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyBUZM4DTdxUinbnNazKqU3BBnNeDE2HAGQ"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}
