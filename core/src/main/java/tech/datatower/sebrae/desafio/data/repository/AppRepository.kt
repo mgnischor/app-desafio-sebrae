@@ -96,6 +96,12 @@ data class MonthlyEnrollmentMetric(
     val count: Int,
 )
 
+/** Modelo e comportamento relacionados a status distribution metric. */
+data class StatusDistributionMetric(
+    val status: StudentStatus,
+    val count: Int,
+)
+
 /** Centraliza operações de dados relacionadas a app. */
 class AppRepository(
     private val database: AppDatabase,
@@ -335,6 +341,24 @@ class AppRepository(
   fun observeMonthlyEnrollmentMetrics(): Flow<List<MonthlyEnrollmentMetric>> =
       dao.observeMonthlyEnrollments().map { items ->
         items.map { MonthlyEnrollmentMetric(month = it.month, count = it.count) }
+      }
+
+  /**
+   * Observa alterações de status distribution metrics e publica atualizações reativas.
+   *
+   * @return Resultado produzido pela operação em formato `Flow<List<StatusDistributionMetric>>`.
+   */
+  fun observeStatusDistribution(): Flow<List<StatusDistributionMetric>> =
+      combine(
+          dao.observeStudentsByStatusCount(StudentStatus.Active),
+          dao.observeStudentsByStatusCount(StudentStatus.Inactive),
+          dao.observeStudentsByStatusCount(StudentStatus.Graduated),
+      ) { active, inactive, graduated ->
+        listOf(
+            StatusDistributionMetric(StudentStatus.Active, active),
+            StatusDistributionMetric(StudentStatus.Inactive, inactive),
+            StatusDistributionMetric(StudentStatus.Graduated, graduated),
+        )
       }
 
   /**
