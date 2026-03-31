@@ -31,8 +31,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import tech.datatower.sebrae.desafio.data.repository.CourseCompletionMetric
@@ -49,9 +53,12 @@ constructor(
     dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
+  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
   val summary: StateFlow<ReportSummary> =
-      repository
-          .observeReportSummary()
+      companyId
+          .filterNotNull()
+          .flatMapLatest { cid -> repository.observeReportSummary(cid) }
           .stateIn(
               viewModelScope,
               SharingStarted.WhileSubscribed(5_000),
@@ -66,18 +73,21 @@ constructor(
           )
 
   val courseCompletion: StateFlow<List<CourseCompletionMetric>> =
-      repository
-          .observeCourseCompletionMetrics()
+      companyId
+          .filterNotNull()
+          .flatMapLatest { cid -> repository.observeCourseCompletionMetrics(cid) }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   val monthlyEnrollments: StateFlow<List<MonthlyEnrollmentMetric>> =
-      repository
-          .observeMonthlyEnrollmentMetrics()
+      companyId
+          .filterNotNull()
+          .flatMapLatest { cid -> repository.observeMonthlyEnrollmentMetrics(cid) }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   val statusDistribution: StateFlow<List<StatusDistributionMetric>> =
-      repository
-          .observeStatusDistribution()
+      companyId
+          .filterNotNull()
+          .flatMapLatest { cid -> repository.observeStatusDistribution(cid) }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   init {
