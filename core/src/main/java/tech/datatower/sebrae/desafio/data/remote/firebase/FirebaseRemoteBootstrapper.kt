@@ -45,7 +45,7 @@ class FirebaseRemoteBootstrapper(
    * @return Resultado produzido pela operação em formato `Boolean`.
    */
   override suspend fun bootstrapIntoLocalCache(): Boolean {
-    val localHasData = dao.countCourses() > 0
+    val localHasData = dao.countCourses(companyId = 0) > 0
     val shouldHydrateFromRemote = !localHasData
     // Foundation step: keep the contract and lifecycle in place without forcing runtime setup.
     // The next increment should fetch Firestore collections and upsert into Room tables.
