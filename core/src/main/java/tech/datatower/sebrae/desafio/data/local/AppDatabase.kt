@@ -50,10 +50,28 @@ import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.model.UserRole
 import java.time.LocalDate
 
+/** Modelo e comportamento relacionados a company entity. */
+@Entity(tableName = "companies")
+data class CompanyEntity(
+    @PrimaryKey val id: Int,
+    val name: String,
+    val cnpj: String = "",
+    val isActive: Boolean = true,
+)
+
+/** Associação entre usuário e empresa (controle de acesso multi-tenant). */
+@Entity(tableName = "user_companies")
+data class UserCompanyEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val userId: Int,
+    val companyId: Int,
+)
+
 /** Modelo e comportamento relacionados a course entity. */
 @Entity(tableName = "courses")
 data class CourseEntity(
     @PrimaryKey val id: Int,
+    val companyId: Int,
     val title: String,
     val category: String,
     val instructor: String,
@@ -67,6 +85,7 @@ data class CourseEntity(
 @Entity(tableName = "school_classes")
 data class SchoolClassEntity(
     @PrimaryKey val id: Int,
+    val companyId: Int,
     val name: String,
     val course: String,
     val instructor: String,
@@ -80,6 +99,7 @@ data class SchoolClassEntity(
 @Entity(tableName = "teachers")
 data class TeacherEntity(
     @PrimaryKey val id: Int,
+    val companyId: Int,
     val name: String,
     val email: String,
     val specialty: String,
@@ -93,6 +113,7 @@ data class TeacherEntity(
 @Entity(tableName = "students")
 data class StudentEntity(
     @PrimaryKey val id: Int,
+    val companyId: Int,
     val name: String,
     val email: String,
     val course: String,
@@ -105,6 +126,7 @@ data class StudentEntity(
 @Entity(tableName = "certificates")
 data class CertificateEntity(
     @PrimaryKey val id: Int,
+    val companyId: Int,
     val studentName: String,
     val courseName: String,
     val issuedDate: String,
@@ -116,6 +138,7 @@ data class CertificateEntity(
 @Entity(tableName = "calendar_events")
 data class CalendarEventEntity(
     @PrimaryKey val id: Int,
+    val companyId: Int,
     val title: String,
     val course: String,
     val date: String,
@@ -128,6 +151,7 @@ data class CalendarEventEntity(
 @Entity(tableName = "recent_activities")
 data class RecentActivityEntity(
     @PrimaryKey val id: Int,
+    val companyId: Int,
     val title: String,
     val subtitle: String,
     val iconKey: String,
@@ -137,7 +161,9 @@ data class RecentActivityEntity(
 /** Modelo e comportamento relacionados a monthly enrollment entity. */
 @Entity(tableName = "monthly_enrollments")
 data class MonthlyEnrollmentEntity(
-    @PrimaryKey val month: String,
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val companyId: Int,
+    val month: String,
     val count: Int,
 )
 
@@ -145,6 +171,7 @@ data class MonthlyEnrollmentEntity(
 @Entity(tableName = "attendance_records")
 data class AttendanceEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val companyId: Int,
     val studentId: Int,
     val date: LocalDate,
     val status: AttendanceStatus,
@@ -156,6 +183,7 @@ data class AttendanceEntity(
 @Entity(tableName = "behavior_records")
 data class BehaviorEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val companyId: Int,
     val studentId: Int,
     val date: LocalDate,
     val participationScore: Int,
@@ -169,6 +197,7 @@ data class BehaviorEntity(
 @Entity(tableName = "pedagogical_needs")
 data class PedagogicalNeedEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val companyId: Int,
     val studentId: Int,
     val type: PedagogicalNeedType,
     val description: String,
@@ -180,6 +209,7 @@ data class PedagogicalNeedEntity(
 @Entity(tableName = "psychological_needs")
 data class PsychologicalNeedEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val companyId: Int,
     val studentId: Int,
     val summary: String,
     val confidentiality: ConfidentialityLevel,
@@ -191,6 +221,7 @@ data class PsychologicalNeedEntity(
 @Entity(tableName = "parent_follow_ups")
 data class ParentFollowUpEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val companyId: Int,
     val studentId: Int,
     val date: LocalDate,
     val channel: ParentContactChannel,
@@ -238,15 +269,71 @@ class AppConverters {
       if (value.isBlank()) emptyList() else value.split("||")
 }
 
-/** Contrato que define opera??es para app dao. */
+/** Contrato que define operações para app dao. */
 @Dao
 interface AppDao {
-  /**
-   * Executa a rotina de insert courses dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
-  @Query("SELECT COUNT(*) FROM courses") suspend fun countCourses(): Int
+
+  // ── Company CRUD ──────────────────────────────────────────────────────────
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertCompanies(items: List<CompanyEntity>)
+
+  @Upsert suspend fun upsertCompany(item: CompanyEntity)
+
+  @Query("SELECT * FROM companies ORDER BY name") fun observeCompanies(): Flow<List<CompanyEntity>>
+
+  @Query("SELECT * FROM companies WHERE isActive = 1 ORDER BY name")
+  fun observeActiveCompanies(): Flow<List<CompanyEntity>>
+
+  @Query("SELECT * FROM companies WHERE id = :companyId LIMIT 1")
+  fun observeCompanyById(companyId: Int): Flow<CompanyEntity?>
+
+  @Query("SELECT * FROM companies ORDER BY name") suspend fun getCompaniesOnce(): List<CompanyEntity>
+
+  @Query("DELETE FROM companies WHERE id = :companyId") suspend fun deleteCompanyById(companyId: Int)
+
+  @Query("DELETE FROM companies") suspend fun clearCompanies()
+
+  // ── UserCompany CRUD ──────────────────────────────────────────────────────
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertUserCompanies(items: List<UserCompanyEntity>)
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertUserCompany(item: UserCompanyEntity)
+
+  @Query("SELECT c.* FROM companies c INNER JOIN user_companies uc ON c.id = uc.companyId WHERE uc.userId = :userId ORDER BY c.name")
+  fun observeCompaniesForUser(userId: Int): Flow<List<CompanyEntity>>
+
+  @Query("SELECT c.* FROM companies c INNER JOIN user_companies uc ON c.id = uc.companyId WHERE uc.userId = :userId ORDER BY c.name")
+  suspend fun getCompaniesForUserOnce(userId: Int): List<CompanyEntity>
+
+  @Query("SELECT * FROM user_companies WHERE userId = :userId AND companyId = :companyId LIMIT 1")
+  suspend fun getUserCompany(userId: Int, companyId: Int): UserCompanyEntity?
+
+  @Query("SELECT * FROM user_companies WHERE userId = :userId")
+  fun observeUserCompanies(userId: Int): Flow<List<UserCompanyEntity>>
+
+  @Query("SELECT userId FROM user_companies WHERE companyId = :companyId")
+  fun observeUserIdsByCompany(companyId: Int): Flow<List<Int>>
+
+  @Query("SELECT * FROM user_companies") suspend fun getUserCompaniesOnce(): List<UserCompanyEntity>
+
+  @Query("DELETE FROM user_companies WHERE userId = :userId AND companyId = :companyId")
+  suspend fun deleteUserCompany(userId: Int, companyId: Int)
+
+  @Query("DELETE FROM user_companies WHERE userId = :userId")
+  suspend fun deleteUserCompaniesForUser(userId: Int)
+
+  @Query("DELETE FROM user_companies WHERE companyId = :companyId")
+  suspend fun deleteUserCompaniesForCompany(companyId: Int)
+
+  @Query("DELETE FROM user_companies") suspend fun clearUserCompanies()
+
+  // ── Courses (filtered by company) ─────────────────────────────────────────
+
+  @Query("SELECT COUNT(*) FROM courses WHERE companyId = :companyId")
+  suspend fun countCourses(companyId: Int): Int
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertCourses(items: List<CourseEntity>)
@@ -257,355 +344,164 @@ interface AppDao {
    * @param courseId Valor de entrada utilizado por esta opera??o.
    * @return Resultado produzido pela opera??o em formato `Flow<CourseEntity?> @Insert(onConflict`.
    */
-  @Query("SELECT * FROM courses ORDER BY title") fun observeCourses(): Flow<List<CourseEntity>>
+  @Query("SELECT * FROM courses WHERE companyId = :companyId ORDER BY title")
+  fun observeCourses(companyId: Int): Flow<List<CourseEntity>>
 
   @Query("SELECT * FROM courses WHERE id = :courseId LIMIT 1")
   fun observeCourseById(courseId: Int): Flow<CourseEntity?>
 
-  /**
-   * Executa a rotina de insert classes dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
+  // ── Classes (filtered by company) ─────────────────────────────────────────
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertClasses(items: List<SchoolClassEntity>)
 
-  /**
-   * Observa altera??es de classes e publica atualiza??es reativas.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<SchoolClassEntity>> @Query("SELECT * FROM school_classes WHERE id`.
-   */
-  @Query("SELECT * FROM school_classes ORDER BY name")
-  fun observeClasses(): Flow<List<SchoolClassEntity>>
+  @Query("SELECT * FROM school_classes WHERE companyId = :companyId ORDER BY name")
+  fun observeClasses(companyId: Int): Flow<List<SchoolClassEntity>>
 
-  /**
-   * Observa altera??es de class by id e publica atualiza??es reativas.
-   *
-   * @param classId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<SchoolClassEntity?> @Query("SELECT *
-   *   FROM school_classes WHERE course`.
-   */
   @Query("SELECT * FROM school_classes WHERE id = :classId LIMIT 1")
   fun observeClassById(classId: Int): Flow<SchoolClassEntity?>
 
-  /**
-   * Observa altera??es de classes by course e publica atualiza??es reativas.
-   *
-   * @param courseName Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<SchoolClassEntity>> @Query("SELECT * FROM school_classes WHERE instructor`.
-   */
-  @Query("SELECT * FROM school_classes WHERE course = :courseName ORDER BY name")
-  fun observeClassesByCourse(courseName: String): Flow<List<SchoolClassEntity>>
+  @Query("SELECT * FROM school_classes WHERE companyId = :companyId AND course = :courseName ORDER BY name")
+  fun observeClassesByCourse(companyId: Int, courseName: String): Flow<List<SchoolClassEntity>>
 
-  /**
-   * Observa altera??es de classes by teacher e publica atualiza??es reativas.
-   *
-   * @param teacherName Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<SchoolClassEntity>> @Insert(onConflict`.
-   */
-  @Query("SELECT * FROM school_classes WHERE instructor = :teacherName ORDER BY name")
-  fun observeClassesByTeacher(teacherName: String): Flow<List<SchoolClassEntity>>
+  @Query("SELECT * FROM school_classes WHERE companyId = :companyId AND instructor = :teacherName ORDER BY name")
+  fun observeClassesByTeacher(companyId: Int, teacherName: String): Flow<List<SchoolClassEntity>>
 
-  /**
-   * Executa a rotina de insert teachers dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
+  // ── Teachers (filtered by company) ────────────────────────────────────────
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertTeachers(items: List<TeacherEntity>)
 
-  /**
-   * Observa altera??es de teacher by id e publica atualiza??es reativas.
-   *
-   * @param teacherId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<TeacherEntity?> @Insert(onConflict`.
-   */
-  @Query("SELECT * FROM teachers ORDER BY name") fun observeTeachers(): Flow<List<TeacherEntity>>
+  @Query("SELECT * FROM teachers WHERE companyId = :companyId ORDER BY name")
+  fun observeTeachers(companyId: Int): Flow<List<TeacherEntity>>
 
   @Query("SELECT * FROM teachers WHERE id = :teacherId LIMIT 1")
   fun observeTeacherById(teacherId: Int): Flow<TeacherEntity?>
 
-  /**
-   * Executa a rotina de insert students dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
+  // ── Students (filtered by company) ────────────────────────────────────────
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertStudents(items: List<StudentEntity>)
 
-  /**
-   * Observa altera??es de student by id e publica atualiza??es reativas.
-   *
-   * @param studentId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<StudentEntity?> @Query("SELECT *
-   *   FROM students WHERE enrolledClass`.
-   */
-  @Query("SELECT * FROM students ORDER BY name") fun observeStudents(): Flow<List<StudentEntity>>
+  @Query("SELECT * FROM students WHERE companyId = :companyId ORDER BY name")
+  fun observeStudents(companyId: Int): Flow<List<StudentEntity>>
 
   @Query("SELECT * FROM students WHERE id = :studentId LIMIT 1")
   fun observeStudentById(studentId: Int): Flow<StudentEntity?>
 
-  /**
-   * Observa altera??es de students by class e publica atualiza??es reativas.
-   *
-   * @param className Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<StudentEntity>> @Insert(onConflict`.
-   */
-  @Query("SELECT * FROM students WHERE enrolledClass = :className ORDER BY name")
-  fun observeStudentsByClass(className: String): Flow<List<StudentEntity>>
+  @Query("SELECT * FROM students WHERE companyId = :companyId AND enrolledClass = :className ORDER BY name")
+  fun observeStudentsByClass(companyId: Int, className: String): Flow<List<StudentEntity>>
 
-  /**
-   * Executa a rotina de insert certificates dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
+  // ── Certificates (filtered by company) ────────────────────────────────────
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertCertificates(items: List<CertificateEntity>)
 
-  /**
-   * Observa altera??es de certificates e publica atualiza??es reativas.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<CertificateEntity>> @Insert(onConflict`.
-   */
-  @Query("SELECT * FROM certificates ORDER BY id DESC")
-  fun observeCertificates(): Flow<List<CertificateEntity>>
+  @Query("SELECT * FROM certificates WHERE companyId = :companyId ORDER BY id DESC")
+  fun observeCertificates(companyId: Int): Flow<List<CertificateEntity>>
 
-  /**
-   * Executa a rotina de insert calendar events dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
+  // ── Calendar Events (filtered by company) ─────────────────────────────────
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertCalendarEvents(items: List<CalendarEventEntity>)
 
-  /**
-   * Observa altera??es de calendar events e publica atualiza??es reativas.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<CalendarEventEntity>> @Insert(onConflict`.
-   */
-  @Query("SELECT * FROM calendar_events ORDER BY date, time")
-  fun observeCalendarEvents(): Flow<List<CalendarEventEntity>>
+  @Query("SELECT * FROM calendar_events WHERE companyId = :companyId ORDER BY date, time")
+  fun observeCalendarEvents(companyId: Int): Flow<List<CalendarEventEntity>>
 
-  /**
-   * Executa a rotina de insert recent activities dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
+  // ── Recent Activities (filtered by company) ───────────────────────────────
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertRecentActivities(items: List<RecentActivityEntity>)
 
-  /**
-   * Observa altera??es de recent activities e publica atualiza??es reativas.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<RecentActivityEntity>> @Insert(onConflict`.
-   */
-  @Query("SELECT * FROM recent_activities ORDER BY id DESC")
-  fun observeRecentActivities(): Flow<List<RecentActivityEntity>>
+  @Query("SELECT * FROM recent_activities WHERE companyId = :companyId ORDER BY id DESC")
+  fun observeRecentActivities(companyId: Int): Flow<List<RecentActivityEntity>>
 
-  /** Observa apenas as atividades recentes mais novas para uso no painel inicial. */
-  @Query("SELECT * FROM recent_activities ORDER BY id DESC LIMIT :limit")
-  fun observeRecentActivitiesLimited(limit: Int): Flow<List<RecentActivityEntity>>
+  @Query("SELECT * FROM recent_activities WHERE companyId = :companyId ORDER BY id DESC LIMIT :limit")
+  fun observeRecentActivitiesLimited(companyId: Int, limit: Int): Flow<List<RecentActivityEntity>>
 
-  /** Observa uma página específica de atividades recentes (paginação por offset). */
-  @Query("SELECT * FROM recent_activities ORDER BY id DESC LIMIT :limit OFFSET :offset")
-  fun observeRecentActivitiesPaged(limit: Int, offset: Int): Flow<List<RecentActivityEntity>>
+  @Query("SELECT * FROM recent_activities WHERE companyId = :companyId ORDER BY id DESC LIMIT :limit OFFSET :offset")
+  fun observeRecentActivitiesPaged(companyId: Int, limit: Int, offset: Int): Flow<List<RecentActivityEntity>>
 
-  /** Observa o total de atividades recentes de forma reativa. */
-  @Query("SELECT COUNT(*) FROM recent_activities") fun observeRecentActivitiesCount(): Flow<Int>
+  @Query("SELECT COUNT(*) FROM recent_activities WHERE companyId = :companyId")
+  fun observeRecentActivitiesCount(companyId: Int): Flow<Int>
 
-  /** Retorna o maior identificador atual de atividade recente. */
   @Query("SELECT MAX(id) FROM recent_activities") suspend fun getMaxRecentActivityId(): Int?
 
-  /**
-   * Executa a rotina de insert monthly enrollments dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
+  // ── Monthly Enrollments (filtered by company) ─────────────────────────────
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertMonthlyEnrollments(items: List<MonthlyEnrollmentEntity>)
 
-  /**
-   * Observa altera??es de monthly enrollments e publica atualiza??es reativas.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<MonthlyEnrollmentEntity>> @Insert(onConflict`.
-   */
-  @Query("SELECT * FROM monthly_enrollments ORDER BY rowid")
-  fun observeMonthlyEnrollments(): Flow<List<MonthlyEnrollmentEntity>>
+  @Query("SELECT * FROM monthly_enrollments WHERE companyId = :companyId ORDER BY month")
+  fun observeMonthlyEnrollments(companyId: Int): Flow<List<MonthlyEnrollmentEntity>>
 
-  /**
-   * Executa a rotina de insert attendance dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
+  // ── Attendance / Behavior / Needs (student-level, filtered by company) ────
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertAttendance(items: List<AttendanceEntity>)
 
-  /**
-   * Observa altera??es de attendance e publica atualiza??es reativas.
-   *
-   * @param studentId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<AttendanceEntity>> @Insert(onConflict`.
-   */
   @Query("SELECT * FROM attendance_records WHERE studentId = :studentId ORDER BY date DESC")
   fun observeAttendance(studentId: Int): Flow<List<AttendanceEntity>>
 
-  /**
-   * Executa a rotina de insert behaviors dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertBehaviors(items: List<BehaviorEntity>)
 
-  /**
-   * Observa altera??es de behaviors e publica atualiza??es reativas.
-   *
-   * @param studentId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<BehaviorEntity>> @Insert(onConflict`.
-   */
   @Query("SELECT * FROM behavior_records WHERE studentId = :studentId ORDER BY date DESC")
   fun observeBehaviors(studentId: Int): Flow<List<BehaviorEntity>>
 
-  /**
-   * Executa a rotina de insert pedagogical needs dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertPedagogicalNeeds(items: List<PedagogicalNeedEntity>)
 
-  /**
-   * Observa altera??es de pedagogical needs e publica atualiza??es reativas.
-   *
-   * @param studentId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<PedagogicalNeedEntity>> @Insert(onConflict`.
-   */
   @Query("SELECT * FROM pedagogical_needs WHERE studentId = :studentId")
   fun observePedagogicalNeeds(studentId: Int): Flow<List<PedagogicalNeedEntity>>
 
-  /**
-   * Executa a rotina de insert psychological needs dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertPsychologicalNeeds(items: List<PsychologicalNeedEntity>)
 
-  /**
-   * Observa altera??es de psychological needs e publica atualiza??es reativas.
-   *
-   * @param studentId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<PsychologicalNeedEntity>> @Insert(onConflict`.
-   */
   @Query("SELECT * FROM psychological_needs WHERE studentId = :studentId")
   fun observePsychologicalNeeds(studentId: Int): Flow<List<PsychologicalNeedEntity>>
 
-  /**
-   * Executa a rotina de insert parent follow ups dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertParentFollowUps(items: List<ParentFollowUpEntity>)
 
-  /**
-   * Observa altera??es de parent follow ups e publica atualiza??es reativas.
-   *
-   * @param studentId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `Flow<List<ParentFollowUpEntity>> @Query("SELECT COUNT(*) FROM students WHERE status`.
-   */
   @Query("SELECT * FROM parent_follow_ups WHERE studentId = :studentId ORDER BY date DESC")
   fun observeParentFollowUps(studentId: Int): Flow<List<ParentFollowUpEntity>>
 
-  /**
-   * Observa altera??es de students by status count e publica atualiza??es reativas.
-   *
-   * @param status Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<Int> @Query("SELECT COUNT(*) FROM
-   *   courses WHERE isPublished`.
-   */
-  @Query("SELECT COUNT(*) FROM students WHERE status = :status")
-  fun observeStudentsByStatusCount(status: StudentStatus): Flow<Int>
+  // ── Aggregate stats (filtered by company) ─────────────────────────────────
 
-  /**
-   * Observa altera??es de published courses count e publica atualiza??es reativas.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<Int> @Query("SELECT COUNT(*) FROM
-   *   school_classes") fun observeClassesCount(): Flow<Int> @Query("SELECT COUNT(*) FROM
-   *   certificates") fun observeCertificatesCount(): Flow<Int> @Query("SELECT AVG(completionRate)
-   *   FROM courses") fun observeAverageCompletionRate(): Flow<Float?> @Query("SELECT AVG(rating)
-   *   FROM teachers") fun observeAverageTeacherRating(): Flow<Float?> @Query("SELECT * FROM
-   *   settings WHERE id`.
-   */
-  @Query("SELECT COUNT(*) FROM courses WHERE isPublished = 1")
-  fun observePublishedCoursesCount(): Flow<Int>
+  @Query("SELECT COUNT(*) FROM students WHERE companyId = :companyId AND status = :status")
+  fun observeStudentsByStatusCount(companyId: Int, status: StudentStatus): Flow<Int>
 
-  /**
-   * Observa altera??es de settings e publica atualiza??es reativas.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<AppSettingsEntity?> @Query("SELECT *
-   *   FROM settings WHERE id`.
-   */
-  @Query("SELECT COUNT(*) FROM school_classes") fun observeClassesCount(): Flow<Int>
+  @Query("SELECT COUNT(*) FROM courses WHERE companyId = :companyId AND isPublished = 1")
+  fun observePublishedCoursesCount(companyId: Int): Flow<Int>
 
-  @Query("SELECT COUNT(*) FROM certificates") fun observeCertificatesCount(): Flow<Int>
+  @Query("SELECT COUNT(*) FROM school_classes WHERE companyId = :companyId")
+  fun observeClassesCount(companyId: Int): Flow<Int>
 
-  @Query("SELECT AVG(completionRate) FROM courses") fun observeAverageCompletionRate(): Flow<Float?>
+  @Query("SELECT COUNT(*) FROM certificates WHERE companyId = :companyId")
+  fun observeCertificatesCount(companyId: Int): Flow<Int>
 
-  @Query("SELECT AVG(rating) FROM teachers") fun observeAverageTeacherRating(): Flow<Float?>
+  @Query("SELECT AVG(completionRate) FROM courses WHERE companyId = :companyId")
+  fun observeAverageCompletionRate(companyId: Int): Flow<Float?>
+
+  @Query("SELECT AVG(rating) FROM teachers WHERE companyId = :companyId")
+  fun observeAverageTeacherRating(companyId: Int): Flow<Float?>
+
+  // ── Settings ──────────────────────────────────────────────────────────────
 
   @Query("SELECT * FROM settings WHERE id = 1 LIMIT 1")
   fun observeSettings(): Flow<AppSettingsEntity?>
 
-  /**
-   * Observa altera??es de settings once e publica atualiza??es reativas.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `AppSettingsEntity? @Upsert suspend fun
-   *   upsertSettings(settings: AppSettingsEntity)`.
-   */
   @Query("SELECT * FROM settings WHERE id = 1 LIMIT 1")
   suspend fun observeSettingsOnce(): AppSettingsEntity?
 
-  /**
-   * Executa a rotina de insert users dentro do contexto deste componente.
-   *
-   * @param items Valor de entrada utilizado por esta opera??o.
-   */
   @Upsert suspend fun upsertSettings(settings: AppSettingsEntity)
+
+  // ── Users ─────────────────────────────────────────────────────────────────
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertUsers(items: List<AppUserEntity>)
 
-  /**
-   * Obt?m dados necess?rios para classes once de forma consistente.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `List<SchoolClassEntity> @Query("SELECT *
-   *   FROM teachers ORDER BY id") suspend fun getTeachersOnce():
-   *   List<TeacherEntity> @Query("SELECT * FROM students ORDER BY id") suspend fun
-   *   getStudentsOnce(): List<StudentEntity> @Query("SELECT * FROM certificates ORDER BY id")`.
-   */
   @Upsert suspend fun upsertUser(item: AppUserEntity)
 
   @Query("SELECT * FROM app_users ORDER BY name") fun observeUsers(): Flow<List<AppUserEntity>>
@@ -615,16 +511,11 @@ interface AppDao {
 
   @Query("SELECT * FROM app_users ORDER BY name") suspend fun getUsersOnce(): List<AppUserEntity>
 
+  // ── One-shot reads (for Firebase sync) ────────────────────────────────────
+
   @Query("SELECT * FROM school_classes ORDER BY id")
   suspend fun getClassesOnce(): List<SchoolClassEntity>
 
-  /**
-   * Obt?m dados necess?rios para certificates once de forma consistente.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `List<CertificateEntity> @Query("SELECT *
-   *   FROM calendar_events ORDER BY id")`.
-   */
   @Query("SELECT * FROM teachers ORDER BY id") suspend fun getTeachersOnce(): List<TeacherEntity>
 
   @Query("SELECT * FROM students ORDER BY id") suspend fun getStudentsOnce(): List<StudentEntity>
@@ -632,99 +523,44 @@ interface AppDao {
   @Query("SELECT * FROM certificates ORDER BY id")
   suspend fun getCertificatesOnce(): List<CertificateEntity>
 
-  /**
-   * Obt?m dados necess?rios para calendar events once de forma consistente.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `List<CalendarEventEntity> @Query("SELECT * FROM recent_activities ORDER BY id")`.
-   */
   @Query("SELECT * FROM calendar_events ORDER BY id")
   suspend fun getCalendarEventsOnce(): List<CalendarEventEntity>
 
-  /**
-   * Obt?m dados necess?rios para recent activities once de forma consistente.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `List<RecentActivityEntity> @Query("SELECT * FROM monthly_enrollments ORDER BY rowid")`.
-   */
   @Query("SELECT * FROM recent_activities ORDER BY id")
   suspend fun getRecentActivitiesOnce(): List<RecentActivityEntity>
 
-  /**
-   * Obt?m dados necess?rios para monthly enrollments once de forma consistente.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `List<MonthlyEnrollmentEntity> @Query("SELECT * FROM attendance_records ORDER BY id")`.
-   */
-  @Query("SELECT * FROM monthly_enrollments ORDER BY rowid")
+  @Query("SELECT * FROM monthly_enrollments ORDER BY id")
   suspend fun getMonthlyEnrollmentsOnce(): List<MonthlyEnrollmentEntity>
 
-  /**
-   * Obt?m dados necess?rios para attendance once de forma consistente.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `List<AttendanceEntity> @Query("SELECT *
-   *   FROM behavior_records ORDER BY id")`.
-   */
   @Query("SELECT * FROM attendance_records ORDER BY id")
   suspend fun getAttendanceOnce(): List<AttendanceEntity>
 
-  /**
-   * Obt?m dados necess?rios para behaviors once de forma consistente.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `List<BehaviorEntity> @Query("SELECT *
-   *   FROM pedagogical_needs ORDER BY id")`.
-   */
   @Query("SELECT * FROM behavior_records ORDER BY id")
   suspend fun getBehaviorsOnce(): List<BehaviorEntity>
 
-  /**
-   * Obt?m dados necess?rios para pedagogical needs once de forma consistente.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `List<PedagogicalNeedEntity> @Query("SELECT * FROM psychological_needs ORDER BY id")`.
-   */
   @Query("SELECT * FROM pedagogical_needs ORDER BY id")
   suspend fun getPedagogicalNeedsOnce(): List<PedagogicalNeedEntity>
 
-  /**
-   * Obt?m dados necess?rios para psychological needs once de forma consistente.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato
-   *   `List<PsychologicalNeedEntity> @Query("SELECT * FROM parent_follow_ups ORDER BY id")`.
-   */
   @Query("SELECT * FROM psychological_needs ORDER BY id")
   suspend fun getPsychologicalNeedsOnce(): List<PsychologicalNeedEntity>
 
-  /**
-   * Obt?m dados necess?rios para parent follow ups once de forma consistente.
-   *
-   * @param ) Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `List<ParentFollowUpEntity> } @Database(
-   *   entities`.
-   */
   @Query("SELECT * FROM parent_follow_ups ORDER BY id")
   suspend fun getParentFollowUpsOnce(): List<ParentFollowUpEntity>
 
-  /** Remove um aluno específico do armazenamento local. */
+  // ── Deletes ───────────────────────────────────────────────────────────────
+
   @Query("DELETE FROM students WHERE id = :studentId") suspend fun deleteStudentById(studentId: Int)
 
-  /** Remove um curso específico do armazenamento local. */
   @Query("DELETE FROM courses WHERE id = :courseId") suspend fun deleteCourseById(courseId: Int)
 
-  /** Remove uma turma específica do armazenamento local. */
   @Query("DELETE FROM school_classes WHERE id = :classId") suspend fun deleteClassById(classId: Int)
 
-  /** Remove um instrutor específico do armazenamento local. */
   @Query("DELETE FROM teachers WHERE id = :teacherId") suspend fun deleteTeacherById(teacherId: Int)
 
-  /** Limpa dados operacionais do app preservando usuários para evitar perda de acesso. */
+  @Query("DELETE FROM app_users WHERE id = :userId") suspend fun deleteUserById(userId: Int)
+
+  // ── Clear all ─────────────────────────────────────────────────────────────
+
   @Query("DELETE FROM courses") suspend fun clearCourses()
 
   @Query("DELETE FROM school_classes") suspend fun clearClasses()
@@ -751,16 +587,14 @@ interface AppDao {
 
   @Query("DELETE FROM parent_follow_ups") suspend fun clearParentFollowUps()
 
-  /** Remove todos os usuários cadastrados do armazenamento local (usado no reset completo). */
   @Query("DELETE FROM app_users") suspend fun clearUsers()
-
-  /** Remove um usuário específico do armazenamento local pelo seu ID. */
-  @Query("DELETE FROM app_users WHERE id = :userId") suspend fun deleteUserById(userId: Int)
 }
 
 @Database(
     entities =
         [
+            CompanyEntity::class,
+            UserCompanyEntity::class,
             CourseEntity::class,
             SchoolClassEntity::class,
             TeacherEntity::class,
@@ -777,7 +611,7 @@ interface AppDao {
             AppSettingsEntity::class,
             AppUserEntity::class,
         ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 /** Modelo e comportamento relacionados a app database. */
