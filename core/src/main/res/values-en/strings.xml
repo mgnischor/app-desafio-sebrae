@@ -239,6 +239,7 @@
     <string name="label_average_rating">Average Rating</string>
     <string name="label_completion_by_course">Completion Rate by Course</string>
     <string name="label_enrollments_by_month">Enrollments by Month</string>
+    <string name="label_status_distribution">Status Distribution</string>
 
     <!-- Settings Screen -->
     <string name="settings_title">Settings</string>
@@ -303,7 +304,9 @@
     <string name="settings_item_reset_database">Reset database</string>
     <string name="settings_subtitle_reset_database">Erase all local and Firebase data</string>
     <string name="settings_reset_database_confirm_title">Confirm full reset</string>
-    <string name="settings_reset_database_confirm_message">This action will irreversibly erase all local and Firebase operational data — courses, students, classes, certificates and reports. Registered users will be preserved. Do you want to continue?</string>
+    <string name="settings_reset_database_confirm_message">This action will irreversibly erase all
+        local and Firebase operational data — courses, students, classes, certificates and reports.
+        Registered users will be preserved. Do you want to continue?</string>
     <string name="settings_reset_database_action">Reset all</string>
     <string name="settings_reset_database_success">Database reset successfully.</string>
     <string name="settings_reset_database_cancel">Cancel</string>
@@ -345,4 +348,59 @@
     <string name="course_create_instructor">Instructor</string>
     <string name="student_create_course">Course</string>
     <string name="student_create_class">Class</string>
+
+    <!-- Create Screens -->
+    <string name="student_create_title">New student</string>
+    <string name="student_create_name">Name</string>
+    <string name="student_create_email">Email</string>
+    <string name="student_create_progress">Progress (%%)</string>
+    <string name="student_create_status">Status</string>
+    <string name="student_create_save">Save student</string>
+    <string name="student_create_error_required">Fill in the required fields.</string>
+    <string name="student_create_error_progress">Progress must be between 0 and 100.</string>
+    <string name="student_create_success">Student saved successfully.</string>
+    <string name="student_create_error_save">Failed to save student.</string>
+
+    <string name="class_create_title">New class</string>
+    <string name="class_create_name">Class name</string>
+    <string name="class_create_students_count">Enrolled students</string>
+    <string name="class_create_capacity">Maximum capacity</string>
+    <string name="class_create_schedule">Schedule</string>
+    <string name="class_create_status">Status</string>
+    <string name="class_create_save">Save class</string>
+    <string name="class_create_error_required">Fill in the required fields.</string>
+    <string name="class_create_error_capacity">Review student count and class capacity.</string>
+    <string name="class_create_success">Class saved successfully.</string>
+    <string name="class_create_error_save">Failed to save class.</string>
+
+    <string name="teacher_create_title">New instructor</string>
+    <string name="teacher_create_name">Name</string>
+    <string name="teacher_create_email">Email</string>
+    <string name="teacher_create_specialty">Specialty</string>
+    <string name="teacher_create_active_courses">Active courses</string>
+    <string name="teacher_create_total_students">Total students</string>
+    <string name="teacher_create_rating">Rating (0.0 to 5.0)</string>
+    <string name="teacher_create_save">Save instructor</string>
+    <string name="teacher_create_error_required">Fill in the required fields.</string>
+    <string name="teacher_create_error_numeric">Review numeric fields.</string>
+    <string name="teacher_create_success">Instructor saved successfully.</string>
+    <string name="teacher_create_error_save">Failed to save instructor.</string>
+
+    <string name="course_create_title">New course</string>
+    <string name="course_create_title_label">Title</string>
+    <string name="course_create_category">Category</string>
+    <string name="course_create_students">Students count</string>
+    <string name="course_create_duration">Workload (h)</string>
+    <string name="course_create_completion">Completion rate (%%)</string>
+    <string name="course_create_published">Published</string>
+    <string name="course_create_yes">Yes</string>
+    <string name="course_create_no">No</string>
+    <string name="course_create_save">Save course</string>
+    <string name="course_create_error_required">Fill in title, category and instructor.</string>
+    <string name="course_create_error_numeric">Review numeric fields.</string>
+    <string name="course_create_success">Course saved successfully.</string>
+    <string name="course_create_error_save">Failed to save course.</string>
+
+    <!-- Offline -->
+    <string name="offline_banner_message">No connection — showing locally saved data</string>
 </resources>
