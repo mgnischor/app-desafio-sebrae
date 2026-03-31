@@ -37,8 +37,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -47,18 +49,35 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.data.columnSeries
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
+import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import tech.datatower.sebrae.desafio.core.R
+import tech.datatower.sebrae.desafio.data.model.StudentStatus
+import tech.datatower.sebrae.desafio.data.repository.CourseCompletionMetric
+import tech.datatower.sebrae.desafio.data.repository.MonthlyEnrollmentMetric
+import tech.datatower.sebrae.desafio.data.repository.StatusDistributionMetric
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 import java.util.Locale
@@ -75,6 +94,7 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
   val summary by viewModel.summary.collectAsState()
   val courseCompletion by viewModel.courseCompletion.collectAsState()
   val monthly by viewModel.monthlyEnrollments.collectAsState()
+  val statusDistribution by viewModel.statusDistribution.collectAsState()
 
   DetailScaffold(title = stringResource(R.string.reports_title), onBack = onBack) { innerPadding, _
     ->
@@ -128,10 +148,12 @@ fun ReportsScreen(onBack: () -> Unit = {}) {
           )
         }
       }
+      item { SectionHeader(stringResource(R.string.label_enrollments_by_month)) }
+      item { EnrollmentBarChart(monthly) }
+      item { SectionHeader(stringResource(R.string.label_status_distribution)) }
+      item { StatusPieChart(statusDistribution) }
       item { SectionHeader(stringResource(R.string.label_completion_by_course)) }
       item { CourseCompletionReport(courseCompletion) }
-      item { SectionHeader(stringResource(R.string.label_enrollments_by_month)) }
-      item { EnrollmentMonthlyReport(monthly) }
     }
   }
 }
@@ -196,7 +218,7 @@ private fun KpiCard(value: String, label: String, modifier: Modifier = Modifier)
  */
 @Composable
 private fun CourseCompletionReport(
-    items: List<tech.datatower.sebrae.desafio.data.repository.CourseCompletionMetric>
+    items: List<CourseCompletionMetric>
 ) {
   ElevatedCard(
       modifier = Modifier.fillMaxWidth(),
@@ -237,13 +259,142 @@ private fun CourseCompletionReport(
 }
 
 /**
+ * Executa a rotina de enrollment bar chart dentro do contexto deste componente.
+ *
+ * @param items Valor de entrada utilizado por esta operação.
+ */
+private val BottomLabelKey = ExtraStore.Key<List<String>>()
+
+private val BottomAxisValueFormatter = CartesianValueFormatter { context, x, _ ->
+  context.model.extraStore.getOrNull(BottomLabelKey)?.getOrNull(x.toInt()) ?: ""
+}
+
+@Composable
+private fun EnrollmentBarChart(
+    items: List<MonthlyEnrollmentMetric>
+) {
+  if (items.isEmpty()) return
+  val modelProducer = remember { CartesianChartModelProducer() }
+  LaunchedEffect(items) {
+    modelProducer.runTransaction {
+      columnSeries { series(y = items.map { it.count }) }
+      extras { it[BottomLabelKey] = items.map { item -> item.month } }
+    }
+  }
+  ElevatedCard(
+      modifier = Modifier.fillMaxWidth(),
+      shape = RoundedCornerShape(16.dp),
+      colors =
+          CardDefaults.elevatedCardColors(
+              containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+          ),
+      elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
+  ) {
+    CartesianChartHost(
+        chart =
+            rememberCartesianChart(
+                rememberColumnCartesianLayer(),
+                startAxis = VerticalAxis.rememberStart(),
+                bottomAxis =
+                    HorizontalAxis.rememberBottom(
+                        valueFormatter = BottomAxisValueFormatter,
+                        itemPlacer = remember { HorizontalAxis.ItemPlacer.segmented() },
+                    ),
+            ),
+        modelProducer = modelProducer,
+        modifier = Modifier.fillMaxWidth().height(220.dp).padding(8.dp),
+        zoomState = rememberVicoZoomState(zoomEnabled = false),
+    )
+  }
+}
+
+/**
+ * Executa a rotina de status pie chart dentro do contexto deste componente.
+ *
+ * @param items Valor de entrada utilizado por esta operação.
+ */
+@Composable
+private fun StatusPieChart(
+    items: List<StatusDistributionMetric>
+) {
+  val total = items.sumOf { it.count }.toFloat()
+  if (total == 0f) return
+  val sliceColors =
+      listOf(
+          MaterialTheme.colorScheme.primary,
+          MaterialTheme.colorScheme.secondary,
+          MaterialTheme.colorScheme.tertiary,
+      )
+  val statusLabels =
+      mapOf(
+          StudentStatus.Active to stringResource(R.string.status_active),
+          StudentStatus.Inactive to stringResource(R.string.status_inactive),
+          StudentStatus.Graduated to stringResource(R.string.status_graduated),
+      )
+  ElevatedCard(
+      modifier = Modifier.fillMaxWidth(),
+      shape = RoundedCornerShape(16.dp),
+      colors =
+          CardDefaults.elevatedCardColors(
+              containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+          ),
+      elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
+  ) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+      androidx.compose.foundation.Canvas(modifier = Modifier.size(120.dp)) {
+        var startAngle = -90f
+        items.forEachIndexed { index, item ->
+          val sweep = (item.count.toFloat() / total) * 360f
+          drawArc(
+              color = sliceColors[index % sliceColors.size],
+              startAngle = startAngle,
+              sweepAngle = sweep,
+              useCenter = true,
+          )
+          startAngle += sweep
+        }
+        drawCircle(
+            color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0f),
+            radius = size.minDimension / 4f,
+            style = Stroke(width = size.minDimension / 2.5f),
+        )
+      }
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items.forEachIndexed { index, item ->
+          val pct = if (total > 0f) ((item.count.toFloat() / total) * 100).toInt() else 0
+          Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            Box(
+                modifier =
+                    Modifier.size(12.dp)
+                        .clip(CircleShape)
+                        .background(sliceColors[index % sliceColors.size]))
+            Text(
+                text = "${statusLabels[item.status]}: ${item.count} ($pct%)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
  * Executa a rotina de enrollment monthly report dentro do contexto deste componente.
  *
  * @param items Valor de entrada utilizado por esta operação.
  */
 @Composable
 private fun EnrollmentMonthlyReport(
-    items: List<tech.datatower.sebrae.desafio.data.repository.MonthlyEnrollmentMetric>
+    items: List<MonthlyEnrollmentMetric>
 ) {
   val maxCount = items.maxOfOrNull { it.count } ?: 1
   ElevatedCard(
