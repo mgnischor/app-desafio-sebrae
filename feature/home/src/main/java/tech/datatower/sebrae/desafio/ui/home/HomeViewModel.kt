@@ -34,8 +34,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.QuickStat
 import tech.datatower.sebrae.desafio.data.model.RecentActivity
@@ -52,14 +56,18 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
+  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
   val stats: StateFlow<List<QuickStat>> =
-      repository
-          .observeHomeQuickStats()
+      companyId
+          .filterNotNull()
+          .flatMapLatest { cid -> repository.observeHomeQuickStats(cid) }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   val recentActivities: StateFlow<List<RecentActivity>> =
-      repository
-          .observeRecentActivities(limit = 5)
+      companyId
+          .filterNotNull()
+          .flatMapLatest { cid -> repository.observeRecentActivities(cid, limit = 5) }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   private val _isSyncing = MutableStateFlow(false)
