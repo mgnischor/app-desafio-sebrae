@@ -32,10 +32,14 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
@@ -54,6 +58,7 @@ constructor(
 ) : ViewModel() {
 
   private val teacherId: Int = checkNotNull(savedStateHandle[AppRoutes.TEACHER_ID_ARG])
+  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
   val teacher: StateFlow<Teacher?> =
       repository
@@ -61,10 +66,10 @@ constructor(
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
   val classes: StateFlow<List<SchoolClass>> =
-      teacher
-          .flatMapLatest { t ->
+      combine(teacher, companyId.filterNotNull()) { t, cid -> t to cid }
+          .flatMapLatest { (t, cid) ->
             val name = t?.name ?: return@flatMapLatest flowOf(emptyList())
-            repository.observeClassesByTeacher(name)
+            repository.observeClassesByTeacher(cid, name)
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
