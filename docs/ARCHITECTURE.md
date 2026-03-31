@@ -34,7 +34,7 @@ com o padrão **Repository** e injeção de dependências via **Hilt**.
 │  Jetpack Compose Screens + Shared Components         │
 │  (login, home, students, courses, classes,           │
 │   teachers, reports, certificates, calendar,         │
-│   settings, users)                                   │
+│   settings, users, companies)                        │
 └───────────────────────┬──────────────────────────────┘
                         │ coleta StateFlow / Flow
 ┌───────────────────────▼──────────────────────────────┐
@@ -117,7 +117,8 @@ tech.datatower.sebrae.desafio/
     ├── certificates/             # CertificatesScreen
     ├── calendar/                 # CalendarScreen
     ├── settings/                 # SettingsScreen
-    └── users/                    # UserManagementScreen
+    ├── users/                    # UserManagementScreen
+    └── companies/                # CompanyManagementScreen, CompanyDetailScreen, CompanySelectorScreen
 ```
 
 ---
@@ -202,7 +203,7 @@ Firebase Firestore
 O `FirebaseScreenSyncPlanner` aplica **mínimo de dados necessários por tela** (`ScreenDataScope`)
 para evitar downloads desnecessários. Cada tela solicita apenas as coleções que precisa:
 
-| Tela | Coleções sincronizadas |
+| TELA | Coleções sincronizadas |
 |---|---|
 | HOME | courses, classes, students, recent_activities |
 | COURSES / COURSE_DETAIL | courses, classes |
@@ -213,6 +214,63 @@ para evitar downloads desnecessários. Cada tela solicita apenas as coleções q
 | CALENDAR | calendar_events |
 | REPORTS | courses, classes, students, teachers, certificates, monthly_enrollments |
 | SETTINGS | settings |
+| COMPANIES | companies, user_companies |
+
+---
+
+## Multi-Tenancy (Empresas)
+
+O sistema suporta **múltiplas empresas (escolas)** com isolamento de dados por empresa. Cada
+registro de dados (cursos, turmas, alunos, professores, etc.) está vinculado a uma empresa
+através do campo `companyId`.
+
+### Modelo de Dados
+
+- **`CompanyEntity`** (tabela `companies`) — cadastro de empresas (id, name, cnpj, isActive).
+- **`UserCompanyEntity`** (tabela `user_companies`) — vínculo N:N entre usuários e empresas
+  (userId, companyId).
+- Todas as 13 entidades de dados (courses, students, classes, teachers, certificates,
+  calendar_events, recent_activities, monthly_enrollments, attendance, behaviors,
+  pedagogical_needs, psychological_needs, parent_follow_ups) possuem campo `companyId`.
+
+### Controle de Acesso por Empresa
+
+- **ADMINISTRADOR** — acesso a todas as empresas ativas; pode criar, editar e excluir empresas;
+  pode vincular/desvincular usuários a empresas.
+- **COORDENADOR / PROFESSOR** — acesso somente às empresas explicitamente vinculadas via
+  `user_companies`.
+
+### Fluxo de Seleção de Empresa
+
+1. Após login, `AuthManager.loadUserCompaniesFromFirestore()` carrega as empresas do usuário.
+2. A primeira empresa da lista é automaticamente selecionada como empresa ativa.
+3. No HomeScreen, o nome da empresa ativa aparece no TopAppBar. Se o usuário tem acesso a mais
+   de uma empresa, um botão permite abrir o `CompanySelectorScreen`.
+4. Ao trocar de empresa via `AuthManager.switchCompany()`, todos os ViewModels reativamente
+   filtram seus dados pelo novo `companyId` via `flatMapLatest`.
+
+### Filtragem por Empresa nos ViewModels
+
+Cada ViewModel observa `AuthManager.currentCompany` e usa `flatMapLatest` para reobservar os
+dados do `AppRepository` com o `companyId` correto:
+
+```kotlin
+private val companyId = AuthManager.currentCompany
+    .map { it?.id }
+    .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+val data = companyId.filterNotNull().flatMapLatest { cid ->
+    repository.observeXxx(cid)
+}.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+```
+
+### Telas de Empresa
+
+| Tela | Rota | Descrição |
+|---|---|---|
+| CompanyManagementScreen | `companies` | CRUD de empresas (admin) |
+| CompanyDetailScreen | `companies/{companyId}` | Edição + gestão de usuários vinculados |
+| CompanySelectorScreen | `company_selector` | Troca de empresa ativa |
 
 ---
 
