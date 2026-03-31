@@ -40,6 +40,9 @@ import tech.datatower.sebrae.desafio.ui.certificates.CertificatesScreen
 import tech.datatower.sebrae.desafio.ui.classes.ClassCreateScreen
 import tech.datatower.sebrae.desafio.ui.classes.ClassDetailScreen
 import tech.datatower.sebrae.desafio.ui.classes.ClassesScreen
+import tech.datatower.sebrae.desafio.ui.companies.CompanyDetailScreen
+import tech.datatower.sebrae.desafio.ui.companies.CompanyManagementScreen
+import tech.datatower.sebrae.desafio.ui.companies.CompanySelectorScreen
 import tech.datatower.sebrae.desafio.ui.courses.CourseCreateScreen
 import tech.datatower.sebrae.desafio.ui.courses.CourseDetailScreen
 import tech.datatower.sebrae.desafio.ui.courses.CoursesScreen
@@ -87,6 +90,7 @@ fun AppNavHost(navController: NavHostController) {
           user = currentUser,
           onModuleClick = { route -> navController.navigate(route) },
           onOpenRecentActivities = { navController.navigate(AppRoutes.RECENT_ACTIVITIES) },
+          onOpenCompanySelector = { navController.navigate(AppRoutes.COMPANY_SELECTOR) },
           onLogout = {
             AuthManager.logout()
             navController.navigate(AppRoutes.LOGIN) { popUpTo(AppRoutes.HOME) { inclusive = true } }
@@ -182,6 +186,7 @@ fun AppNavHost(navController: NavHostController) {
           currentUser = currentUser,
           onBack = { navController.popBackStack() },
           onOpenUserManagement = { navController.navigate(AppRoutes.USERS_MANAGEMENT) },
+          onOpenCompanyManagement = { navController.navigate(AppRoutes.COMPANIES_MANAGEMENT) },
       )
     }
     composable(AppRoutes.USERS_MANAGEMENT) {
@@ -196,6 +201,27 @@ fun AppNavHost(navController: NavHostController) {
         arguments = listOf(navArgument(AppRoutes.USER_ID_ARG) { type = NavType.IntType }),
     ) {
       UserProfileScreen(onBack = { navController.popBackStack() })
+    }
+    composable(AppRoutes.COMPANIES_MANAGEMENT) {
+      CompanyManagementScreen(
+          currentUser = currentUser,
+          onBack = { navController.popBackStack() },
+          onOpenCompanyDetail = { companyId ->
+            navController.navigate(AppRoutes.companyDetail(companyId))
+          },
+      )
+    }
+    composable(
+        route = AppRoutes.COMPANY_DETAIL,
+        arguments = listOf(navArgument(AppRoutes.COMPANY_ID_ARG) { type = NavType.IntType }),
+    ) {
+      CompanyDetailScreen(onBack = { navController.popBackStack() })
+    }
+    composable(AppRoutes.COMPANY_SELECTOR) {
+      CompanySelectorScreen(
+          onBack = { navController.popBackStack() },
+          onCompanySelected = { navController.popBackStack() },
+      )
     }
   }
 }
