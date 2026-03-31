@@ -33,8 +33,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Course
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
@@ -52,19 +56,24 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
+  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
   val students: StateFlow<List<Student>> =
-      repository
-          .observeStudents()
+      companyId
+          .filterNotNull()
+          .flatMapLatest { cid -> repository.observeStudents(cid) }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   val courses: StateFlow<List<Course>> =
-      repository
-          .observeCourses()
+      companyId
+          .filterNotNull()
+          .flatMapLatest { cid -> repository.observeCourses(cid) }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   val classes: StateFlow<List<SchoolClass>> =
-      repository
-          .observeClasses()
+      companyId
+          .filterNotNull()
+          .flatMapLatest { cid -> repository.observeClasses(cid) }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   sealed class SaveState {
