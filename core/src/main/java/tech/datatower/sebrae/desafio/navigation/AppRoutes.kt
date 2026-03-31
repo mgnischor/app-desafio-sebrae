@@ -39,6 +39,7 @@ object AppRoutes {
   const val CLASS_ID_ARG = "classId"
   const val TEACHER_ID_ARG = "teacherId"
   const val USER_ID_ARG = "userId"
+  const val COMPANY_ID_ARG = "companyId"
 
   /** Rota da tela de login. */
   const val LOGIN = "login"
@@ -89,6 +90,18 @@ object AppRoutes {
   /** Rota da tela de perfil de um usuário específico. */
   const val USER_PROFILE = "users/{$USER_ID_ARG}/profile"
 
+  /** Rota da tela de gestão de empresas (admin-only). */
+  const val COMPANIES_MANAGEMENT = "companies"
+
+  /** Rota da tela de criação de empresa. */
+  const val COMPANY_CREATE = "companies/new"
+
+  /** Rota da tela de detalhes/edição de empresa. */
+  const val COMPANY_DETAIL = "companies/{$COMPANY_ID_ARG}"
+
+  /** Rota da tela de seleção de empresa (company switcher). */
+  const val COMPANY_SELECTOR = "companies/select"
+
   /**
    * Monta a rota de acompanhamento do aluno substituindo o argumento dinâmico.
    *
@@ -128,4 +141,6 @@ object AppRoutes {
    * @return Rota final navegável para o perfil do usuário.
    */
   fun userProfile(userId: Int): String = "users/$userId/profile"
+
+  fun companyDetail(companyId: Int): String = "companies/$companyId"
 }
