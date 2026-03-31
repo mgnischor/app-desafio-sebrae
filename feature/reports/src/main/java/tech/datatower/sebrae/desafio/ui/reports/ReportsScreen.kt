@@ -217,9 +217,7 @@ private fun KpiCard(value: String, label: String, modifier: Modifier = Modifier)
  * @param items Valor de entrada utilizado por esta operação.
  */
 @Composable
-private fun CourseCompletionReport(
-    items: List<CourseCompletionMetric>
-) {
+private fun CourseCompletionReport(items: List<CourseCompletionMetric>) {
   ElevatedCard(
       modifier = Modifier.fillMaxWidth(),
       shape = RoundedCornerShape(16.dp),
@@ -270,9 +268,7 @@ private val BottomAxisValueFormatter = CartesianValueFormatter { context, x, _ -
 }
 
 @Composable
-private fun EnrollmentBarChart(
-    items: List<MonthlyEnrollmentMetric>
-) {
+private fun EnrollmentBarChart(items: List<MonthlyEnrollmentMetric>) {
   if (items.isEmpty()) return
   val modelProducer = remember { CartesianChartModelProducer() }
   LaunchedEffect(items) {
@@ -314,9 +310,7 @@ private fun EnrollmentBarChart(
  * @param items Valor de entrada utilizado por esta operação.
  */
 @Composable
-private fun StatusPieChart(
-    items: List<StatusDistributionMetric>
-) {
+private fun StatusPieChart(items: List<StatusDistributionMetric>) {
   val total = items.sumOf { it.count }.toFloat()
   if (total == 0f) return
   val sliceColors =
@@ -374,7 +368,8 @@ private fun StatusPieChart(
                 modifier =
                     Modifier.size(12.dp)
                         .clip(CircleShape)
-                        .background(sliceColors[index % sliceColors.size]))
+                        .background(sliceColors[index % sliceColors.size])
+            )
             Text(
                 text = "${statusLabels[item.status]}: ${item.count} ($pct%)",
                 style = MaterialTheme.typography.bodySmall,
@@ -393,9 +388,7 @@ private fun StatusPieChart(
  * @param items Valor de entrada utilizado por esta operação.
  */
 @Composable
-private fun EnrollmentMonthlyReport(
-    items: List<MonthlyEnrollmentMetric>
-) {
+private fun EnrollmentMonthlyReport(items: List<MonthlyEnrollmentMetric>) {
   val maxCount = items.maxOfOrNull { it.count } ?: 1
   ElevatedCard(
       modifier = Modifier.fillMaxWidth(),
