@@ -30,10 +30,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.model.Teacher
+import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
@@ -58,18 +59,25 @@ constructor(
 ) : ViewModel() {
 
   private val teacherId: Int = checkNotNull(savedStateHandle[AppRoutes.TEACHER_ID_ARG])
-  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
   val teacher: StateFlow<Teacher?> =
       repository
           .observeTeacherById(teacherId)
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   val classes: StateFlow<List<SchoolClass>> =
-      combine(teacher, companyId.filterNotNull()) { t, cid -> t to cid }
-          .flatMapLatest { (t, cid) ->
+      combine(teacher, AuthManager.currentUser, AuthManager.currentCompany) { t, user, company ->
+            Triple(t, user, company)
+          }
+          .flatMapLatest { (t, user, company) ->
             val name = t?.name ?: return@flatMapLatest flowOf(emptyList())
-            repository.observeClassesByTeacher(cid, name)
+            if (user?.role == UserRole.ADMINISTRADOR) {
+              repository.observeAllClasses().map { list -> list.filter { it.instructor == name } }
+            } else {
+              val cid = company?.id ?: return@flatMapLatest flowOf(emptyList())
+              repository.observeClassesByTeacher(cid, name)
+            }
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
