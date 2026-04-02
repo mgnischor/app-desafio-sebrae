@@ -29,18 +29,20 @@ package tech.datatower.sebrae.desafio.ui.classes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
+import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
@@ -54,12 +56,19 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
+  @OptIn(ExperimentalCoroutinesApi::class)
   val classes: StateFlow<List<SchoolClass>> =
-      companyId
-          .filterNotNull()
-          .flatMapLatest { cid -> repository.observeClasses(cid) }
+      combine(AuthManager.currentUser, AuthManager.currentCompany) { user, company ->
+            Pair(user, company)
+          }
+          .flatMapLatest { (user, company) ->
+            if (user?.role == UserRole.ADMINISTRADOR) {
+              repository.observeAllClasses()
+            } else {
+              val cid = company?.id ?: return@flatMapLatest flowOf(emptyList())
+              repository.observeClasses(cid)
+            }
+          }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   private val _isInitialLoading = MutableStateFlow(true)
