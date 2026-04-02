@@ -49,6 +49,13 @@ import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import tech.datatower.sebrae.desafio.navigation.AppRoutes
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de detalhes de professor.
+ *
+ * Carrega os dados do professor ([teacher]) e as turmas que ele ministra ([classes]) a partir
+ * do ID recebido via [SavedStateHandle]. Administradores vêem todas as turmas;
+ * demais perfis apenas as da empresa corrente.
+ */
 @HiltViewModel
 class TeacherDetailViewModel
 @Inject
@@ -60,11 +67,13 @@ constructor(
 
   private val teacherId: Int = checkNotNull(savedStateHandle[AppRoutes.TEACHER_ID_ARG])
 
+  /** Dados completos do professor identificado pelo ID recebido na navegação; `null` enquanto carrega. */
   val teacher: StateFlow<Teacher?> =
       repository
           .observeTeacherById(teacherId)
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+  /** Turmas ministradas por este professor, filtradas pela empresa ativa quando não-administrador. */
   @OptIn(ExperimentalCoroutinesApi::class)
   val classes: StateFlow<List<SchoolClass>> =
       combine(teacher, AuthManager.currentUser, AuthManager.currentCompany) { t, user, company ->
