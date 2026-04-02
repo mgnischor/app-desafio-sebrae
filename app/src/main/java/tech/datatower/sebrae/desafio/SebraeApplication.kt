@@ -34,7 +34,12 @@ import tech.datatower.sebrae.desafio.data.repository.AppGraph
 /** Ponto de entrada da aplicação, responsável por inicializar o Hilt e o bootstrapper remoto. */
 @HiltAndroidApp
 class SebraeApplication : Application() {
-  /** Trata o evento de create no contexto da aplicação. */
+  /**
+   * Inicializa o Hilt e pré-aquece os singletons pesados (Room + Firebase) via [AppGraph.warmUp]
+   * antes do primeiro frame da UI.
+   *
+   * @param savedInstanceState Estado previamente salvo pelo sistema Android (ignorado aqui).
+   */
   override fun onCreate() {
     super.onCreate()
     AppGraph.warmUp(this)
