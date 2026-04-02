@@ -41,6 +41,13 @@ import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import tech.datatower.sebrae.desafio.navigation.AppRoutes
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de monitoramento individual de aluno.
+ *
+ * Carrega o [snapshot] completo de desempenho do aluno (frequência, comportamento,
+ * necessidades pedagógicas/psicológicas e seguimentos com responsáveis) via observação reativa.
+ * O ID do aluno é recebido do [SavedStateHandle] via rota de navegação.
+ */
 @HiltViewModel
 class StudentMonitoringViewModel
 @Inject
@@ -52,6 +59,7 @@ constructor(
 
   private val studentId: Int = checkNotNull(savedStateHandle[AppRoutes.STUDENT_ID_ARG])
 
+  /** Snapshot completo de monitoramento do aluno; `null` até os dados estarem disponíveis. */
   val snapshot: StateFlow<StudentMonitoringSnapshot?> =
       repository
           .observeStudentMonitoringSnapshot(studentId)
