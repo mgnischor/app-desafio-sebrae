@@ -84,7 +84,10 @@
     <string name="login_hint_title">Credenciais de acesso</string>
 
     <!-- User roles -->
+    <string name="role_responsavel">Responsável</string>
     <string name="role_professor">Professor</string>
+    <string name="role_orientador_educacional">Orientador Educacional</string>
+    <string name="role_psicopedagogo">Psicopedagogo</string>
     <string name="role_coordenador">Coordenador</string>
     <string name="role_administrador">Administrador</string>
 
@@ -410,6 +413,7 @@
     <!-- User Profile Screen -->
     <string name="user_profile_title">Perfil do Usuário</string>
     <string name="user_profile_section_access">Dados de Acesso</string>
+    <string name="user_profile_section_companies">Acesso a Empresas</string>
     <string name="user_profile_section_teacher">Vínculo como Instrutor</string>
     <string name="user_profile_section_student">Vínculo como Aluno</string>
     <string name="user_profile_label_name">Nome</string>
@@ -429,4 +433,44 @@
     <string name="user_profile_no_links">Este usuário ainda não possui vínculo como instrutor ou
         aluno.</string>
     <string name="user_profile_view_button">Ver perfil</string>
+
+    <!-- CSV Import -->
+    <string name="settings_item_import_csv">Importar dados via CSV</string>
+    <string name="settings_subtitle_import_csv">Importar alunos, cursos e turmas de arquivo CSV</string>
+    <string name="csv_import_title">Importar CSV</string>
+    <string name="csv_import_select_file">Selecionar arquivo</string>
+    <string name="csv_import_select_type">Tipo de importação</string>
+    <string name="csv_import_type_students">Alunos</string>
+    <string name="csv_import_type_courses">Cursos</string>
+    <string name="csv_import_type_classes">Turmas</string>
+    <string name="csv_import_type_teachers">Instrutores</string>
+    <string name="csv_import_processing">Processando importação…</string>
+    <string name="csv_import_success">%d registros importados com sucesso.</string>
+    <string name="csv_import_error">Erro na importação: %s</string>
+    <string name="csv_import_no_file">Nenhum arquivo selecionado.</string>
+    <string name="csv_import_action">Importar</string>
+    <string name="csv_import_cancel">Cancelar</string>
+
+    <!-- Monitoring Entry -->
+    <string name="monitoring_entry_title">Lançamento de Acompanhamento</string>
+    <string name="monitoring_entry_attendance">Registrar Frequência</string>
+    <string name="monitoring_entry_behavior">Registrar Comportamento</string>
+    <string name="monitoring_entry_pedagogical">Registrar Necessidade Pedagógica</string>
+    <string name="monitoring_entry_psychological">Registrar Necessidade Psicológica</string>
+    <string name="monitoring_entry_parent_followup">Registrar Contato com Responsável</string>
+    <string name="monitoring_entry_save">Salvar registro</string>
+    <string name="monitoring_entry_success">Registro salvo com sucesso.</string>
+    <string name="monitoring_entry_error">Não foi possível salvar o registro.</string>
+    <string name="monitoring_entry_select_student">Selecione o aluno</string>
+    <string name="monitoring_entry_select_type">Tipo de registro</string>
+    <string name="monitoring_entry_date">Data</string>
+    <string name="monitoring_entry_notes">Observações</string>
+
+    <!-- Login credential hints (demo) -->
+    <string name="login_hint_admin">Admin: admin@sebrae.edu.br / admin123</string>
+    <string name="login_hint_coordenador">Coordenador: coordenador@sebrae.edu.br / coord123</string>
+    <string name="login_hint_psicopedagogo">Psicopedagogo: psicopedagogo@sebrae.edu.br / psico123</string>
+    <string name="login_hint_orientador">Orientador: orientador@sebrae.edu.br / orient123</string>
+    <string name="login_hint_professor">Professor: professor@sebrae.edu.br / prof123</string>
+    <string name="login_hint_responsavel">Responsável: responsavel@sebrae.edu.br / resp123</string>
 </resources>
