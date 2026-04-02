@@ -48,6 +48,14 @@ import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de listagem de professores.
+ *
+ * Expõe [teachers] como [StateFlow] reativo filtrado pelo papel do usuário:
+ * administradores vêem todos os professores; demais perfis apenas os da empresa corrente.
+ * Fornece [refresh], [deactivateTeacher], [reactivateTeacher] e [deleteTeacher]
+ * com feedback via [actionResult].
+ */
 @HiltViewModel
 class TeachersViewModel
 @Inject
@@ -56,6 +64,7 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
+  /** Lista de professores visível para o perfil logado, atualizada reativamente pelo Room. */
   @OptIn(ExperimentalCoroutinesApi::class)
   val teachers: StateFlow<List<Teacher>> =
       combine(AuthManager.currentUser, AuthManager.currentCompany) { user, company ->
@@ -72,16 +81,26 @@ constructor(
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   private val _isInitialLoading = MutableStateFlow(true)
+  /** `true` até a primeira sincronização com o Firestore concluir; controla o indicador inicial de carga. */
   val isInitialLoading: StateFlow<Boolean> = _isInitialLoading.asStateFlow()
 
   private val _isRefreshing = MutableStateFlow(false)
+  /** `true` enquanto um pull-to-refresh manual está em andamento. */
   val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+  /**
+   * Resultado de uma operação de desativação, reativação ou exclusão de professor.
+   */
   sealed class ActionResult {
+    /** Nenhuma operação pendente ou resultado já consumido. */
     data object Idle : ActionResult()
 
+    /** Operação concluída com sucesso. */
     data object Success : ActionResult()
 
+    /** Operação falhou.
+     * @property message Descrição do erro para exibir na UI.
+     */
     data class Error(val message: String) : ActionResult()
   }
 
@@ -95,6 +114,10 @@ constructor(
     }
   }
 
+  /**
+   * Solicita nova sincronização com o Firestore (pull-to-refresh).
+   * Ignorado se já há um refresh em andamento.
+   */
   fun refresh() {
     if (_isRefreshing.value) return
     viewModelScope.launch {
@@ -107,6 +130,12 @@ constructor(
     }
   }
 
+  /**
+   * Desativa o professor no Firestore e no banco local. Erros são expostos via [actionResult].
+   *
+   * @param currentUser Usuário logado (deve ter permissão para gerir professores).
+   * @param teacher Professor a desativar.
+   */
   fun deactivateTeacher(currentUser: AppUser?, teacher: Teacher) {
     viewModelScope.launch {
       val result = dataConnectService.deactivateTeacher(currentUser, teacher)
@@ -116,6 +145,12 @@ constructor(
     }
   }
 
+  /**
+   * Reativa um professor previamente desativado. Erros são expostos via [actionResult].
+   *
+   * @param currentUser Usuário logado (deve ter permissão para gerir professores).
+   * @param teacher Professor a reativar.
+   */
   fun reactivateTeacher(currentUser: AppUser?, teacher: Teacher) {
     viewModelScope.launch {
       val result = dataConnectService.reactivateTeacher(currentUser, teacher)
@@ -125,6 +160,12 @@ constructor(
     }
   }
 
+  /**
+   * Exclui permanentemente o professor pelo ID. Erros são expostos via [actionResult].
+   *
+   * @param currentUser Usuário logado (deve ter permissão para excluir professores).
+   * @param teacherId ID do professor a remover.
+   */
   fun deleteTeacher(currentUser: AppUser?, teacherId: Int) {
     viewModelScope.launch {
       val result = dataConnectService.deleteTeacher(currentUser, teacherId)
@@ -134,6 +175,7 @@ constructor(
     }
   }
 
+  /** Redefine [actionResult] para [ActionResult.Idle] após o resultado ser tratado pela UI. */
   fun clearActionResult() {
     _actionResult.value = ActionResult.Idle
   }
