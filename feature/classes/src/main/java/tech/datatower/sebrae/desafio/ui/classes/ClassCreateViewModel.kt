@@ -129,12 +129,19 @@ constructor(
   }
 
   private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
+  /** Estado atual da operação de persistência da turma. */
   val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
 
   init {
     viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.CLASSES) }
   }
 
+  /**
+   * Persiste a turma no Firestore e no banco local.
+   *
+   * @param requester Usuário logado (deve ter permissão para criar turmas).
+   * @param schoolClass Dados completos da turma a cadastrar ou atualizar.
+   */
   fun saveClass(requester: AppUser?, schoolClass: SchoolClass) {
     viewModelScope.launch {
       _saveState.value = SaveState.Saving
@@ -150,6 +157,7 @@ constructor(
     }
   }
 
+  /** Redefine [saveState] para [SaveState.Idle]; usado ao reabrir o formulário após erro. */
   fun resetSaveState() {
     _saveState.value = SaveState.Idle
   }
