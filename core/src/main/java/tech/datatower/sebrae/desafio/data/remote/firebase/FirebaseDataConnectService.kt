@@ -104,7 +104,16 @@ class FirebaseDataConnectService(
 ) {
   private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-  /** Modelo e comportamento relacionados a managed user. */
+  /**
+   * Representa um usuário gerenciado pelo administrador, incluindo hash de senha para operações
+   * de criação e atualização via painel de Gerenciamento de Usuários.
+   *
+   * @property id Identificador único do usuário.
+   * @property name Nome completo exibido na interface.
+   * @property email Endereço de e-mail utilizado como credencial de login.
+   * @property role Nível de permissão do usuário.
+   * @property passwordHash Hash SHA-256 da senha para autenticação local.
+   */
   data class ManagedUser(
       val id: Int,
       val name: String,
@@ -114,18 +123,18 @@ class FirebaseDataConnectService(
   )
 
   /**
-   * Resultado genérico para operações assíncronas.
+   * Resultado genérico para operações assíncronas do serviço.
    *
-   * Success: operação bem-sucedida com dados Error: falha na operação com mensagem de erro Loading:
-   * operação em progresso
+   * Use `when` de forma exaustiva para tratar os três estados possíveis.
    */
   sealed class Result<out T> {
-    /** Modelo e comportamento relacionados a success. */
+    /** Operação concluída com sucesso; contém o dado retornado. */
     data class Success<T>(val data: T) : Result<T>()
 
-    /** Modelo e comportamento relacionados a error. */
+    /** Operação falhou; contém a exceção e uma mensagem localizada para exibição na UI. */
     data class Error(val exception: Exception, val message: String = "") : Result<Nothing>()
 
+    /** Operação em andamento; indica que o resultado ainda não está disponível. */
     data object Loading : Result<Nothing>()
   }
 
