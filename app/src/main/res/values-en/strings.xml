@@ -322,6 +322,7 @@
     <!-- User Profile Screen -->
     <string name="user_profile_title">User Profile</string>
     <string name="user_profile_section_access">Access Data</string>
+    <string name="user_profile_section_companies">Company Access</string>
     <string name="user_profile_section_teacher">Linked as Instructor</string>
     <string name="user_profile_section_student">Linked as Student</string>
     <string name="user_profile_label_name">Name</string>
