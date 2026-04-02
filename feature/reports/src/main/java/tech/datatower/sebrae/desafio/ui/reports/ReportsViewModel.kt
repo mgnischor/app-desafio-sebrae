@@ -29,10 +29,11 @@ package tech.datatower.sebrae.desafio.ui.reports
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -53,41 +54,54 @@ constructor(
     dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+  private val defaultSummary =
+      ReportSummary(
+          activeStudents = 0,
+          activeCourses = 0,
+          totalClasses = 0,
+          completionRate = 0f,
+          certificates = 0,
+          averageTeacherRating = 0f,
+      )
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   val summary: StateFlow<ReportSummary> =
-      companyId
-          .filterNotNull()
-          .flatMapLatest { cid -> repository.observeReportSummary(cid) }
-          .stateIn(
-              viewModelScope,
-              SharingStarted.WhileSubscribed(5_000),
-              ReportSummary(
-                  activeStudents = 0,
-                  activeCourses = 0,
-                  totalClasses = 0,
-                  completionRate = 0f,
-                  certificates = 0,
-                  averageTeacherRating = 0f,
-              ),
-          )
+      AuthManager.currentCompany
+          .map { it?.id }
+          .flatMapLatest { cid ->
+            if (cid == null) return@flatMapLatest flowOf(defaultSummary)
+            repository.observeReportSummary(cid)
+          }
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), defaultSummary)
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   val courseCompletion: StateFlow<List<CourseCompletionMetric>> =
-      companyId
-          .filterNotNull()
-          .flatMapLatest { cid -> repository.observeCourseCompletionMetrics(cid) }
+      AuthManager.currentCompany
+          .map { it?.id }
+          .flatMapLatest { cid ->
+            if (cid == null) return@flatMapLatest flowOf(emptyList())
+            repository.observeCourseCompletionMetrics(cid)
+          }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   val monthlyEnrollments: StateFlow<List<MonthlyEnrollmentMetric>> =
-      companyId
-          .filterNotNull()
-          .flatMapLatest { cid -> repository.observeMonthlyEnrollmentMetrics(cid) }
+      AuthManager.currentCompany
+          .map { it?.id }
+          .flatMapLatest { cid ->
+            if (cid == null) return@flatMapLatest flowOf(emptyList())
+            repository.observeMonthlyEnrollmentMetrics(cid)
+          }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   val statusDistribution: StateFlow<List<StatusDistributionMetric>> =
-      companyId
-          .filterNotNull()
-          .flatMapLatest { cid -> repository.observeStatusDistribution(cid) }
+      AuthManager.currentCompany
+          .map { it?.id }
+          .flatMapLatest { cid ->
+            if (cid == null) return@flatMapLatest flowOf(emptyList())
+            repository.observeStatusDistribution(cid)
+          }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   init {
