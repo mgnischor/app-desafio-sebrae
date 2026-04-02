@@ -46,6 +46,18 @@ import tech.datatower.sebrae.desafio.data.repository.ReportSummary
 import tech.datatower.sebrae.desafio.data.repository.StatusDistributionMetric
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de relatórios.
+ *
+ * Consolida quatro [StateFlow]s reativos derivados dos dados da empresa ativa:
+ * - [summary]: totais gerais (alunos, cursos, turmas, taxa de conclusão, certificados).
+ * - [courseCompletion]: taxa de conclusão por curso.
+ * - [monthlyEnrollments]: matrículas mensais.
+ * - [statusDistribution]: distribuição de status de alunos.
+ *
+ * Um listener em tempo real do Firestore é iniciado no bloco `init` e cancelado
+ * automaticamente quando o ViewModel é destruído.
+ */
 @HiltViewModel
 class ReportsViewModel
 @Inject
@@ -64,6 +76,7 @@ constructor(
           averageTeacherRating = 0f,
       )
 
+  /** Estatísticas consolidadas da empresa ativa (alunos ativos, cursos, turmas, etc.). */
   @OptIn(ExperimentalCoroutinesApi::class)
   val summary: StateFlow<ReportSummary> =
       AuthManager.currentCompany
@@ -74,6 +87,7 @@ constructor(
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), defaultSummary)
 
+  /** Taxa de conclusão por curso; lista vazia se a empresa ainda não foi selecionada. */
   @OptIn(ExperimentalCoroutinesApi::class)
   val courseCompletion: StateFlow<List<CourseCompletionMetric>> =
       AuthManager.currentCompany
@@ -84,6 +98,7 @@ constructor(
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  /** Métricas de matrículas mensais para os últimos períodos disponíveis. */
   @OptIn(ExperimentalCoroutinesApi::class)
   val monthlyEnrollments: StateFlow<List<MonthlyEnrollmentMetric>> =
       AuthManager.currentCompany
@@ -94,6 +109,7 @@ constructor(
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  /** Distribuição de alunos por status (Ativo, Inativo, Concluído, etc.). */
   @OptIn(ExperimentalCoroutinesApi::class)
   val statusDistribution: StateFlow<List<StatusDistributionMetric>> =
       AuthManager.currentCompany
