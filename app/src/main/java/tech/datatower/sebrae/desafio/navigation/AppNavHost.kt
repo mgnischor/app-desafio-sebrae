@@ -50,7 +50,9 @@ import tech.datatower.sebrae.desafio.ui.home.HomeScreen
 import tech.datatower.sebrae.desafio.ui.home.RecentActivitiesScreen
 import tech.datatower.sebrae.desafio.ui.login.LoginScreen
 import tech.datatower.sebrae.desafio.ui.reports.ReportsScreen
+import tech.datatower.sebrae.desafio.ui.settings.CsvImportScreen
 import tech.datatower.sebrae.desafio.ui.settings.SettingsScreen
+import tech.datatower.sebrae.desafio.ui.students.MonitoringEntryScreen
 import tech.datatower.sebrae.desafio.ui.students.StudentCreateScreen
 import tech.datatower.sebrae.desafio.ui.students.StudentMonitoringScreen
 import tech.datatower.sebrae.desafio.ui.students.StudentsScreen
@@ -116,8 +118,22 @@ fun AppNavHost(navController: NavHostController) {
     composable(
         route = AppRoutes.STUDENT_MONITORING,
         arguments = listOf(navArgument(AppRoutes.STUDENT_ID_ARG) { type = NavType.IntType }),
+    ) { backStackEntry ->
+      val studentId = backStackEntry.arguments?.getInt(AppRoutes.STUDENT_ID_ARG) ?: 0
+      StudentMonitoringScreen(
+          currentUser = currentUser,
+          onBack = { navController.popBackStack() },
+          onOpenMonitoringEntry = { navController.navigate(AppRoutes.monitoringEntry(studentId)) },
+      )
+    }
+    composable(
+        route = AppRoutes.MONITORING_ENTRY,
+        arguments = listOf(navArgument(AppRoutes.STUDENT_ID_ARG) { type = NavType.IntType }),
     ) {
-      StudentMonitoringScreen(onBack = { navController.popBackStack() })
+      MonitoringEntryScreen(
+          currentUser = currentUser,
+          onBack = { navController.popBackStack() },
+      )
     }
     composable(AppRoutes.COURSES) {
       CoursesScreen(
@@ -187,6 +203,13 @@ fun AppNavHost(navController: NavHostController) {
           onBack = { navController.popBackStack() },
           onOpenUserManagement = { navController.navigate(AppRoutes.USERS_MANAGEMENT) },
           onOpenCompanyManagement = { navController.navigate(AppRoutes.COMPANIES_MANAGEMENT) },
+          onOpenCsvImport = { navController.navigate(AppRoutes.CSV_IMPORT) },
+      )
+    }
+    composable(AppRoutes.CSV_IMPORT) {
+      CsvImportScreen(
+          currentUser = currentUser,
+          onBack = { navController.popBackStack() },
       )
     }
     composable(AppRoutes.USERS_MANAGEMENT) {
