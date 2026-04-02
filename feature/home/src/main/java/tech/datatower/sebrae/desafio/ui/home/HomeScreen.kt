@@ -54,11 +54,11 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.InsertChart
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.UnfoldMore
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.UnfoldMore
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
@@ -101,7 +101,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.core.R
 import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.AppUser
-import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.model.MenuModule
 import tech.datatower.sebrae.desafio.data.model.QuickStat
 import tech.datatower.sebrae.desafio.data.model.RealtimeNotificationRules
@@ -345,9 +344,12 @@ private fun HomeTopBar(
             if (companyName != null) {
               Row(
                   verticalAlignment = Alignment.CenterVertically,
-                  modifier = if (showCompanySwitcher) {
-                    Modifier.clip(RoundedCornerShape(4.dp)).clickable { onCompanySwitcherClick() }
-                  } else Modifier,
+                  modifier =
+                      if (showCompanySwitcher) {
+                        Modifier.clip(RoundedCornerShape(4.dp)).clickable {
+                          onCompanySwitcherClick()
+                        }
+                      } else Modifier,
               ) {
                 Text(
                     text = companyName,
@@ -604,11 +606,13 @@ private fun ModulesGrid(
     modules: List<MenuModule>,
     onModuleClick: (String) -> Unit,
 ) {
+  if (modules.isEmpty()) return
+
   // Fixed-height grid (avoids nested scroll issues inside LazyColumn)
   val rows = (modules.size + 1) / 2
   val cardHeight = 100.dp
   val verticalSpacing = 12.dp
-  val gridHeight = cardHeight * rows + verticalSpacing * (rows - 1)
+  val gridHeight = cardHeight * rows + verticalSpacing * (rows - 1).coerceAtLeast(0)
 
   LazyVerticalGrid(
       columns = GridCells.Fixed(2),
@@ -765,12 +769,34 @@ private fun RecentActivityItem(item: RecentActivity, modifier: Modifier = Modifi
 private fun filterModulesByRole(allModules: List<MenuModule>, role: UserRole?): List<MenuModule> {
   val allowedRoutes =
       when (role) {
+        UserRole.RESPONSAVEL ->
+            setOf(
+                AppRoutes.STUDENTS,
+                AppRoutes.CALENDAR,
+                AppRoutes.SETTINGS,
+            )
         UserRole.PROFESSOR ->
             setOf(
                 AppRoutes.STUDENTS,
                 AppRoutes.COURSES,
                 AppRoutes.CLASSES,
                 AppRoutes.CALENDAR,
+            )
+        UserRole.ORIENTADOR_EDUCACIONAL ->
+            setOf(
+                AppRoutes.STUDENTS,
+                AppRoutes.COURSES,
+                AppRoutes.CLASSES,
+                AppRoutes.CALENDAR,
+                AppRoutes.CERTIFICATES,
+            )
+        UserRole.PSICOPEDAGOGO ->
+            setOf(
+                AppRoutes.STUDENTS,
+                AppRoutes.COURSES,
+                AppRoutes.CLASSES,
+                AppRoutes.CALENDAR,
+                AppRoutes.CERTIFICATES,
             )
         UserRole.COORDENADOR ->
             setOf(
