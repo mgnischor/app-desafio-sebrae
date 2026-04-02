@@ -34,6 +34,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Qualifier
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import tech.datatower.sebrae.desafio.BuildConfig
 import tech.datatower.sebrae.desafio.R
@@ -44,8 +46,6 @@ import tech.datatower.sebrae.desafio.data.local.AppDatabase
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseSeedCredentialStore
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
-import javax.inject.Qualifier
-import javax.inject.Singleton
 
 /** Qualificador para o [MutableStateFlow] que guarda o rótulo da fonte de dados. */
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class DataSourceLabelFlow
