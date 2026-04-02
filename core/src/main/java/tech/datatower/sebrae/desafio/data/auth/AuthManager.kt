@@ -38,7 +38,18 @@ import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.model.UserRole
 import java.security.MessageDigest
 
-/** Gerenciador de autenticação em memória. */
+/**
+ * Gerencia autenticação e sessão de usuário para toda a aplicação.
+ *
+ * Suporta dois fluxos de login:
+ * - **Firebase Auth** (principal): autentica via Firebase e busca o perfil na collection `users`
+ *   do Firestore.
+ * - **Local (fallback)**: valida credenciais em memória usando hashes SHA-256, útil para
+ *   desenvolvimento e testes offline.
+ *
+ * O estado da sessão é exposto como [StateFlow] para que a UI possa reagir reativamente a
+ * alterações de usuário e empresa ativa.
+ */
 object AuthManager {
 
   private const val TAG = "AuthManager"
@@ -105,12 +116,16 @@ object AuthManager {
   private val firebaseAuth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
   private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
 
-  /** Modelo e comportamento relacionados a firebase login result. */
+  /**
+   * Representa o resultado de uma tentativa de login via Firebase Auth.
+   *
+   * Use `when` para tratamento exaustivo dos casos de sucesso e falha.
+   */
   sealed class FirebaseLoginResult {
-    /** Modelo e comportamento relacionados a success. */
+    /** Login realizado com sucesso; contém o [AppUser] autenticado e com perfil carregado. */
     data class Success(val user: AppUser) : FirebaseLoginResult()
 
-    /** Modelo e comportamento relacionados a error. */
+    /** Login falhou; contém a mensagem de erro localizada para exibição ao usuário. */
     data class Error(val message: String) : FirebaseLoginResult()
   }
 
@@ -126,7 +141,7 @@ object AuthManager {
   /** Fluxo reativo com as empresas às quais o usuário autenticado tem acesso. */
   val userCompanies: StateFlow<List<Company>> = _userCompanies.asStateFlow()
 
-  /** Define as empresas que o usuário tem acesso (chamado após login/sync). */
+  /** Define as empresas que o usuário tem acesso e seleciona automaticamente a primeira quando nenhuma empresa está ativa. */
   fun setUserCompanies(companies: List<Company>) {
     _userCompanies.value = companies
     if (_currentCompany.value == null && companies.isNotEmpty()) {
@@ -137,14 +152,33 @@ object AuthManager {
     }
   }
 
-  /** Troca a empresa ativa do usuário. */
+  /**
+   * Troca a empresa ativa do usuário autenticado.
+   *
+   * A troca só é permitida para empresas que estejam na lista [userCompanies] do usuário.
+   *
+   * @param company Empresa a ser ativada.
+   */
   fun switchCompany(company: Company) {
     if (_userCompanies.value.any { it.id == company.id }) {
       _currentCompany.value = company
     }
   }
 
-  /** Login oficial do app via Firebase Auth e perfil em Firestore (collection `users`). */
+  /**
+   * Autentica o usuário via Firebase Auth e carrega seu perfil da collection `users` no Firestore.
+   *
+   * O fluxo é:
+   * 1. Valida e normaliza as credenciais.
+   * 2. Autentica via `FirebaseAuth.signInWithEmailAndPassword`.
+   * 3. Busca o documento de perfil no Firestore (por UID, por campo `authUid` ou por `email`).
+   * 4. Atualiza a lista local de usuários e carrega as empresas vinculadas.
+   *
+   * @param email Endereço de e-mail informado na tela de login.
+   * @param password Senha informada na tela de login (transmitida de forma segura ao Firebase).
+   * @return [FirebaseLoginResult.Success] com o usuário autenticado, ou [FirebaseLoginResult.Error]
+   *   com a mensagem de falha.
+   */
   suspend fun loginWithFirebase(email: String, password: String): FirebaseLoginResult {
     val normalizedEmail = email.trim().lowercase()
     if (normalizedEmail.isBlank() || password.isBlank()) {
@@ -201,11 +235,14 @@ object AuthManager {
   }
 
   /**
-   * Busca dados de user profile na origem configurada.
+   * Busca o perfil de usuário no Firestore tentando três estratégias em cascata:
+   * 1. Documento cujo ID é o próprio UID do Firebase Auth.
+   * 2. Documento com o campo `authUid` igual ao UID do Firebase Auth.
+   * 3. Documento com o campo `email` igual ao e-mail informado no login.
    *
-   * @param firebaseUid Valor de entrada utilizado por esta opera??o.
-   * @param fallbackEmail Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `AppUser?`.
+   * @param firebaseUid UID do usuário autenticado no Firebase Auth.
+   * @param fallbackEmail E-mail normalizado usado na terceira estratégia de busca.
+   * @return [AppUser] se encontrado, ou `null` se nenhum documento corresponder.
    */
   private suspend fun fetchUserProfile(firebaseUid: String, fallbackEmail: String): AppUser? {
     val byDocumentId = firestore.collection(USERS_COLLECTION).document(firebaseUid).get().await()
@@ -235,10 +272,12 @@ object AuthManager {
   }
 
   /**
-   * Executa a rotina de com dentro do contexto deste componente.
+   * Converte um [DocumentSnapshot] do Firestore para o modelo de domínio [AppUser].
    *
-   * @param fallbackEmail Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `AppUser`.
+   * Resolve o `id` preferindo o campo numérico `id`, em seguida `legacyId`, e por último um hash
+   * do ID do documento como fallback.
+   *
+   * @param fallbackEmail E-mail usado quando o campo `email` estiver ausente no documento.
    */
   private fun com.google.firebase.firestore.DocumentSnapshot.toAppUser(
       fallbackEmail: String
@@ -259,9 +298,12 @@ object AuthManager {
   }
 
   /**
-   * Executa a rotina de upsert local user dentro do contexto deste componente.
+   * Insere ou atualiza um [AppUser] na lista reativa local de usuários.
    *
-   * @param user Valor de entrada utilizado por esta opera??o.
+   * Combina usuários por `id` ou `email` para evitar duplicatas após sincronização com o
+   * Firestore.
+   *
+   * @param user Usuário a ser inserido ou atualizado.
    */
   private fun upsertLocalUser(user: AppUser) {
     val mutable = _users.value.toMutableList()
