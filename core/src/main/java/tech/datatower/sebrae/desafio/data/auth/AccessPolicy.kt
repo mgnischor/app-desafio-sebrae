@@ -38,6 +38,7 @@ enum class ProtectedResource {
   Calendar,
   Settings,
   Companies,
+  StudentMonitoring,
 }
 
 /** Ações suportadas pelas regras de autorização da aplicação. */
@@ -52,6 +53,8 @@ enum class ProtectedAction {
   ClearStorage,
   ResetDatabase,
   ChangeOwnPassword,
+  ImportCsv,
+  CreateCompanyUsers,
 }
 
 /**
@@ -76,8 +79,34 @@ object AccessPolicy {
     return when (role) {
       UserRole.ADMINISTRADOR -> true
       UserRole.COORDENADOR -> coordinatorRules(resource, action)
+      UserRole.PSICOPEDAGOGO -> psicopedagogoRules(resource, action)
+      UserRole.ORIENTADOR_EDUCACIONAL -> orientadorRules(resource, action)
       UserRole.PROFESSOR -> professorRules(resource, action)
+      UserRole.RESPONSAVEL -> responsavelRules(resource, action)
     }
+  }
+
+  /**
+   * Verifica se o perfil possui nível hierárquico igual ou superior ao nível informado.
+   *
+   * Hierarquia: ADMINISTRADOR > COORDENADOR > PSICOPEDAGOGO > ORIENTADOR_EDUCACIONAL > PROFESSOR >
+   * RESPONSAVEL
+   */
+  fun hierarchyLevel(role: UserRole): Int {
+    return when (role) {
+      UserRole.RESPONSAVEL -> 0
+      UserRole.PROFESSOR -> 1
+      UserRole.ORIENTADOR_EDUCACIONAL -> 2
+      UserRole.PSICOPEDAGOGO -> 3
+      UserRole.COORDENADOR -> 4
+      UserRole.ADMINISTRADOR -> 5
+    }
+  }
+
+  /** Retorna true se [role] possui nível igual ou superior a [minimumRole]. */
+  fun isAtLeast(role: UserRole?, minimumRole: UserRole): Boolean {
+    if (role == null) return false
+    return hierarchyLevel(role) >= hierarchyLevel(minimumRole)
   }
 
   private fun coordinatorRules(resource: ProtectedResource, action: ProtectedAction): Boolean {
@@ -96,10 +125,46 @@ object AccessPolicy {
                 ProtectedAction.LaunchStudentRecord,
             )
       }
+      ProtectedResource.StudentMonitoring ->
+          action in setOf(ProtectedAction.View, ProtectedAction.Create, ProtectedAction.Update)
       ProtectedResource.Calendar -> action in setOf(ProtectedAction.View, ProtectedAction.Create)
       ProtectedResource.Settings ->
           action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
-      ProtectedResource.Users -> false
+      ProtectedResource.Users -> action == ProtectedAction.CreateCompanyUsers
+      ProtectedResource.Companies -> false
+    }
+  }
+
+  private fun psicopedagogoRules(resource: ProtectedResource, action: ProtectedAction): Boolean {
+    return when (resource) {
+      ProtectedResource.Students ->
+          action in setOf(ProtectedAction.View, ProtectedAction.LaunchStudentRecord)
+      ProtectedResource.StudentMonitoring ->
+          action in setOf(ProtectedAction.View, ProtectedAction.Create, ProtectedAction.Update)
+      ProtectedResource.Courses,
+      ProtectedResource.Classes -> action == ProtectedAction.View
+      ProtectedResource.Calendar -> action == ProtectedAction.View
+      ProtectedResource.Settings ->
+          action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
+      ProtectedResource.Teachers,
+      ProtectedResource.Users,
+      ProtectedResource.Companies -> false
+    }
+  }
+
+  private fun orientadorRules(resource: ProtectedResource, action: ProtectedAction): Boolean {
+    return when (resource) {
+      ProtectedResource.Students ->
+          action in setOf(ProtectedAction.View, ProtectedAction.LaunchStudentRecord)
+      ProtectedResource.StudentMonitoring ->
+          action in setOf(ProtectedAction.View, ProtectedAction.Create, ProtectedAction.Update)
+      ProtectedResource.Courses,
+      ProtectedResource.Classes -> action == ProtectedAction.View
+      ProtectedResource.Calendar -> action == ProtectedAction.View
+      ProtectedResource.Settings ->
+          action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
+      ProtectedResource.Teachers,
+      ProtectedResource.Users,
       ProtectedResource.Companies -> false
     }
   }
@@ -110,9 +175,26 @@ object AccessPolicy {
       ProtectedResource.Classes -> action == ProtectedAction.View
       ProtectedResource.Students ->
           action in setOf(ProtectedAction.View, ProtectedAction.LaunchStudentRecord)
+      ProtectedResource.StudentMonitoring ->
+          action in setOf(ProtectedAction.View, ProtectedAction.Create, ProtectedAction.Update)
       ProtectedResource.Calendar -> action == ProtectedAction.View
       ProtectedResource.Settings ->
           action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
+      ProtectedResource.Teachers,
+      ProtectedResource.Users,
+      ProtectedResource.Companies -> false
+    }
+  }
+
+  private fun responsavelRules(resource: ProtectedResource, action: ProtectedAction): Boolean {
+    return when (resource) {
+      ProtectedResource.Students -> action == ProtectedAction.View
+      ProtectedResource.StudentMonitoring -> action == ProtectedAction.View
+      ProtectedResource.Calendar -> action == ProtectedAction.View
+      ProtectedResource.Settings ->
+          action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
+      ProtectedResource.Courses,
+      ProtectedResource.Classes,
       ProtectedResource.Teachers,
       ProtectedResource.Users,
       ProtectedResource.Companies -> false
