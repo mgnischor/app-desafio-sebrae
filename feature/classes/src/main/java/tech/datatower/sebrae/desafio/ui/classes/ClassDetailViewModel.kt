@@ -30,10 +30,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.model.Student
+import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
@@ -58,19 +59,38 @@ constructor(
 ) : ViewModel() {
 
   private val classId: Int = checkNotNull(savedStateHandle[AppRoutes.CLASS_ID_ARG])
-  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   val schoolClass: StateFlow<SchoolClass?> =
-      companyId
-          .filterNotNull()
-          .flatMapLatest { cid -> repository.observeClassById(classId, cid) }
+      combine(AuthManager.currentUser, AuthManager.currentCompany) { user, company ->
+            Pair(user, company)
+          }
+          .flatMapLatest { (user, company) ->
+            if (user?.role == UserRole.ADMINISTRADOR) {
+              repository.observeAllClasses().map { list -> list.firstOrNull { it.id == classId } }
+            } else {
+              val cid = company?.id ?: return@flatMapLatest flowOf(null)
+              repository.observeClassById(classId, cid)
+            }
+          }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   val students: StateFlow<List<Student>> =
-      combine(schoolClass, companyId.filterNotNull()) { c, cid -> c to cid }
-          .flatMapLatest { (c, cid) ->
-            val name = c?.name ?: return@flatMapLatest flowOf(emptyList())
-            repository.observeStudentsByClass(cid, name)
+      combine(schoolClass, AuthManager.currentUser, AuthManager.currentCompany) { sc, user, company
+            ->
+            Triple(sc, user, company)
+          }
+          .flatMapLatest { (sc, user, company) ->
+            val name = sc?.name ?: return@flatMapLatest flowOf(emptyList())
+            if (user?.role == UserRole.ADMINISTRADOR) {
+              repository.observeAllStudents().map { list ->
+                list.filter { it.enrolledClass == name }
+              }
+            } else {
+              val cid = company?.id ?: return@flatMapLatest flowOf(emptyList())
+              repository.observeStudentsByClass(cid, name)
+            }
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
