@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,6 @@ import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import tech.datatower.sebrae.desafio.navigation.AppRoutes
-import javax.inject.Inject
 
 @HiltViewModel
 class CompanyDetailViewModel
@@ -40,8 +40,7 @@ constructor(
 
   /** Lista de todos os usuarios do sistema (via AuthManager). */
   val allUsers: StateFlow<List<AppUser>> =
-      AuthManager.users
-          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+      AuthManager.users.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   sealed class SaveState {
     data object Idle : SaveState()
@@ -57,7 +56,8 @@ constructor(
   fun updateCompany(requester: AppUser?, name: String, cnpj: String, isActive: Boolean) {
     viewModelScope.launch {
       try {
-        val updated = Company(id = companyId, name = name.trim(), cnpj = cnpj.trim(), isActive = isActive)
+        val updated =
+            Company(id = companyId, name = name.trim(), cnpj = cnpj.trim(), isActive = isActive)
         repository.upsertCompanyForAdmin(requester, updated)
         _saveState.value = SaveState.Success
       } catch (e: SecurityException) {
