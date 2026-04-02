@@ -182,6 +182,17 @@ class AppRepository(
         }
       }
 
+  fun observeAllCourses(): Flow<List<Course>> =
+      combine(dao.observeAllCourses(), dao.observeAllStudents()) { courseEntities, studentEntities
+        ->
+        val students = studentEntities.map { it.toModel() }
+        val realByCourse = RelationshipRules.realStudentsByCourse(students)
+        courseEntities.map { entity ->
+          val model = entity.toModel()
+          model.copy(totalStudents = realByCourse[model.title.trim()].orZero())
+        }
+      }
+
   fun observeCourseById(courseId: Int): Flow<Course?> =
       dao.observeCourseById(courseId).map { it?.toModel() }
 
@@ -209,6 +220,16 @@ class AppRepository(
         }
       }
 
+  fun observeAllClasses(): Flow<List<SchoolClass>> =
+      combine(dao.observeAllClasses(), dao.observeAllStudents()) { classEntities, studentEntities ->
+        val students = studentEntities.map { it.toModel() }
+        val realByClass = RelationshipRules.realStudentsByClass(students)
+        classEntities.map { entity ->
+          val model = entity.toModel()
+          model.copy(studentsCount = realByClass[model.name.trim()].orZero())
+        }
+      }
+
   fun observeClassById(classId: Int, companyId: Int): Flow<SchoolClass?> =
       combine(dao.observeClassById(classId), dao.observeStudents(companyId)) {
           classEntity,
@@ -223,12 +244,17 @@ class AppRepository(
       dao.observeClassesByCourse(companyId, courseName).map { items -> items.map { it.toModel() } }
 
   fun observeClassesByTeacher(companyId: Int, teacherName: String): Flow<List<SchoolClass>> =
-      dao.observeClassesByTeacher(companyId, teacherName).map { items -> items.map { it.toModel() } }
+      dao.observeClassesByTeacher(companyId, teacherName).map { items ->
+        items.map { it.toModel() }
+      }
 
   // ── Teachers (filtered by company) ────────────────────────────────────
 
   fun observeTeachers(companyId: Int): Flow<List<Teacher>> =
       dao.observeTeachers(companyId).map { items -> items.map { it.toModel() } }
+
+  fun observeAllTeachers(): Flow<List<Teacher>> =
+      dao.observeAllTeachers().map { items -> items.map { it.toModel() } }
 
   fun observeTeacherById(teacherId: Int): Flow<Teacher?> =
       dao.observeTeacherById(teacherId).map { it?.toModel() }
@@ -238,6 +264,14 @@ class AppRepository(
   fun observeStudents(companyId: Int): Flow<List<Student>> =
       dao.observeStudents(companyId).map { items -> items.map { it.toModel() } }
 
+  fun observeAllStudents(): Flow<List<Student>> =
+      dao.observeAllStudents().map { items -> items.map { it.toModel() } }
+
+  fun observeStudentsByGuardian(guardianUserId: Int, companyId: Int): Flow<List<Student>> =
+      dao.observeStudentsByGuardian(guardianUserId, companyId).map { items ->
+        items.map { it.toModel() }
+      }
+
   fun observeStudentsByClass(companyId: Int, className: String): Flow<List<Student>> =
       dao.observeStudentsByClass(companyId, className).map { items -> items.map { it.toModel() } }
 
@@ -245,6 +279,9 @@ class AppRepository(
 
   fun observeCertificates(companyId: Int): Flow<List<Certificate>> =
       dao.observeCertificates(companyId).map { items -> items.map { it.toModel() } }
+
+  fun observeAllCertificates(): Flow<List<Certificate>> =
+      dao.observeAllCertificates().map { items -> items.map { it.toModel() } }
 
   // ── Calendar Events (filtered by company) ─────────────────────────────
 
@@ -257,10 +294,18 @@ class AppRepository(
       dao.observeRecentActivities(companyId).map { items -> items.map { it.toModel() } }
 
   fun observeRecentActivities(companyId: Int, limit: Int): Flow<List<RecentActivity>> =
-      dao.observeRecentActivitiesLimited(companyId, limit).map { items -> items.map { it.toModel() } }
+      dao.observeRecentActivitiesLimited(companyId, limit).map { items ->
+        items.map { it.toModel() }
+      }
 
-  fun observeRecentActivitiesPaged(companyId: Int, limit: Int, offset: Int): Flow<List<RecentActivity>> =
-      dao.observeRecentActivitiesPaged(companyId, limit, offset).map { items -> items.map { it.toModel() } }
+  fun observeRecentActivitiesPaged(
+      companyId: Int,
+      limit: Int,
+      offset: Int,
+  ): Flow<List<RecentActivity>> =
+      dao.observeRecentActivitiesPaged(companyId, limit, offset).map { items ->
+        items.map { it.toModel() }
+      }
 
   fun observeRecentActivitiesCount(companyId: Int): Flow<Int> =
       dao.observeRecentActivitiesCount(companyId)
@@ -384,6 +429,115 @@ class AppRepository(
 
   // ── Settings ──────────────────────────────────────────────────────────
 
+  /** Insere um registro de frequência para o aluno informado. */
+  suspend fun insertAttendanceRecord(companyId: Int, studentId: Int, record: AttendanceRecord) {
+    dao.insertAttendance(
+        listOf(
+            AttendanceEntity(
+                companyId = companyId,
+                studentId = studentId,
+                date = record.date,
+                status = record.status,
+                minutesLate = record.minutesLate,
+                justification = record.justification,
+            )
+        )
+    )
+  }
+
+  /** Insere um registro de comportamento para o aluno informado. */
+  suspend fun insertBehaviorRecord(companyId: Int, studentId: Int, record: BehaviorRecord) {
+    dao.insertBehaviors(
+        listOf(
+            BehaviorEntity(
+                companyId = companyId,
+                studentId = studentId,
+                date = record.date,
+                participationScore = record.participationScore,
+                activityDelivery = record.activityDelivery,
+                delayMinutes = record.delayMinutes,
+                grade = record.grade,
+                note = record.note,
+            )
+        )
+    )
+  }
+
+  /** Insere uma necessidade pedagógica para o aluno informado. */
+  suspend fun insertPedagogicalNeedRecord(companyId: Int, studentId: Int, need: PedagogicalNeed) {
+    dao.insertPedagogicalNeeds(
+        listOf(
+            PedagogicalNeedEntity(
+                companyId = companyId,
+                studentId = studentId,
+                type = need.type,
+                description = need.description,
+                expiresAt = need.expiresAt,
+                accommodations = need.accommodations,
+            )
+        )
+    )
+  }
+
+  /** Insere uma necessidade psicológica para o aluno informado. */
+  suspend fun insertPsychologicalNeedRecord(
+      companyId: Int,
+      studentId: Int,
+      need: PsychologicalNeed,
+  ) {
+    dao.insertPsychologicalNeeds(
+        listOf(
+            PsychologicalNeedEntity(
+                companyId = companyId,
+                studentId = studentId,
+                summary = need.summary,
+                confidentiality = need.confidentiality,
+                nextStep = need.nextStep,
+                reviewAt = need.reviewAt,
+            )
+        )
+    )
+  }
+
+  /** Insere um registro de acompanhamento de pais/responsáveis para o aluno informado. */
+  suspend fun insertParentFollowUpRecord(
+      companyId: Int,
+      studentId: Int,
+      followUp: ParentFollowUp,
+  ) {
+    dao.insertParentFollowUps(
+        listOf(
+            ParentFollowUpEntity(
+                companyId = companyId,
+                studentId = studentId,
+                date = followUp.date,
+                channel = followUp.channel,
+                outcome = followUp.outcome,
+                responsible = followUp.responsible,
+                notes = followUp.notes,
+            )
+        )
+    )
+  }
+
+  // ── CSV Bulk Import ───────────────────────────────────────────────────
+
+  suspend fun importStudents(entities: List<StudentEntity>) {
+    dao.insertStudents(entities)
+  }
+
+  suspend fun importCourses(entities: List<CourseEntity>) {
+    dao.insertCourses(entities)
+  }
+
+  suspend fun importClasses(entities: List<SchoolClassEntity>) {
+    dao.insertClasses(entities)
+  }
+
+  suspend fun importTeachers(entities: List<TeacherEntity>) {
+    dao.insertTeachers(entities)
+  }
+
   fun observeSettings(): Flow<AppSettings> =
       dao.observeSettings().map {
         if (it == null) {
@@ -404,7 +558,9 @@ class AppRepository(
       dao.observeUserById(userId).map { it?.toModel() }
 
   fun observeRegisteredUsersForAdmin(requester: AppUser?): Flow<List<AppUser>> {
-    return if (requester?.role == UserRole.ADMINISTRADOR) {
+    return if (
+        requester?.role == UserRole.ADMINISTRADOR || requester?.role == UserRole.COORDENADOR
+    ) {
       dao.observeUsers().map { items -> items.map { it.toModel() } }
     } else {
       flowOf(emptyList())
@@ -416,8 +572,8 @@ class AppRepository(
       user: AppUser,
       plainPassword: String,
   ) {
-    if (requester?.role != UserRole.ADMINISTRADOR) {
-      throw SecurityException("Apenas administrador pode cadastrar usuarios.")
+    if (requester?.role != UserRole.ADMINISTRADOR && requester?.role != UserRole.COORDENADOR) {
+      throw SecurityException("Apenas administrador ou coordenador pode cadastrar usuarios.")
     }
     if (plainPassword.isBlank()) {
       throw IllegalArgumentException("Senha do usuario nao pode ser vazia.")

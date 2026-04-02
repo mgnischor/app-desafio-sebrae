@@ -67,6 +67,24 @@ object AuthManager {
                   email = "admin@sebrae.edu.br",
                   role = UserRole.ADMINISTRADOR,
               ),
+              AppUser(
+                  id = 4,
+                  name = "Orientadora Beatriz Lima",
+                  email = "orientador@sebrae.edu.br",
+                  role = UserRole.ORIENTADOR_EDUCACIONAL,
+              ),
+              AppUser(
+                  id = 5,
+                  name = "Psicopedagoga Carla Mendes",
+                  email = "psicopedagogo@sebrae.edu.br",
+                  role = UserRole.PSICOPEDAGOGO,
+              ),
+              AppUser(
+                  id = 6,
+                  name = "Maria da Silva (Responsável)",
+                  email = "responsavel@sebrae.edu.br",
+                  role = UserRole.RESPONSAVEL,
+              ),
           )
       )
 
@@ -75,6 +93,9 @@ object AuthManager {
           "professor@sebrae.edu.br" to sha256("prof123"),
           "coordenador@sebrae.edu.br" to sha256("coord123"),
           "admin@sebrae.edu.br" to sha256("admin123"),
+          "orientador@sebrae.edu.br" to sha256("orient123"),
+          "psicopedagogo@sebrae.edu.br" to sha256("psico123"),
+          "responsavel@sebrae.edu.br" to sha256("resp123"),
       )
 
   private val _currentUser = MutableStateFlow<AppUser?>(null)
@@ -308,32 +329,38 @@ object AuthManager {
   }
 
   /**
-   * Carrega as empresas do usuário a partir do Firestore após login bem-sucedido.
-   * Administradores recebem todas as empresas ativas; demais papéis recebem apenas as vinculadas.
+   * Carrega as empresas do usuário a partir do Firestore após login bem-sucedido. Administradores
+   * recebem todas as empresas ativas; demais papéis recebem apenas as vinculadas.
    */
   private suspend fun loadUserCompaniesFromFirestore(user: AppUser) {
     try {
       val allCompanies = firestore.collection(COMPANIES_COLLECTION).get().await()
-      val companyMap = allCompanies.documents.mapNotNull { doc ->
-        val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
-        val name = doc.getString("name").orEmpty()
-        val cnpj = doc.getString("cnpj").orEmpty()
-        val isActive = doc.getBoolean("isActive") ?: true
-        if (isActive) Company(id = id, name = name, cnpj = cnpj, isActive = true) else null
-      }.associateBy { it.id }
+      val companyMap =
+          allCompanies.documents
+              .mapNotNull { doc ->
+                val id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null
+                val name = doc.getString("name").orEmpty()
+                val cnpj = doc.getString("cnpj").orEmpty()
+                val isActive = doc.getBoolean("isActive") ?: true
+                if (isActive) Company(id = id, name = name, cnpj = cnpj, isActive = true) else null
+              }
+              .associateBy { it.id }
 
-      val companies = if (user.role == UserRole.ADMINISTRADOR) {
-        companyMap.values.toList()
-      } else {
-        val userCompanyDocs = firestore.collection(USER_COMPANIES_COLLECTION)
-            .whereEqualTo("userId", user.id)
-            .get()
-            .await()
-        userCompanyDocs.documents.mapNotNull { doc ->
-          val companyId = (doc.get("companyId") as? Number)?.toInt() ?: return@mapNotNull null
-          companyMap[companyId]
-        }
-      }
+      val companies =
+          if (user.role == UserRole.ADMINISTRADOR) {
+            companyMap.values.toList()
+          } else {
+            val userCompanyDocs =
+                firestore
+                    .collection(USER_COMPANIES_COLLECTION)
+                    .whereEqualTo("userId", user.id)
+                    .get()
+                    .await()
+            userCompanyDocs.documents.mapNotNull { doc ->
+              val companyId = (doc.get("companyId") as? Number)?.toInt() ?: return@mapNotNull null
+              companyMap[companyId]
+            }
+          }
       setUserCompanies(companies.sortedBy { it.name })
     } catch (e: Exception) {
       Log.w(TAG, "Falha ao carregar empresas do usuario", e)

@@ -409,6 +409,7 @@
     <!-- User Profile Screen -->
     <string name="user_profile_title">Perfil do Usuário</string>
     <string name="user_profile_section_access">Dados de Acesso</string>
+    <string name="user_profile_section_companies">Acesso a Empresas</string>
     <string name="user_profile_section_teacher">Vínculo como Instrutor</string>
     <string name="user_profile_section_student">Vínculo como Aluno</string>
     <string name="user_profile_label_name">Nome</string>

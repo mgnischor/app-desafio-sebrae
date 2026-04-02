@@ -717,10 +717,10 @@ class FirebaseDataConnectService(
       Log.d(TAG, "Iniciando busca de cursos do Data Connect...")
 
       val snapshot = firestore.collection(COLLECTION_COURSES).get().await()
-      val courses =
+      val entities =
           snapshot.documents.mapNotNull { doc ->
             try {
-              Course(
+              CourseEntity(
                   id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null,
                   title = doc.getString("title") ?: "",
                   category = doc.getString("category") ?: "",
@@ -729,6 +729,7 @@ class FirebaseDataConnectService(
                   durationHours = (doc.get("durationHours") as? Number)?.toInt() ?: 0,
                   completionRate = (doc.get("completionRate") as? Number)?.toFloat() ?: 0f,
                   isPublished = doc.getBoolean("isPublished") ?: false,
+                  companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
               )
             } catch (e: Exception) {
               Log.w(TAG, "Erro ao converter curso: ${doc.id}", e)
@@ -737,11 +738,23 @@ class FirebaseDataConnectService(
           }
 
       // Sincronizar com cache local
-      if (courses.isNotEmpty()) {
-        dao.insertCourses(courses.map { it.toEntity() })
-        Log.d(TAG, "Sincronizados ${courses.size} cursos para cache local")
+      if (entities.isNotEmpty()) {
+        dao.insertCourses(entities)
+        Log.d(TAG, "Sincronizados ${entities.size} cursos para cache local")
       }
 
+      val courses = entities.map { entity ->
+        Course(
+            id = entity.id,
+            title = entity.title,
+            category = entity.category,
+            instructor = entity.instructor,
+            totalStudents = entity.totalStudents,
+            durationHours = entity.durationHours,
+            completionRate = entity.completionRate,
+            isPublished = entity.isPublished,
+        )
+      }
       Result.Success(courses)
     } catch (e: Exception) {
       Log.e(TAG, "Erro ao buscar cursos do Data Connect", e)
@@ -761,9 +774,9 @@ class FirebaseDataConnectService(
       target: AppUser,
       plainPassword: String,
   ): Result<Boolean> {
-    if (requester?.role != UserRole.ADMINISTRADOR) {
+    if (requester?.role != UserRole.ADMINISTRADOR && requester?.role != UserRole.COORDENADOR) {
       return Result.Error(
-          SecurityException("Apenas administrador pode cadastrar usuarios."),
+          SecurityException("Apenas administrador ou coordenador pode cadastrar usuarios."),
           "Acesso negado para cadastro de usuarios.",
       )
     }
@@ -857,9 +870,9 @@ class FirebaseDataConnectService(
    * armazenamento local. A tela de gestão refletirá a remoção imediatamente.
    */
   suspend fun deleteUserForAdmin(requester: AppUser?, userId: Int): Result<Boolean> {
-    if (requester?.role != UserRole.ADMINISTRADOR) {
+    if (requester?.role != UserRole.ADMINISTRADOR && requester?.role != UserRole.COORDENADOR) {
       return Result.Error(
-          SecurityException("Apenas administrador pode remover usuarios."),
+          SecurityException("Apenas administrador ou coordenador pode remover usuarios."),
           "Acesso negado para remocao de usuarios.",
       )
     }
@@ -919,10 +932,10 @@ class FirebaseDataConnectService(
    */
   fun observeUsersRealtimeForAdmin(requester: AppUser?): Flow<Result<List<ManagedUser>>> =
       callbackFlow {
-        if (requester?.role != UserRole.ADMINISTRADOR) {
+        if (requester?.role != UserRole.ADMINISTRADOR && requester?.role != UserRole.COORDENADOR) {
           trySend(
               Result.Error(
-                  SecurityException("Apenas administrador pode observar usuarios."),
+                  SecurityException("Apenas administrador ou coordenador pode observar usuarios."),
                   "Acesso negado para leitura de usuarios.",
               )
           )
@@ -1007,7 +1020,8 @@ class FirebaseDataConnectService(
                             subtitle = doc.getString("subtitle").orEmpty(),
                             iconKey = doc.getString("iconKey").orEmpty().ifBlank { "calendar" },
                             timeLabel = doc.getString("timeLabel").orEmpty().ifBlank { "agora" },
-                            companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
+                            companyId =
+                                (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                         )
                       }
                       ?.sortedByDescending { it.id }
@@ -1029,10 +1043,11 @@ class FirebaseDataConnectService(
       Log.d(TAG, "Iniciando busca de estudantes do Data Connect...")
 
       val snapshot = firestore.collection(COLLECTION_STUDENTS).get().await()
-      val students =
+      val entities =
           snapshot.documents.mapNotNull { doc ->
             try {
-              Student(
+              val statusName = doc.getString("status").orEmpty().ifBlank { "Active" }
+              StudentEntity(
                   id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null,
                   name = doc.getString("name") ?: "",
                   email = doc.getString("email") ?: "",
@@ -1040,12 +1055,9 @@ class FirebaseDataConnectService(
                   enrolledClass = doc.getString("enrolledClass") ?: "",
                   progress = (doc.get("progress") as? Number)?.toFloat() ?: 0f,
                   status =
-                      runCatching {
-                            StudentStatus.valueOf(
-                                doc.getString("status").orEmpty().ifBlank { "Active" }
-                            )
-                          }
+                      runCatching { StudentStatus.valueOf(statusName) }
                           .getOrDefault(StudentStatus.Active),
+                  companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
               )
             } catch (e: Exception) {
               Log.w(TAG, "Erro ao converter estudante: ${doc.id}", e)
@@ -1054,11 +1066,22 @@ class FirebaseDataConnectService(
           }
 
       // Sincronizar com cache local
-      if (students.isNotEmpty()) {
-        dao.insertStudents(students.map { it.toEntity() })
-        Log.d(TAG, "Sincronizados ${students.size} estudantes para cache local")
+      if (entities.isNotEmpty()) {
+        dao.insertStudents(entities)
+        Log.d(TAG, "Sincronizados ${entities.size} estudantes para cache local")
       }
 
+      val students = entities.map { entity ->
+        Student(
+            id = entity.id,
+            name = entity.name,
+            email = entity.email,
+            course = entity.course,
+            enrolledClass = entity.enrolledClass,
+            progress = entity.progress,
+            status = entity.status,
+        )
+      }
       Result.Success(students)
     } catch (e: Exception) {
       Log.e(TAG, "Erro ao buscar estudantes do Data Connect", e)
@@ -1072,10 +1095,11 @@ class FirebaseDataConnectService(
       Log.d(TAG, "Iniciando busca de turmas do Data Connect...")
 
       val snapshot = firestore.collection(COLLECTION_CLASSES).get().await()
-      val classes =
+      val entities =
           snapshot.documents.mapNotNull { doc ->
             try {
-              SchoolClass(
+              val statusName = doc.getString("status").orEmpty().ifBlank { "Open" }
+              SchoolClassEntity(
                   id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null,
                   name = doc.getString("name") ?: "",
                   course = doc.getString("course") ?: "",
@@ -1084,12 +1108,9 @@ class FirebaseDataConnectService(
                   maxCapacity = (doc.get("maxCapacity") as? Number)?.toInt() ?: 0,
                   schedule = doc.getString("schedule") ?: "",
                   status =
-                      runCatching {
-                            ClassStatus.valueOf(
-                                doc.getString("status").orEmpty().ifBlank { "Open" }
-                            )
-                          }
+                      runCatching { ClassStatus.valueOf(statusName) }
                           .getOrDefault(ClassStatus.Open),
+                  companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
               )
             } catch (e: Exception) {
               Log.w(TAG, "Erro ao converter turma: ${doc.id}", e)
@@ -1097,11 +1118,23 @@ class FirebaseDataConnectService(
             }
           }
 
-      if (classes.isNotEmpty()) {
-        dao.insertClasses(classes.map { it.toEntity() })
-        Log.d(TAG, "Sincronizadas ${classes.size} turmas para cache local")
+      if (entities.isNotEmpty()) {
+        dao.insertClasses(entities)
+        Log.d(TAG, "Sincronizadas ${entities.size} turmas para cache local")
       }
 
+      val classes = entities.map { entity ->
+        SchoolClass(
+            id = entity.id,
+            name = entity.name,
+            course = entity.course,
+            instructor = entity.instructor,
+            studentsCount = entity.studentsCount,
+            maxCapacity = entity.maxCapacity,
+            schedule = entity.schedule,
+            status = entity.status,
+        )
+      }
       Result.Success(classes)
     } catch (e: Exception) {
       Log.e(TAG, "Erro ao buscar turmas do Data Connect", e)
@@ -1115,10 +1148,10 @@ class FirebaseDataConnectService(
       Log.d(TAG, "Iniciando busca de professores do Data Connect...")
 
       val snapshot = firestore.collection(COLLECTION_TEACHERS).get().await()
-      val teachers =
+      val entities =
           snapshot.documents.mapNotNull { doc ->
             try {
-              Teacher(
+              tech.datatower.sebrae.desafio.data.local.TeacherEntity(
                   id = (doc.get("id") as? Number)?.toInt() ?: return@mapNotNull null,
                   name = doc.getString("name") ?: "",
                   email = doc.getString("email") ?: "",
@@ -1127,6 +1160,7 @@ class FirebaseDataConnectService(
                   totalStudents = (doc.get("totalStudents") as? Number)?.toInt() ?: 0,
                   rating = (doc.get("rating") as? Number)?.toFloat() ?: 0f,
                   isActive = doc.getBoolean("isActive") ?: true,
+                  companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
               )
             } catch (e: Exception) {
               Log.w(TAG, "Erro ao converter professor: ${doc.id}", e)
@@ -1135,15 +1169,73 @@ class FirebaseDataConnectService(
           }
 
       // Sincronizar com cache local
-      if (teachers.isNotEmpty()) {
-        dao.insertTeachers(teachers.map { it.toEntity() })
-        Log.d(TAG, "Sincronizados ${teachers.size} professores para cache local")
+      if (entities.isNotEmpty()) {
+        dao.insertTeachers(entities)
+        Log.d(TAG, "Sincronizados ${entities.size} professores para cache local")
       }
 
+      val teachers = entities.map { entity ->
+        Teacher(
+            id = entity.id,
+            name = entity.name,
+            email = entity.email,
+            specialty = entity.specialty,
+            activeCourses = entity.activeCourses,
+            totalStudents = entity.totalStudents,
+            rating = entity.rating,
+            isActive = entity.isActive,
+        )
+      }
       Result.Success(teachers)
     } catch (e: Exception) {
       Log.e(TAG, "Erro ao buscar professores do Data Connect", e)
       Result.Error(e, "Falha ao buscar professores: ${e.message}")
+    }
+  }
+
+  /**
+   * Busca a lista de usuários do Firestore e atualiza o cache local (Room).
+   *
+   * Necessário para que a tela de Perfil consiga localizar o usuário via `observeUserById()` mesmo
+   * quando ele foi carregado apenas pelo listener em tempo real da tela de Gestão.
+   */
+  suspend fun fetchUsers(): Result<List<AppUser>> {
+    return try {
+      Log.d(TAG, "Buscando usuarios do Firestore para cache local...")
+      val snapshot = firestore.collection(COLLECTION_USERS).get().await()
+      val entities =
+          snapshot.documents.mapNotNull { doc ->
+            try {
+              val id =
+                  (doc.get("id") as? Number)?.toInt()
+                      ?: (doc.get("legacyId") as? Number)?.toInt()
+                      ?: doc.id.hashCode().let {
+                        if (it == Int.MIN_VALUE) 1 else kotlin.math.abs(it)
+                      }
+              val roleRaw = doc.getString("role").orEmpty().uppercase()
+              val role = runCatching { UserRole.valueOf(roleRaw) }.getOrDefault(UserRole.PROFESSOR)
+              tech.datatower.sebrae.desafio.data.local.AppUserEntity(
+                  id = id,
+                  name = doc.getString("name").orEmpty().ifBlank { "Usuario" },
+                  email = doc.getString("email").orEmpty(),
+                  role = role,
+                  passwordHash = doc.getString("passwordHash").orEmpty(),
+              )
+            } catch (e: Exception) {
+              Log.w(TAG, "Erro ao converter usuario: ${doc.id}", e)
+              null
+            }
+          }
+      if (entities.isNotEmpty()) {
+        dao.insertUsers(entities)
+        Log.d(TAG, "Sincronizados ${entities.size} usuarios para cache local")
+      }
+      Result.Success(
+          entities.map { AppUser(id = it.id, name = it.name, email = it.email, role = it.role) }
+      )
+    } catch (e: Exception) {
+      Log.w(TAG, "Falha ao buscar usuarios do Firestore", e)
+      Result.Error(e, "Falha ao buscar usuarios: ${e.message}")
     }
   }
 
@@ -1481,9 +1573,10 @@ class FirebaseDataConnectService(
       // Atualiza empresas do usuario no AuthManager
       val currentUser = AuthManager.currentUser.value
       if (currentUser != null) {
-        val activeCompanies = entities.filter { it.isActive }.map {
-          Company(id = it.id, name = it.name, cnpj = it.cnpj, isActive = it.isActive)
-        }
+        val activeCompanies =
+            entities
+                .filter { it.isActive }
+                .map { Company(id = it.id, name = it.name, cnpj = it.cnpj, isActive = it.isActive) }
         if (currentUser.role == UserRole.ADMINISTRADOR) {
           AuthManager.setUserCompanies(activeCompanies.sortedBy { it.name })
         }
@@ -1510,11 +1603,16 @@ class FirebaseDataConnectService(
       // Atualiza empresas do usuario no AuthManager para nao-admins
       val currentUser = AuthManager.currentUser.value
       if (currentUser != null && currentUser.role != UserRole.ADMINISTRADOR) {
-        val userCompanyIds = entities.filter { it.userId == currentUser.id }.map { it.companyId }.toSet()
+        val userCompanyIds =
+            entities.filter { it.userId == currentUser.id }.map { it.companyId }.toSet()
         if (userCompanyIds.isNotEmpty()) {
-          val companies = dao.observeCompanies().first().filter { it.id in userCompanyIds }.map {
-            Company(id = it.id, name = it.name, cnpj = it.cnpj, isActive = it.isActive)
-          }
+          val companies =
+              dao.observeCompanies()
+                  .first()
+                  .filter { it.id in userCompanyIds }
+                  .map {
+                    Company(id = it.id, name = it.name, cnpj = it.cnpj, isActive = it.isActive)
+                  }
           AuthManager.setUserCompanies(companies.sortedBy { it.name })
         }
       }
@@ -1536,19 +1634,28 @@ class FirebaseDataConnectService(
       )
     }
     return try {
-      val payload = mapOf(
-          "id" to company.id,
-          "name" to company.name,
-          "cnpj" to company.cnpj,
-          "isActive" to company.isActive,
+      val payload =
+          mapOf(
+              "id" to company.id,
+              "name" to company.name,
+              "cnpj" to company.cnpj,
+              "isActive" to company.isActive,
+          )
+      firestore
+          .collection(COLLECTION_COMPANIES)
+          .document(company.id.toString())
+          .set(payload)
+          .await()
+      dao.insertCompanies(
+          listOf(
+              CompanyEntity(
+                  id = company.id,
+                  name = company.name,
+                  cnpj = company.cnpj,
+                  isActive = company.isActive,
+              )
+          )
       )
-      firestore.collection(COLLECTION_COMPANIES).document(company.id.toString()).set(payload).await()
-      dao.insertCompanies(listOf(CompanyEntity(
-          id = company.id,
-          name = company.name,
-          cnpj = company.cnpj,
-          isActive = company.isActive,
-      )))
       Result.Success(true)
     } catch (e: Exception) {
       Result.Error(e, "Falha ao salvar empresa: ${e.message}")
@@ -1771,7 +1878,8 @@ class FirebaseDataConnectService(
                         status =
                             runCatching { StudentStatus.valueOf(statusName) }
                                 .getOrDefault(StudentStatus.Active),
-                        companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
+                        companyId =
+                            (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                     )
                   }
                   .orEmpty()
@@ -1802,7 +1910,8 @@ class FirebaseDataConnectService(
                         durationHours = (doc.get("durationHours") as? Number)?.toInt() ?: 0,
                         completionRate = (doc.get("completionRate") as? Number)?.toFloat() ?: 0f,
                         isPublished = doc.getBoolean("isPublished") ?: false,
-                        companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
+                        companyId =
+                            (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                     )
                   }
                   .orEmpty()
@@ -1837,7 +1946,8 @@ class FirebaseDataConnectService(
                         status =
                             runCatching { ClassStatus.valueOf(statusName) }
                                 .getOrDefault(ClassStatus.Open),
-                        companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
+                        companyId =
+                            (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                     )
                   }
                   .orEmpty()
@@ -1866,7 +1976,8 @@ class FirebaseDataConnectService(
                         issuedDate = doc.getString("issuedDate").orEmpty(),
                         hours = (doc.get("hours") as? Number)?.toInt() ?: 0,
                         code = doc.getString("code").orEmpty(),
-                        companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
+                        companyId =
+                            (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                     )
                   }
                   .orEmpty()
@@ -1893,7 +2004,8 @@ class FirebaseDataConnectService(
                     MonthlyEnrollmentEntity(
                         month = month,
                         count = (doc.get("count") as? Number)?.toInt() ?: 0,
-                        companyId = (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
+                        companyId =
+                            (doc.get("companyId") as? Number)?.toInt() ?: currentCompanyId(),
                     )
                   }
                   .orEmpty()

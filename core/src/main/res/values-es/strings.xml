@@ -326,6 +326,7 @@
     <!-- Pantalla de perfil de usuario -->
     <string name="user_profile_title">Perfil del Usuario</string>
     <string name="user_profile_section_access">Datos de Acceso</string>
+    <string name="user_profile_section_companies">Acceso a Empresas</string>
     <string name="user_profile_section_teacher">Vínculo como Instructor</string>
     <string name="user_profile_section_student">Vínculo como Alumno</string>
     <string name="user_profile_label_name">Nombre</string>

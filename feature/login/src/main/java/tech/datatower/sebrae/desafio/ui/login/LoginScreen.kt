@@ -176,6 +176,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             passwordFocusRequester = passwordFocusRequester,
             onLoginClick = ::attemptLogin,
         )
+
+        Spacer(modifier = Modifier.height(24.dp))
       }
 
       // Overlay de carregamento cobre toda a tela durante o login

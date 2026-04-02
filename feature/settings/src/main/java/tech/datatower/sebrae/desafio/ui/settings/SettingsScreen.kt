@@ -43,6 +43,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Lock
@@ -104,6 +105,7 @@ fun SettingsScreen(
     onBack: () -> Unit = {},
     onOpenUserManagement: () -> Unit = {},
     onOpenCompanyManagement: () -> Unit = {},
+    onOpenCsvImport: () -> Unit = {},
 ) {
   val viewModel: SettingsViewModel = hiltViewModel()
   val settings by viewModel.settings.collectAsState()
@@ -163,13 +165,18 @@ fun SettingsScreen(
                 }
               },
           )
-          if (currentUser?.role == UserRole.ADMINISTRADOR) {
+          if (
+              currentUser?.role == UserRole.ADMINISTRADOR ||
+                  currentUser?.role == UserRole.COORDENADOR
+          ) {
             SettingsItem(
                 icon = Icons.Outlined.ManageAccounts,
                 title = "Usuários",
                 subtitle = "Cadastro e controle de acesso",
                 onClick = onOpenUserManagement,
             )
+          }
+          if (currentUser?.role == UserRole.ADMINISTRADOR) {
             SettingsItem(
                 icon = Icons.Outlined.Storage,
                 title = "Empresas",
@@ -237,6 +244,14 @@ fun SettingsScreen(
                 viewModel.updateLanguage(it)
               },
           )
+          if (currentUser?.role == UserRole.ADMINISTRADOR) {
+            SettingsItem(
+                icon = Icons.Outlined.FileUpload,
+                title = stringResource(R.string.settings_item_import_csv),
+                subtitle = stringResource(R.string.settings_subtitle_import_csv),
+                onClick = onOpenCsvImport,
+            )
+          }
           if (canClearStorage) {
             SettingsItem(
                 icon = Icons.Outlined.Storage,

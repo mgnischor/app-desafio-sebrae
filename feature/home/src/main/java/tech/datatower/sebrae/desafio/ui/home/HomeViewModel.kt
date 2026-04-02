@@ -30,12 +30,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -56,22 +58,30 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
+  @OptIn(ExperimentalCoroutinesApi::class)
   val stats: StateFlow<List<QuickStat>> =
-      companyId
-          .filterNotNull()
-          .flatMapLatest { cid -> repository.observeHomeQuickStats(cid) }
+      AuthManager.currentCompany
+          .map { it?.id }
+          .flatMapLatest { cid ->
+            if (cid == null) return@flatMapLatest flowOf(emptyList())
+            repository.observeHomeQuickStats(cid)
+          }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   val recentActivities: StateFlow<List<RecentActivity>> =
-      companyId
-          .filterNotNull()
-          .flatMapLatest { cid -> repository.observeRecentActivities(cid, limit = 5) }
+      AuthManager.currentCompany
+          .map { it?.id }
+          .flatMapLatest { cid ->
+            if (cid == null) return@flatMapLatest flowOf(emptyList())
+            repository.observeRecentActivities(cid, limit = 5)
+          }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   private val _isSyncing = MutableStateFlow(false)
   val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
+  private var realtimeJob: Job? = null
 
   fun syncHome() {
     viewModelScope.launch {
@@ -82,7 +92,8 @@ constructor(
   }
 
   fun observeRealtimeActivities(user: AppUser?) {
-    viewModelScope.launch {
+    realtimeJob?.cancel()
+    realtimeJob = viewModelScope.launch {
       dataConnectService.observeRecentActivitiesRealtimeForBackoffice(user).collect { result ->
         if (result is FirebaseDataConnectService.Result.Error) {
           Log.w("HomeViewModel", "Falha no listener de atividades recentes: ${result.message}")

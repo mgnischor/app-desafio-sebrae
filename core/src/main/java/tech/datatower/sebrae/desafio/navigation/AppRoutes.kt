@@ -102,6 +102,12 @@ object AppRoutes {
   /** Rota da tela de seleção de empresa (company switcher). */
   const val COMPANY_SELECTOR = "companies/select"
 
+  /** Rota da tela de importação de dados via CSV (admin-only). */
+  const val CSV_IMPORT = "settings/csv-import"
+
+  /** Rota da tela de lançamento de acompanhamento do aluno. */
+  const val MONITORING_ENTRY = "students/{$STUDENT_ID_ARG}/monitoring/entry"
+
   /**
    * Monta a rota de acompanhamento do aluno substituindo o argumento dinâmico.
    *
@@ -143,4 +149,6 @@ object AppRoutes {
   fun userProfile(userId: Int): String = "users/$userId/profile"
 
   fun companyDetail(companyId: Int): String = "companies/$companyId"
+
+  fun monitoringEntry(studentId: Int): String = "students/$studentId/monitoring/entry"
 }

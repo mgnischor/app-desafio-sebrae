@@ -36,7 +36,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.local.AppDao
+import tech.datatower.sebrae.desafio.data.local.GuardianStudentEntity
+import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.data.remote.NoOpRemoteBootstrapper
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseRemoteBootstrapper
@@ -109,6 +112,25 @@ object AppGraph {
 
       remoteBootstrapper.bootstrapIntoLocalCache()
       service.syncAllData()
+
+      // Seed guardian-student links for demo RESPONSAVEL user
+      seedGuardianStudentLinks(dao)
     }
+  }
+
+  /**
+   * Vincula o usuário RESPONSAVEL de demonstração aos dois primeiros alunos
+   * disponíveis na empresa, caso ainda não existam vínculos.
+   */
+  private suspend fun seedGuardianStudentLinks(dao: AppDao) {
+    val guardian =
+        AuthManager.users.value.firstOrNull { it.role == UserRole.RESPONSAVEL } ?: return
+    val students = dao.getStudentsOnce()
+    if (students.isEmpty()) return
+    // Link guardian to first 2 students in the company
+    val linked = students.take(2).map { s ->
+      GuardianStudentEntity(guardianUserId = guardian.id, studentId = s.id)
+    }
+    dao.insertGuardianStudents(linked)
   }
 }

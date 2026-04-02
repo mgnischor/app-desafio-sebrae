@@ -32,15 +32,28 @@ package tech.datatower.sebrae.desafio.data.model
  * Cada perfil define quais módulos e informações são acessíveis na aplicação.
  */
 enum class UserRole {
+  /** Acesso mínimo: visualiza apenas alunos vinculados e seus dados de acompanhamento. */
+  RESPONSAVEL,
+
   /** Acesso restrito: Alunos, Calendário e Certificados. */
   PROFESSOR,
 
   /**
-   * Acesso intermediário: Alunos, Cursos, Turmas, Instrutores, Calendário, Certificados e
-   * Relatórios.
+   * Acesso educacional: Alunos (qualquer), Calendário, Certificados e lançamento de acompanhamento.
+   */
+  ORIENTADOR_EDUCACIONAL,
+
+  /**
+   * Acesso psicopedagógico: Alunos (qualquer), Calendário, Certificados e acompanhamento completo.
+   */
+  PSICOPEDAGOGO,
+
+  /**
+   * Acesso intermediário: Alunos, Cursos, Turmas, Instrutores, Calendário, Certificados, Relatórios
+   * e criação de usuários na empresa vinculada.
    */
   COORDENADOR,
 
-  /** Acesso completo a todos os módulos, incluindo Configurações. */
+  /** Acesso completo a todos os módulos, incluindo Configurações e importação CSV. */
   ADMINISTRADOR,
 }

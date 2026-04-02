@@ -38,13 +38,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import tech.datatower.sebrae.desafio.data.connectivity.ConnectivityObserver
 import tech.datatower.sebrae.desafio.data.model.AppSettings
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import tech.datatower.sebrae.desafio.navigation.AppNavHost
 import tech.datatower.sebrae.desafio.ui.components.OfflineBanner
 import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
-import javax.inject.Inject
 
 /**
  * Activity de entrada da aplicação.

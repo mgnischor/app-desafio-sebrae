@@ -28,6 +28,7 @@ package tech.datatower.sebrae.desafio.ui.users
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -136,19 +137,34 @@ fun UserManagementScreen(
     ) {
       SnackbarHost(hostState = snackbarHostState)
 
-      if (currentUser?.role != UserRole.ADMINISTRADOR) {
+      if (
+          currentUser?.role != UserRole.ADMINISTRADOR && currentUser?.role != UserRole.COORDENADOR
+      ) {
         ElevatedCard(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.elevatedCardColors(),
         ) {
           Text(
-              text = "Apenas administradores podem acessar esta tela.",
+              text = "Apenas administradores e coordenadores podem acessar esta tela.",
               modifier = Modifier.padding(16.dp),
               style = MaterialTheme.typography.bodyMedium,
           )
         }
         return@Column
       }
+
+      // Coordenador can only create users with roles below their level
+      val allowedRoles =
+          if (currentUser.role == UserRole.COORDENADOR) {
+            listOf(
+                UserRole.RESPONSAVEL,
+                UserRole.PROFESSOR,
+                UserRole.ORIENTADOR_EDUCACIONAL,
+                UserRole.PSICOPEDAGOGO,
+            )
+          } else {
+            UserRole.entries.toList()
+          }
 
       ElevatedCard(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.elevatedCardColors()) {
         Column(
@@ -181,7 +197,7 @@ fun UserManagementScreen(
 
           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = "Perfil de acesso", style = MaterialTheme.typography.labelLarge)
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -190,6 +206,7 @@ fun UserManagementScreen(
                     selected = selectedRole == role,
                     onClick = { selectedRole = role },
                     label = { Text(roleLabel(role)) },
+                    enabled = role in allowedRoles,
                 )
               }
             }
@@ -275,7 +292,10 @@ fun UserManagementScreen(
  */
 private fun roleLabel(role: UserRole): String {
   return when (role) {
+    UserRole.RESPONSAVEL -> "Responsável"
     UserRole.PROFESSOR -> "Professor"
+    UserRole.ORIENTADOR_EDUCACIONAL -> "Orientador Educacional"
+    UserRole.PSICOPEDAGOGO -> "Psicopedagogo"
     UserRole.COORDENADOR -> "Coordenador"
     UserRole.ADMINISTRADOR -> "Administrador"
   }

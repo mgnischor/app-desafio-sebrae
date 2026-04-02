@@ -34,12 +34,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.AppUser
+import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.model.SchoolClass
 import tech.datatower.sebrae.desafio.data.model.Student
 import tech.datatower.sebrae.desafio.data.model.Teacher
@@ -78,6 +78,8 @@ constructor(
 
   private val userId: Int = checkNotNull(savedStateHandle[AppRoutes.USER_ID_ARG])
 
+  // ── Estados do perfil ────────────────────────────────────────────────────
+
   /** Estado de carregamento e resultado do perfil. */
   sealed class ProfileState {
     data object Loading : ProfileState()
@@ -90,32 +92,75 @@ constructor(
   private val _state = MutableStateFlow<ProfileState>(ProfileState.Loading)
   val state: StateFlow<ProfileState> = _state.asStateFlow()
 
+  // ── Estados de acesso a empresa ──────────────────────────────────────────
+
+  /** Resultado de uma operação de vínculo usuário-empresa. */
+  sealed class CompanyAccessResult {
+    data object Idle : CompanyAccessResult()
+
+    data object Success : CompanyAccessResult()
+
+    data class Error(val message: String) : CompanyAccessResult()
+  }
+
+  /** Lista de todas as empresas cadastradas no sistema. */
+  private val _allCompanies = MutableStateFlow<List<Company>>(emptyList())
+  val allCompanies: StateFlow<List<Company>> = _allCompanies.asStateFlow()
+
+  /** IDs das empresas às quais este usuário tem acesso. */
+  private val _userCompanyIds = MutableStateFlow<Set<Int>>(emptySet())
+  val userCompanyIds: StateFlow<Set<Int>> = _userCompanyIds.asStateFlow()
+
+  /** Resultado da última operação de concessão/revogação de acesso. */
+  private val _companyAccessResult = MutableStateFlow<CompanyAccessResult>(CompanyAccessResult.Idle)
+  val companyAccessResult: StateFlow<CompanyAccessResult> = _companyAccessResult.asStateFlow()
+
+  // ── Inicialização ────────────────────────────────────────────────────────
+
   init {
     viewModelScope.launch {
+      // Sincroniza usuários para que observeUserById() encontre o registro no Room,
+      // mesmo quando o usuário veio do listener em tempo real do Firestore.
+      dataConnectService.fetchUsers()
+      // Sincroniza empresas e vínculos usuário-empresa para exibição na UI.
+      dataConnectService.syncScope(ScreenDataScope.COMPANIES)
       dataConnectService.syncScope(ScreenDataScope.TEACHERS)
       dataConnectService.syncScope(ScreenDataScope.STUDENTS)
       dataConnectService.syncScope(ScreenDataScope.CLASSES)
     }
     observeProfile()
+    observeCompanyAccess()
   }
+
+  // ── Observações reativas ─────────────────────────────────────────────────
 
   private fun observeProfile() {
     viewModelScope.launch {
-      AuthManager.currentCompany
-          .map { it?.id }
-          .filterNotNull()
-          .flatMapLatest { cid ->
+      // Combina empresa atual + dados do usuário em uma única observação.
+      // NÃO usa filterNotNull() para não bloquear quando currentCompany ainda é null
+      // (ex.: login demo ou Firestore sem empresas cadastradas).
+      combine(
+              AuthManager.currentCompany,
+              repository.observeUserById(userId),
+          ) { company, user ->
+            Pair(company, user)
+          }
+          .flatMapLatest { (company, user) ->
+            if (user == null) {
+              return@flatMapLatest flowOf(ProfileState.Error("Usuário não encontrado."))
+            }
+
+            val cid =
+                company?.id
+                    ?: // Empresa ainda não carregada — exibe dados básicos sem vínculos acadêmicos
+                    return@flatMapLatest flowOf(ProfileState.Success(UserProfileData(user = user)))
+
+            // Empresa disponível — vincula instrutor/aluno pelo e-mail
             combine(
-                repository.observeUserById(userId),
                 repository.observeTeachers(cid),
                 repository.observeStudents(cid),
                 repository.observeClasses(cid),
-            ) { user, teachers, students, classes ->
-              if (user == null) {
-                return@combine ProfileState.Error("Usuário não encontrado.")
-              }
-
-              // Vincula pelo e-mail — mesma pessoa pode ser instrutor e aluno
+            ) { teachers, students, classes ->
               val teacher = teachers.firstOrNull { it.email.equals(user.email, ignoreCase = true) }
               val student = students.firstOrNull { it.email.equals(user.email, ignoreCase = true) }
 
@@ -142,5 +187,50 @@ constructor(
           }
           .collect { _state.value = it }
     }
+  }
+
+  private fun observeCompanyAccess() {
+    viewModelScope.launch { repository.observeCompanies().collect { _allCompanies.value = it } }
+    viewModelScope.launch {
+      repository.observeCompaniesForUser(userId).collect { companies ->
+        _userCompanyIds.value = companies.map { it.id }.toSet()
+      }
+    }
+  }
+
+  // ── Ações ────────────────────────────────────────────────────────────────
+
+  /**
+   * Concede ou revoga o acesso de um usuário a uma empresa.
+   *
+   * @param requester Usuário logado que realiza a ação (deve ser ADMINISTRADOR).
+   * @param companyId ID da empresa a conceder/revogar.
+   * @param currentlyHasAccess Se `true`, revoga o acesso; se `false`, concede.
+   */
+  fun toggleCompanyAccess(requester: AppUser?, companyId: Int, currentlyHasAccess: Boolean) {
+    viewModelScope.launch {
+      val result =
+          if (currentlyHasAccess) {
+            dataConnectService.revokeUserCompanyAccess(requester, userId, companyId)
+          } else {
+            dataConnectService.grantUserCompanyAccess(requester, userId, companyId)
+          }
+      _companyAccessResult.value =
+          when (result) {
+            is FirebaseDataConnectService.Result.Success -> CompanyAccessResult.Success
+            is FirebaseDataConnectService.Result.Error ->
+                CompanyAccessResult.Error(
+                    result.message
+                        .ifBlank { result.exception.message.orEmpty() }
+                        .ifBlank { "Operação falhou. Verifique suas permissões." }
+                )
+            FirebaseDataConnectService.Result.Loading -> CompanyAccessResult.Idle
+          }
+    }
+  }
+
+  /** Limpa o resultado da última operação de acesso a empresa. */
+  fun clearCompanyAccessResult() {
+    _companyAccessResult.value = CompanyAccessResult.Idle
   }
 }
