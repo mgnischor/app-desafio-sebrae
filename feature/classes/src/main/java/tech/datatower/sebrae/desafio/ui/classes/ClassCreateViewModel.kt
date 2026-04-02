@@ -50,6 +50,12 @@ import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de cadastro de turma.
+ *
+ * Expõe [classes], [courses] e [teachers] para preencher os seletores do formulário.
+ * A operação de persistência é executada via [saveClass]; o resultado é rastreado em [saveState].
+ */
 @HiltViewModel
 class ClassCreateViewModel
 @Inject
@@ -103,13 +109,22 @@ constructor(
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  /**
+   * Resultado da operação de persistência da turma.
+   */
   sealed class SaveState {
+    /** Formulário ainda não submetido ou resultado já consumido. */
     data object Idle : SaveState()
 
+    /** Persistência em andamento; botão de confirmação deve ser desabilitado. */
     data object Saving : SaveState()
 
+    /** Persistência concluída com sucesso; navegar de volta. */
     data object Success : SaveState()
 
+    /** Persistência falhou.
+     * @property message Descrição do erro para exibir ao usuário.
+     */
     data class Error(val message: String) : SaveState()
   }
 
