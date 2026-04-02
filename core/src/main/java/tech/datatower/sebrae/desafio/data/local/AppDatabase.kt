@@ -122,6 +122,14 @@ data class StudentEntity(
     val status: StudentStatus,
 )
 
+/** Vínculo entre responsável (guardian) e aluno — permite filtrar alunos por responsável. */
+@Entity(tableName = "guardian_students")
+data class GuardianStudentEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val guardianUserId: Int,
+    val studentId: Int,
+)
+
 /** Modelo e comportamento relacionados a certificate entity. */
 @Entity(tableName = "certificates")
 data class CertificateEntity(
@@ -288,9 +296,11 @@ interface AppDao {
   @Query("SELECT * FROM companies WHERE id = :companyId LIMIT 1")
   fun observeCompanyById(companyId: Int): Flow<CompanyEntity?>
 
-  @Query("SELECT * FROM companies ORDER BY name") suspend fun getCompaniesOnce(): List<CompanyEntity>
+  @Query("SELECT * FROM companies ORDER BY name")
+  suspend fun getCompaniesOnce(): List<CompanyEntity>
 
-  @Query("DELETE FROM companies WHERE id = :companyId") suspend fun deleteCompanyById(companyId: Int)
+  @Query("DELETE FROM companies WHERE id = :companyId")
+  suspend fun deleteCompanyById(companyId: Int)
 
   @Query("DELETE FROM companies") suspend fun clearCompanies()
 
@@ -302,10 +312,14 @@ interface AppDao {
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertUserCompany(item: UserCompanyEntity)
 
-  @Query("SELECT c.* FROM companies c INNER JOIN user_companies uc ON c.id = uc.companyId WHERE uc.userId = :userId ORDER BY c.name")
+  @Query(
+      "SELECT c.* FROM companies c INNER JOIN user_companies uc ON c.id = uc.companyId WHERE uc.userId = :userId ORDER BY c.name"
+  )
   fun observeCompaniesForUser(userId: Int): Flow<List<CompanyEntity>>
 
-  @Query("SELECT c.* FROM companies c INNER JOIN user_companies uc ON c.id = uc.companyId WHERE uc.userId = :userId ORDER BY c.name")
+  @Query(
+      "SELECT c.* FROM companies c INNER JOIN user_companies uc ON c.id = uc.companyId WHERE uc.userId = :userId ORDER BY c.name"
+  )
   suspend fun getCompaniesForUserOnce(userId: Int): List<CompanyEntity>
 
   @Query("SELECT * FROM user_companies WHERE userId = :userId AND companyId = :companyId LIMIT 1")
@@ -347,6 +361,8 @@ interface AppDao {
   @Query("SELECT * FROM courses WHERE companyId = :companyId ORDER BY title")
   fun observeCourses(companyId: Int): Flow<List<CourseEntity>>
 
+  @Query("SELECT * FROM courses ORDER BY title") fun observeAllCourses(): Flow<List<CourseEntity>>
+
   @Query("SELECT * FROM courses WHERE id = :courseId LIMIT 1")
   fun observeCourseById(courseId: Int): Flow<CourseEntity?>
 
@@ -358,13 +374,20 @@ interface AppDao {
   @Query("SELECT * FROM school_classes WHERE companyId = :companyId ORDER BY name")
   fun observeClasses(companyId: Int): Flow<List<SchoolClassEntity>>
 
+  @Query("SELECT * FROM school_classes ORDER BY name")
+  fun observeAllClasses(): Flow<List<SchoolClassEntity>>
+
   @Query("SELECT * FROM school_classes WHERE id = :classId LIMIT 1")
   fun observeClassById(classId: Int): Flow<SchoolClassEntity?>
 
-  @Query("SELECT * FROM school_classes WHERE companyId = :companyId AND course = :courseName ORDER BY name")
+  @Query(
+      "SELECT * FROM school_classes WHERE companyId = :companyId AND course = :courseName ORDER BY name"
+  )
   fun observeClassesByCourse(companyId: Int, courseName: String): Flow<List<SchoolClassEntity>>
 
-  @Query("SELECT * FROM school_classes WHERE companyId = :companyId AND instructor = :teacherName ORDER BY name")
+  @Query(
+      "SELECT * FROM school_classes WHERE companyId = :companyId AND instructor = :teacherName ORDER BY name"
+  )
   fun observeClassesByTeacher(companyId: Int, teacherName: String): Flow<List<SchoolClassEntity>>
 
   // ── Teachers (filtered by company) ────────────────────────────────────────
@@ -374,6 +397,8 @@ interface AppDao {
 
   @Query("SELECT * FROM teachers WHERE companyId = :companyId ORDER BY name")
   fun observeTeachers(companyId: Int): Flow<List<TeacherEntity>>
+
+  @Query("SELECT * FROM teachers ORDER BY name") fun observeAllTeachers(): Flow<List<TeacherEntity>>
 
   @Query("SELECT * FROM teachers WHERE id = :teacherId LIMIT 1")
   fun observeTeacherById(teacherId: Int): Flow<TeacherEntity?>
@@ -386,11 +411,27 @@ interface AppDao {
   @Query("SELECT * FROM students WHERE companyId = :companyId ORDER BY name")
   fun observeStudents(companyId: Int): Flow<List<StudentEntity>>
 
+  @Query("SELECT * FROM students ORDER BY name") fun observeAllStudents(): Flow<List<StudentEntity>>
+
   @Query("SELECT * FROM students WHERE id = :studentId LIMIT 1")
   fun observeStudentById(studentId: Int): Flow<StudentEntity?>
 
-  @Query("SELECT * FROM students WHERE companyId = :companyId AND enrolledClass = :className ORDER BY name")
+  @Query(
+      "SELECT * FROM students WHERE companyId = :companyId AND enrolledClass = :className ORDER BY name"
+  )
   fun observeStudentsByClass(companyId: Int, className: String): Flow<List<StudentEntity>>
+
+  // ── Guardian-Student links ────────────────────────────────────────────────
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insertGuardianStudents(items: List<GuardianStudentEntity>)
+
+  @Query(
+      "SELECT s.* FROM students s INNER JOIN guardian_students gs ON s.id = gs.studentId WHERE gs.guardianUserId = :guardianUserId AND s.companyId = :companyId ORDER BY s.name"
+  )
+  fun observeStudentsByGuardian(guardianUserId: Int, companyId: Int): Flow<List<StudentEntity>>
+
+  @Query("DELETE FROM guardian_students") suspend fun clearGuardianStudents()
 
   // ── Certificates (filtered by company) ────────────────────────────────────
 
@@ -399,6 +440,9 @@ interface AppDao {
 
   @Query("SELECT * FROM certificates WHERE companyId = :companyId ORDER BY id DESC")
   fun observeCertificates(companyId: Int): Flow<List<CertificateEntity>>
+
+  @Query("SELECT * FROM certificates ORDER BY id DESC")
+  fun observeAllCertificates(): Flow<List<CertificateEntity>>
 
   // ── Calendar Events (filtered by company) ─────────────────────────────────
 
@@ -416,11 +460,19 @@ interface AppDao {
   @Query("SELECT * FROM recent_activities WHERE companyId = :companyId ORDER BY id DESC")
   fun observeRecentActivities(companyId: Int): Flow<List<RecentActivityEntity>>
 
-  @Query("SELECT * FROM recent_activities WHERE companyId = :companyId ORDER BY id DESC LIMIT :limit")
+  @Query(
+      "SELECT * FROM recent_activities WHERE companyId = :companyId ORDER BY id DESC LIMIT :limit"
+  )
   fun observeRecentActivitiesLimited(companyId: Int, limit: Int): Flow<List<RecentActivityEntity>>
 
-  @Query("SELECT * FROM recent_activities WHERE companyId = :companyId ORDER BY id DESC LIMIT :limit OFFSET :offset")
-  fun observeRecentActivitiesPaged(companyId: Int, limit: Int, offset: Int): Flow<List<RecentActivityEntity>>
+  @Query(
+      "SELECT * FROM recent_activities WHERE companyId = :companyId ORDER BY id DESC LIMIT :limit OFFSET :offset"
+  )
+  fun observeRecentActivitiesPaged(
+      companyId: Int,
+      limit: Int,
+      offset: Int,
+  ): Flow<List<RecentActivityEntity>>
 
   @Query("SELECT COUNT(*) FROM recent_activities WHERE companyId = :companyId")
   fun observeRecentActivitiesCount(companyId: Int): Flow<Int>
@@ -599,6 +651,7 @@ interface AppDao {
             SchoolClassEntity::class,
             TeacherEntity::class,
             StudentEntity::class,
+            GuardianStudentEntity::class,
             CertificateEntity::class,
             CalendarEventEntity::class,
             RecentActivityEntity::class,
@@ -611,7 +664,7 @@ interface AppDao {
             AppSettingsEntity::class,
             AppUserEntity::class,
         ],
-    version = 7,
+    version = 9,
     exportSchema = false,
 )
 /** Modelo e comportamento relacionados a app database. */
