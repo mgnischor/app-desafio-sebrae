@@ -89,12 +89,10 @@ fun StudentCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   val saveState by viewModel.saveState.collectAsState()
   val isSaving = saveState is StudentCreateViewModel.SaveState.Saving
 
-  val saveSuccessMessage = stringResource(R.string.student_create_success)
   val saveErrorMessage = stringResource(R.string.student_create_error_save)
   LaunchedEffect(saveState) {
     when (val s = saveState) {
       is StudentCreateViewModel.SaveState.Success -> {
-        snackbarHostState.showSnackbar(saveSuccessMessage)
         viewModel.resetSaveState()
         onBack()
       }
