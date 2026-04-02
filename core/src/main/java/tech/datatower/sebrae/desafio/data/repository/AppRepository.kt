@@ -77,7 +77,16 @@ import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.data.model.UserRole
 import java.security.MessageDigest
 
-/** Modelo e comportamento relacionados a report summary. */
+/**
+ * Consolida os indicadores agrégados exibidos na tela de relatórios.
+ *
+ * @property activeStudents Quantidade de alunos com status ativo na empresa.
+ * @property activeCourses Quantidade de cursos publicados na empresa.
+ * @property totalClasses Quantidade total de turmas cadastradas na empresa.
+ * @property completionRate Taxa média de conclusão dos cursos no intervalo de `0f..1f`.
+ * @property certificates Quantidade de certificados emitidos na empresa.
+ * @property averageTeacherRating Avaliação média dos instrutores no intervalo de `0f..5f`.
+ */
 data class ReportSummary(
     val activeStudents: Int,
     val activeCourses: Int,
@@ -87,25 +96,48 @@ data class ReportSummary(
     val averageTeacherRating: Float,
 )
 
-/** Modelo e comportamento relacionados a course completion metric. */
+/**
+ * Métrica de taxa de conclusão por curso para o gráfico de relatórios.
+ *
+ * @property name Título do curso.
+ * @property rate Taxa de conclusão no intervalo de `0f..1f`.
+ */
 data class CourseCompletionMetric(
     val name: String,
     val rate: Float,
 )
 
-/** Modelo e comportamento relacionados a monthly enrollment metric. */
+/**
+ * Métrica de matrículas agrupadas por mês para o gráfico de evolução.
+ *
+ * @property month Mês de referência no formato `"YYYY-MM"`.
+ * @property count Quantidade de matrículas registradas no mês.
+ */
 data class MonthlyEnrollmentMetric(
     val month: String,
     val count: Int,
 )
 
-/** Modelo e comportamento relacionados a status distribution metric. */
+/**
+ * Métrica de distribuição de alunos por status acadêmico para o gráfico de relatórios.
+ *
+ * @property status Situação acadêmica do grupo de alunos.
+ * @property count Quantidade de alunos nesse status.
+ */
 data class StatusDistributionMetric(
     val status: StudentStatus,
     val count: Int,
 )
 
-/** Centraliza operações de dados relacionadas a app. */
+/**
+ * Repositório central de acesso a dados da aplicação.
+ *
+ * Orquestra operações de leitura e escrita no banco local Room, expondo [Flow] reativos para a
+ * camada de UI via ViewModels. Cada método de consulta filtra os dados pelo `companyId` ativo,
+ * garantindo o isolamento multi-tenant.
+ *
+ * Esta classe é provida como singleton pelo Hilt e não deve ser instanciada diretamente.
+ */
 class AppRepository(
     private val database: AppDatabase,
     private val dao: AppDao,
@@ -659,7 +691,7 @@ private fun CompanyEntity.toModel() =
 private fun Company.toEntity() =
     CompanyEntity(id = id, name = name, cnpj = cnpj, isActive = isActive)
 
-/** Executa a rotina de course entity dentro do contexto deste componente. */
+/** Converte [CourseEntity] para o modelo de domínio [Course]. */
 private fun CourseEntity.toModel() =
     Course(
         id = id,
@@ -672,7 +704,7 @@ private fun CourseEntity.toModel() =
         isPublished = isPublished,
     )
 
-/** Executa a rotina de school class entity dentro do contexto deste componente. */
+/** Converte [SchoolClassEntity] para o modelo de domínio [SchoolClass]. */
 private fun SchoolClassEntity.toModel() =
     SchoolClass(
         id = id,
@@ -685,7 +717,7 @@ private fun SchoolClassEntity.toModel() =
         status = status,
     )
 
-/** Executa a rotina de teacher entity dentro do contexto deste componente. */
+/** Converte [TeacherEntity] para o modelo de domínio [Teacher]. */
 private fun TeacherEntity.toModel() =
     Teacher(
         id = id,
@@ -698,7 +730,7 @@ private fun TeacherEntity.toModel() =
         isActive = isActive,
     )
 
-/** Executa a rotina de student entity dentro do contexto deste componente. */
+/** Converte [StudentEntity] para o modelo de domínio [Student]. */
 private fun StudentEntity.toModel() =
     Student(
         id = id,
@@ -710,7 +742,7 @@ private fun StudentEntity.toModel() =
         status = status,
     )
 
-/** Executa a rotina de certificate entity dentro do contexto deste componente. */
+/** Converte [CertificateEntity] para o modelo de domínio [Certificate]. */
 private fun CertificateEntity.toModel() =
     Certificate(
         id = id,
@@ -721,7 +753,7 @@ private fun CertificateEntity.toModel() =
         code = code,
     )
 
-/** Executa a rotina de calendar event entity dentro do contexto deste componente. */
+/** Converte [CalendarEventEntity] para o modelo de domínio [CalendarEvent]. */
 private fun CalendarEventEntity.toModel() =
     CalendarEvent(
         id = id,
@@ -733,7 +765,10 @@ private fun CalendarEventEntity.toModel() =
         type = type,
     )
 
-/** Executa a rotina de recent activity entity dentro do contexto deste componente. */
+/**
+ * Converte [RecentActivityEntity] para o modelo de domínio [RecentActivity],
+ * mapeando a `iconKey` string para o [ImageVector] correspondente.
+ */
 private fun RecentActivityEntity.toModel() =
     RecentActivity(
         id = id,
@@ -749,7 +784,7 @@ private fun RecentActivityEntity.toModel() =
         timeLabel = timeLabel,
     )
 
-/** Executa a rotina de attendance entity dentro do contexto deste componente. */
+/** Converte [AttendanceEntity] para o modelo de domínio [AttendanceRecord]. */
 private fun AttendanceEntity.toModel() =
     AttendanceRecord(
         date = date,
@@ -758,7 +793,7 @@ private fun AttendanceEntity.toModel() =
         justification = justification,
     )
 
-/** Executa a rotina de behavior entity dentro do contexto deste componente. */
+/** Converte [BehaviorEntity] para o modelo de domínio [BehaviorRecord]. */
 private fun BehaviorEntity.toModel() =
     BehaviorRecord(
         date = date,
@@ -769,7 +804,7 @@ private fun BehaviorEntity.toModel() =
         note = note,
     )
 
-/** Executa a rotina de pedagogical need entity dentro do contexto deste componente. */
+/** Converte [PedagogicalNeedEntity] para o modelo de domínio [PedagogicalNeed]. */
 private fun PedagogicalNeedEntity.toModel() =
     PedagogicalNeed(
         type = type,
@@ -778,7 +813,7 @@ private fun PedagogicalNeedEntity.toModel() =
         accommodations = accommodations,
     )
 
-/** Executa a rotina de psychological need entity dentro do contexto deste componente. */
+/** Converte [PsychologicalNeedEntity] para o modelo de domínio [PsychologicalNeed]. */
 private fun PsychologicalNeedEntity.toModel() =
     PsychologicalNeed(
         summary = summary,
@@ -787,7 +822,7 @@ private fun PsychologicalNeedEntity.toModel() =
         reviewAt = reviewAt,
     )
 
-/** Executa a rotina de parent follow up entity dentro do contexto deste componente. */
+/** Converte [ParentFollowUpEntity] para o modelo de domínio [ParentFollowUp]. */
 private fun ParentFollowUpEntity.toModel() =
     ParentFollowUp(
         date = date,
@@ -797,22 +832,22 @@ private fun ParentFollowUpEntity.toModel() =
         notes = notes,
     )
 
-/** Executa a rotina de app user entity dentro do contexto deste componente. */
+/** Converte [AppUserEntity] para o modelo de domínio [AppUser]. */
 private fun AppUserEntity.toModel() = AppUser(id = id, name = name, email = email, role = role)
 
 /**
- * Executa a rotina de app user dentro do contexto deste componente.
+ * Converte [AppUser] para [AppUserEntity] registrando o hash SHA-256 da senha.
  *
- * @param passwordHash Valor de entrada utilizado por esta operação.
+ * @param passwordHash Hash SHA-256 da senha do usuário para armazenamento local seguro.
  */
 private fun AppUser.toEntity(passwordHash: String) =
     AppUserEntity(id = id, name = name, email = email, role = role, passwordHash = passwordHash)
 
 /**
- * Executa a rotina de sha256 dentro do contexto deste componente.
+ * Calcula o hash SHA-256 hexadecimal da string fornecida para armazenamento seguro de senhas.
  *
- * @param input Valor de entrada utilizado por esta operação.
- * @return Resultado produzido pela operação em formato `String`.
+ * @param input Valor a ser hasheado.
+ * @return Hash SHA-256 em representação hexadecimal minúscula.
  */
 private fun sha256(input: String): String {
   val digest = MessageDigest.getInstance("SHA-256")
