@@ -45,6 +45,13 @@ import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de certificados.
+ *
+ * Expõe [certificates] como [StateFlow] reativo filtrado pela empresa ativa.
+ * Administradores vêem certificados de todas as empresas; demais perfis vêem apenas
+ * os da empresa corrente. A sincronização inicial com o Firestore é disparada no bloco `init`.
+ */
 @HiltViewModel
 class CertificatesViewModel
 @Inject
@@ -53,6 +60,7 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
+  /** Lista de certificados visíveis ao perfil logado, filtrada por empresa quando não-administrador. */
   @OptIn(ExperimentalCoroutinesApi::class)
   val certificates: StateFlow<List<Certificate>> =
       combine(AuthManager.currentUser, AuthManager.currentCompany) { user, company ->
