@@ -28,19 +28,25 @@ package tech.datatower.sebrae.desafio.ui.students
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -59,7 +65,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.core.R
+import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
+import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
+import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.ActivityDeliveryStatus
+import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.AttendanceRecord
 import tech.datatower.sebrae.desafio.data.model.AttendanceStatus
 import tech.datatower.sebrae.desafio.data.model.ConfidentialityLevel
@@ -86,7 +96,9 @@ import tech.datatower.sebrae.desafio.ui.theme.AppDesafioSEBRAETheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentMonitoringScreen(
+    currentUser: AppUser? = null,
     onBack: () -> Unit = {},
+    onOpenMonitoringEntry: () -> Unit = {},
 ) {
   val viewModel: StudentMonitoringViewModel = hiltViewModel()
   val snapshot by viewModel.snapshot.collectAsState()
@@ -108,6 +120,13 @@ fun StudentMonitoringScreen(
       remember(data) { StudentMonitoringRules.attendanceRate(data.attendanceRecords) }
   val averageGrade = remember(data) { StudentMonitoringRules.averageGrade(data.behaviorRecords) }
 
+  val canCreateEntry =
+      AccessPolicy.can(
+          currentUser?.role,
+          ProtectedResource.StudentMonitoring,
+          ProtectedAction.Create,
+      )
+
   var selectedTab by remember { mutableIntStateOf(0) }
   val tabs =
       listOf(
@@ -121,43 +140,54 @@ fun StudentMonitoringScreen(
   DetailScaffold(title = stringResource(R.string.monitoring_title), onBack = onBack) {
       innerPadding,
       _ ->
-    LazyColumn(
-        modifier = Modifier.padding(innerPadding),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-      item {
-        StudentHeader(
-            name = data.studentName,
-            enrolledClass = data.enrolledClass,
-            attendanceRate = attendanceRate,
-            averageGrade = averageGrade,
-        )
-      }
+    Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+      LazyColumn(
+          contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        item {
+          StudentHeader(
+              name = data.studentName,
+              enrolledClass = data.enrolledClass,
+              attendanceRate = attendanceRate,
+              averageGrade = averageGrade,
+          )
+        }
 
-      if (alerts.isNotEmpty()) {
-        item { AlertsCard(alerts = alerts) }
-      }
+        if (alerts.isNotEmpty()) {
+          item { AlertsCard(alerts = alerts) }
+        }
 
-      item {
-        PrimaryTabRow(selectedTabIndex = selectedTab) {
-          tabs.forEachIndexed { index, title ->
-            Tab(
-                selected = selectedTab == index,
-                onClick = { selectedTab = index },
-                text = { Text(title) },
-            )
+        item {
+          PrimaryTabRow(selectedTabIndex = selectedTab) {
+            tabs.forEachIndexed { index, title ->
+              Tab(
+                  selected = selectedTab == index,
+                  onClick = { selectedTab = index },
+                  text = { Text(title) },
+              )
+            }
           }
+        }
+
+        // Lazy render tab content to avoid rebuilding off-screen sections
+        when (selectedTab) {
+          0 -> item { AttendanceSection(data) }
+          1 -> item { BehaviorSection(data) }
+          2 -> item { PedagogicalSection(data) }
+          3 -> item { PsychologicalSection(data) }
+          else -> item { ParentSection(data) }
         }
       }
 
-      // Lazy render tab content to avoid rebuilding off-screen sections
-      when (selectedTab) {
-        0 -> item { AttendanceSection(data) }
-        1 -> item { BehaviorSection(data) }
-        2 -> item { PedagogicalSection(data) }
-        3 -> item { PsychologicalSection(data) }
-        else -> item { ParentSection(data) }
+      if (canCreateEntry) {
+        FloatingActionButton(
+            onClick = onOpenMonitoringEntry,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            containerColor = MaterialTheme.colorScheme.primary,
+        ) {
+          Icon(Icons.Filled.Add, contentDescription = "Novo lançamento")
+        }
       }
     }
   }
