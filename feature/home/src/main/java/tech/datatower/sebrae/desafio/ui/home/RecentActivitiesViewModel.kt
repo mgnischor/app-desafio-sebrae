@@ -30,10 +30,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -53,12 +54,14 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
+  @OptIn(ExperimentalCoroutinesApi::class)
   val allRecents: StateFlow<List<RecentActivity>> =
-      companyId
-          .filterNotNull()
-          .flatMapLatest { cid -> repository.observeRecentActivities(cid) }
+      AuthManager.currentCompany
+          .map { it?.id }
+          .flatMapLatest { cid ->
+            if (cid == null) return@flatMapLatest flowOf(emptyList())
+            repository.observeRecentActivities(cid)
+          }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   fun syncHome() {
