@@ -3,6 +3,7 @@ package tech.datatower.sebrae.desafio.ui.companies
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,7 +13,6 @@ import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
-import javax.inject.Inject
 
 @HiltViewModel
 class CompanyManagementViewModel
@@ -56,8 +56,7 @@ constructor(
     observeJob = viewModelScope.launch {
       repository.observeCompanies().collect { companies ->
         val deletedIds = _locallyDeletedIds.value
-        _state.value =
-            CompaniesState.Success(companies.filter { it.id !in deletedIds })
+        _state.value = CompaniesState.Success(companies.filter { it.id !in deletedIds })
       }
     }
   }
@@ -65,8 +64,7 @@ constructor(
   fun createCompany(requester: AppUser?, name: String, cnpj: String) {
     viewModelScope.launch {
       try {
-        val companies =
-            (_state.value as? CompaniesState.Success)?.companies ?: emptyList()
+        val companies = (_state.value as? CompaniesState.Success)?.companies ?: emptyList()
         val nextId = (companies.maxOfOrNull { it.id } ?: 0) + 1
         val company = Company(id = nextId, name = name.trim(), cnpj = cnpj.trim())
         repository.upsertCompanyForAdmin(requester, company)
@@ -91,8 +89,7 @@ constructor(
         _actionResult.value = ActionResult.Error(e.message ?: "Acesso negado.")
       } catch (e: Exception) {
         _locallyDeletedIds.update { it - companyId }
-        _actionResult.value =
-            ActionResult.Error(e.message ?: "Não foi possível remover a empresa.")
+        _actionResult.value = ActionResult.Error(e.message ?: "Não foi possível remover a empresa.")
       }
     }
   }
