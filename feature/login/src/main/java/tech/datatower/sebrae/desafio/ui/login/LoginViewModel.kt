@@ -36,22 +36,43 @@ import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de login.
+ *
+ * Coordena o fluxo de autenticação via [AuthManager.loginWithFirebase] e expõe o estado
+ * resultante como [StateFlow] para que a tela reaja adequadamente a cada situação.
+ */
 @HiltViewModel
 class LoginViewModel @Inject constructor() : ViewModel() {
 
+  /**
+   * Representa o estado atual do fluxo de autenticação.
+   *
+   * Use `when` de forma exaustiva para tratar cada situação na UI.
+   */
   sealed class LoginState {
+    /** Estado inicial; nenhuma tentativa de login foi feita ainda. */
     data object Idle : LoginState()
 
+    /** Aguardando resposta da operação de login em andamento. */
     data object Loading : LoginState()
 
+    /** Login falhou; contém a mensagem de erro para exibição ao usuário. */
     data class Error(val message: String) : LoginState()
 
+    /** Login concluído com sucesso; a navegação para a tela inicial deve ser acionada. */
     data object Success : LoginState()
   }
 
   private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
   val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
 
+  /**
+   * Inicia a tentativa de login via Firebase Auth e atualiza [loginState] conforme o resultado.
+   *
+   * @param email Endereço de e-mail informado pelo usuário.
+   * @param password Senha informada pelo usuário.
+   */
   fun login(email: String, password: String) {
     viewModelScope.launch {
       _loginState.value = LoginState.Loading
@@ -63,6 +84,7 @@ class LoginViewModel @Inject constructor() : ViewModel() {
     }
   }
 
+  /** Redefine [loginState] para [LoginState.Idle], permitindo nova tentativa de login. */
   fun resetState() {
     _loginState.value = LoginState.Idle
   }
