@@ -56,7 +56,10 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-  private val companyId = AuthManager.currentCompany.map { it?.id }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+  private val companyId =
+      AuthManager.currentCompany
+          .map { it?.id }
+          .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
   val events: StateFlow<List<CalendarEvent>> =
       companyId
