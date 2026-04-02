@@ -20,6 +20,14 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import javax.inject.Inject
 
+/**
+ * ViewModel de importação de dados via CSV.
+ *
+ * Lê um arquivo CSV a partir de uma [Uri] de conteúdo e insere os registros
+ * no banco local Room via [AppRepository]. Suporta importação de [CsvImportType.STUDENTS],
+ * [CsvImportType.COURSES], [CsvImportType.CLASSES] e [CsvImportType.TEACHERS].
+ * IDs são gerados localmente; o cabecalho é detectado automaticamente e ignorado.
+ */
 @HiltViewModel
 class CsvImportViewModel
 @Inject
@@ -27,6 +35,15 @@ constructor(
     private val repository: AppRepository,
 ) : ViewModel() {
 
+  /**
+   * Abre e processa o arquivo CSV indicado por [uri], inserindo os registros no banco local.
+   *
+   * @param context Contexto Android para acesso ao [ContentResolver].
+   * @param uri URI do arquivo CSV selecionado pelo usuário.
+   * @param type Tipo de entidade a importar.
+   * @param onSuccess Callback chamado com a quantidade de registros importados com sucesso.
+   * @param onError Callback chamado com a mensagem de erro em caso de falha.
+   */
   fun importCsv(
       context: Context,
       uri: Uri,
@@ -64,6 +81,13 @@ constructor(
     }
   }
 
+  /**
+   * Lê todas as linhas não vazias do arquivo CSV via [ContentResolver].
+   *
+   * @param context Contexto Android para acesso ao [ContentResolver].
+   * @param uri URI do arquivo CSV.
+   * @return Lista de linhas do arquivo, com linhas em branco removidas.
+   */
   private fun readCsvLines(context: Context, uri: Uri): List<String> {
     val inputStream =
         context.contentResolver.openInputStream(uri)
@@ -73,6 +97,13 @@ constructor(
     }
   }
 
+  /**
+   * Verifica heurísticamente se a primeira linha do CSV é um cabeçalho.
+   *
+   * @param line Primeira linha do arquivo.
+   * @param type Tipo de entidade; define as palavras-chave esperadas no cabeçalho.
+   * @return `true` se a linha parece ser um cabeçalho e deve ser ignorada.
+   */
   private fun looksLikeHeader(line: String, type: CsvImportType): Boolean {
     val lower = line.lowercase()
     return when (type) {
@@ -83,8 +114,23 @@ constructor(
     }
   }
 
+  /**
+   * Divide uma linha CSV por vírgula, removendo espaços extras em cada campo.
+   *
+   * @param line Linha do arquivo CSV.
+   * @return Lista de valores dos campos.
+   */
   private fun parseLine(line: String): List<String> = line.split(",").map { it.trim() }
 
+  /**
+   * Importa alunos a partir das linhas do CSV e insere no Room.
+   *
+   * Formato esperado: `nome, email, curso, turma[, progresso%, status]`.
+   *
+   * @param companyId ID da empresa ativa.
+   * @param lines Linhas de dados (sem cabeçalho).
+   * @return Quantidade de registros importados com sucesso.
+   */
   private suspend fun importStudents(companyId: Int, lines: List<String>): Int {
     val baseId = System.currentTimeMillis().toInt().let { if (it < 0) -it else it } % 100_000
     val entities = lines.mapIndexedNotNull { index, line ->
@@ -107,6 +153,15 @@ constructor(
     return entities.size
   }
 
+  /**
+   * Importa cursos a partir das linhas do CSV e insere no Room.
+   *
+   * Formato esperado: `titulo, categoria, instrutor[, totalAlunos, duracaoHoras, conclusao%, publicado]`.
+   *
+   * @param companyId ID da empresa ativa.
+   * @param lines Linhas de dados (sem cabeçalho).
+   * @return Quantidade de registros importados com sucesso.
+   */
   private suspend fun importCourses(companyId: Int, lines: List<String>): Int {
     val baseId = System.currentTimeMillis().toInt().let { if (it < 0) -it else it } % 100_000
     val entities = lines.mapIndexedNotNull { index, line ->
@@ -128,6 +183,15 @@ constructor(
     return entities.size
   }
 
+  /**
+   * Importa turmas a partir das linhas do CSV e insere no Room.
+   *
+   * Formato esperado: `nome, curso, instrutor[, totalAlunos, capacidadeMax, agenda, status]`.
+   *
+   * @param companyId ID da empresa ativa.
+   * @param lines Linhas de dados (sem cabeçalho).
+   * @return Quantidade de registros importados com sucesso.
+   */
   private suspend fun importClasses(companyId: Int, lines: List<String>): Int {
     val baseId = System.currentTimeMillis().toInt().let { if (it < 0) -it else it } % 100_000
     val entities = lines.mapIndexedNotNull { index, line ->
@@ -151,6 +215,15 @@ constructor(
     return entities.size
   }
 
+  /**
+   * Importa professores a partir das linhas do CSV e insere no Room.
+   *
+   * Formato esperado: `nome, email, especialidade[, cursosAtivos, totalAlunos, avaliação]`.
+   *
+   * @param companyId ID da empresa ativa.
+   * @param lines Linhas de dados (sem cabeçalho).
+   * @return Quantidade de registros importados com sucesso.
+   */
   private suspend fun importTeachers(companyId: Int, lines: List<String>): Int {
     val baseId = System.currentTimeMillis().toInt().let { if (it < 0) -it else it } % 100_000
     val entities = lines.mapIndexedNotNull { index, line ->
