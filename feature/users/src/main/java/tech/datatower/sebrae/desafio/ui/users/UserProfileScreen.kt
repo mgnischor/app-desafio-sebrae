@@ -39,6 +39,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.ElevatedCard
@@ -46,16 +47,22 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.core.R
+import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
@@ -75,6 +82,24 @@ import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 fun UserProfileScreen(onBack: () -> Unit) {
   val viewModel: UserProfileViewModel = hiltViewModel()
   val state by viewModel.state.collectAsState()
+  val allCompanies by viewModel.allCompanies.collectAsState()
+  val userCompanyIds by viewModel.userCompanyIds.collectAsState()
+  val companyAccessResult by viewModel.companyAccessResult.collectAsState()
+  val currentUser by AuthManager.currentUser.collectAsState()
+
+  val snackbarHostState = remember { SnackbarHostState() }
+
+  // Exibe snackbar quando uma operação de acesso retorna erro
+  LaunchedEffect(companyAccessResult) {
+    if (companyAccessResult is UserProfileViewModel.CompanyAccessResult.Error) {
+      snackbarHostState.showSnackbar(
+          (companyAccessResult as UserProfileViewModel.CompanyAccessResult.Error).message
+      )
+      viewModel.clearCompanyAccessResult()
+    } else if (companyAccessResult is UserProfileViewModel.CompanyAccessResult.Success) {
+      viewModel.clearCompanyAccessResult()
+    }
+  }
 
   Box(modifier = Modifier.fillMaxSize()) {
     DetailScaffold(
@@ -139,6 +164,56 @@ fun UserProfileScreen(onBack: () -> Unit) {
                     label = stringResource(R.string.user_profile_label_role),
                     value = roleLabel(data.user.role),
                 )
+              }
+            }
+
+            // ── Acesso a Empresas (somente ADMINISTRADOR) ─────────
+            if (currentUser?.role == UserRole.ADMINISTRADOR && allCompanies.isNotEmpty()) {
+              ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                  Row(
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.spacedBy(8.dp),
+                  ) {
+                    Icon(Icons.Outlined.Business, contentDescription = null)
+                    Text(
+                        stringResource(R.string.user_profile_section_companies),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                  }
+                  HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+                  allCompanies.forEach { company ->
+                    val hasAccess = company.id in userCompanyIds
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                      Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = company.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        if (company.cnpj.isNotBlank()) {
+                          Text(
+                              text = company.cnpj,
+                              style = MaterialTheme.typography.bodySmall,
+                              color = MaterialTheme.colorScheme.onSurfaceVariant,
+                          )
+                        }
+                      }
+                      Switch(
+                          checked = hasAccess,
+                          onCheckedChange = {
+                            viewModel.toggleCompanyAccess(currentUser, company.id, hasAccess)
+                          },
+                      )
+                    }
+                  }
+                }
               }
             }
 
@@ -281,6 +356,12 @@ fun UserProfileScreen(onBack: () -> Unit) {
         }
       }
     }
+
+    // Snackbar para feedback de operações de acesso a empresa
+    SnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier.align(Alignment.BottomCenter),
+    )
   }
 }
 
@@ -314,7 +395,10 @@ private fun ProfileInfoRow(label: String, value: String) {
 /** Converte UserRole em label de exibição. */
 private fun roleLabel(role: UserRole): String =
     when (role) {
+      UserRole.RESPONSAVEL -> "Responsável"
       UserRole.PROFESSOR -> "Professor"
+      UserRole.ORIENTADOR_EDUCACIONAL -> "Orientador Educacional"
+      UserRole.PSICOPEDAGOGO -> "Psicopedagogo"
       UserRole.COORDENADOR -> "Coordenador"
       UserRole.ADMINISTRADOR -> "Administrador"
     }
