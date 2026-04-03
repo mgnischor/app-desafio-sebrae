@@ -26,6 +26,7 @@
 */
 package tech.datatower.sebrae.desafio.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
@@ -37,6 +38,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Upsert
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 import tech.datatower.sebrae.desafio.data.model.ActivityDeliveryStatus
 import tech.datatower.sebrae.desafio.data.model.AttendanceStatus
@@ -86,6 +89,7 @@ data class UserCompanyEntity(
  * @property durationHours Carga horária total em horas.
  * @property completionRate Taxa de conclusão no intervalo de `0f..1f`.
  * @property isPublished Indica se o curso está publicado para matrícula.
+ * @property startDate Data de início do curso no formato ISO-8601, ou `null` se não definida.
  */
 @Entity(tableName = "courses")
 data class CourseEntity(
@@ -98,6 +102,7 @@ data class CourseEntity(
     val durationHours: Int,
     val completionRate: Float,
     val isPublished: Boolean,
+    @ColumnInfo(defaultValue = "NULL") val startDate: String? = null,
 )
 
 /**
@@ -430,7 +435,9 @@ data class AppUserEntity(
  * Suporta conversão bidirecional de [LocalDate] e de listas de string (usada em `accommodations`).
  */
 class AppConverters {
-  /** Serializa um [LocalDate] no formato ISO-8601 (`"YYYY-MM-DD"`), ou `null` se o valor for nulo. */
+  /**
+   * Serializa um [LocalDate] no formato ISO-8601 (`"YYYY-MM-DD"`), ou `null` se o valor for nulo.
+   */
   @TypeConverter fun localDateToString(value: LocalDate?): String? = value?.toString()
 
   /** Desserializa uma string ISO-8601 para [LocalDate], ou `null` se o valor for nulo. */
@@ -832,7 +839,7 @@ interface AppDao {
             AppSettingsEntity::class,
             AppUserEntity::class,
         ],
-    version = 9,
+    version = 10,
     exportSchema = false,
 )
 /** Modelo e comportamento relacionados a app database. */
@@ -844,4 +851,14 @@ abstract class AppDatabase : RoomDatabase() {
    * @return Resultado produzido pela opera??o em formato `AppDao }`.
    */
   abstract fun appDao(): AppDao
+
+  companion object {
+    /** Migração da versão 9 para 10: adiciona coluna `startDate` à tabela `courses`. */
+    val MIGRATION_9_10 =
+        object : Migration(9, 10) {
+          override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE courses ADD COLUMN startDate TEXT DEFAULT NULL")
+          }
+        }
+  }
 }
