@@ -52,9 +52,9 @@ import javax.inject.Inject
 /**
  * ViewModel da tela de detalhes de turma.
  *
- * Carrega os dados da turma ([schoolClass]) e os alunos matriculados nela ([students]) a partir
- * do ID recebido via [SavedStateHandle]. Administradores vêem todos os alunos;
- * demais perfis apenas os da empresa corrente.
+ * Carrega os dados da turma ([schoolClass]) e os alunos matriculados nela ([students]) a partir do
+ * ID recebido via [SavedStateHandle]. Administradores vêem todos os alunos; demais perfis apenas os
+ * da empresa corrente.
  */
 @HiltViewModel
 class ClassDetailViewModel
@@ -67,7 +67,9 @@ constructor(
 
   private val classId: Int = checkNotNull(savedStateHandle[AppRoutes.CLASS_ID_ARG])
 
-  /** Dados completos da turma identificada pelo ID recebido na navegação; `null` enquanto carrega. */
+  /**
+   * Dados completos da turma identificada pelo ID recebido na navegação; `null` enquanto carrega.
+   */
   @OptIn(ExperimentalCoroutinesApi::class)
   val schoolClass: StateFlow<SchoolClass?> =
       combine(AuthManager.currentUser, AuthManager.currentCompany) { user, company ->
