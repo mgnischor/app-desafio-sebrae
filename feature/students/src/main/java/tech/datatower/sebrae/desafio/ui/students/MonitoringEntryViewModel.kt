@@ -28,10 +28,9 @@ import javax.inject.Inject
 /**
  * ViewModel do formulário de registro de entrada de monitoramento.
  *
- * Expõe o [snapshot] atual do aluno e disponibiliza [saveEntry] para persistir um novo
- * registro de frequência, comportamento, necessidade pedagógica/psicológica ou seguimento
- * com responsável.
- * O tipo de entrada é selecionado via [MonitoringEntryType] (definido na tela de entrada).
+ * Expõe o [snapshot] atual do aluno e disponibiliza [saveEntry] para persistir um novo registro de
+ * frequência, comportamento, necessidade pedagógica/psicológica ou seguimento com responsável. O
+ * tipo de entrada é selecionado via [MonitoringEntryType] (definido na tela de entrada).
  */
 @HiltViewModel
 class MonitoringEntryViewModel
@@ -52,8 +51,8 @@ constructor(
   /**
    * Persiste um novo registro de monitoramento para o aluno atual.
    *
-   * Determina a tabela de destino com base em [entryType] e construí o objeto de domínio
-   * com os parâmetros fornecidos. A data é sempre a data de hoje.
+   * Determina a tabela de destino com base em [entryType] e construí o objeto de domínio com os
+   * parâmetros fornecidos. A data é sempre a data de hoje.
    *
    * @param entryType Tipo de entrada a registrar (frequência, comportamento, etc.).
    * @param attendanceStatus Status de presença (usado apenas quando [entryType] = ATTENDANCE).
@@ -68,13 +67,16 @@ constructor(
    * @param pedagogicalDescription Descrição da necessidade pedagógica (apenas PEDAGOGICAL).
    * @param pedagogicalAccommodations Lista de adaptações pedagógicas (apenas PEDAGOGICAL).
    * @param psychologicalSummary Resumo da necessidade psicológica (apenas PSYCHOLOGICAL).
-   * @param confidentiality Nível de confidencialidade do registro psicológico (apenas PSYCHOLOGICAL).
-   * @param nextStep Próximo passo sugerido para o acompanhamento psicológico (apenas PSYCHOLOGICAL).
+   * @param confidentiality Nível de confidencialidade do registro psicológico (apenas
+   *   PSYCHOLOGICAL).
+   * @param nextStep Próximo passo sugerido para o acompanhamento psicológico (apenas
+   *   PSYCHOLOGICAL).
    * @param parentChannel Canal de contato com responsável (apenas PARENT_FOLLOWUP).
    * @param parentOutcome Resultado do contato com responsável (apenas PARENT_FOLLOWUP).
    * @param parentResponsible Profissional responsável pelo contato (apenas PARENT_FOLLOWUP).
    * @param parentNotes Observações sobre o contato com responsável (apenas PARENT_FOLLOWUP).
-   * @return `true` se o registro foi persistido com sucesso; `false` em caso de erro ou empresa não selecionada.
+   * @return `true` se o registro foi persistido com sucesso; `false` em caso de erro ou empresa não
+   *   selecionada.
    */
   suspend fun saveEntry(
       entryType: MonitoringEntryType,
