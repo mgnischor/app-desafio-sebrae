@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
+import tech.datatower.sebrae.desafio.data.auth.AuthManager.userCompanies
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.model.UserRole
@@ -42,8 +43,8 @@ import java.security.MessageDigest
  * Gerencia autenticação e sessão de usuário para toda a aplicação.
  *
  * Suporta dois fluxos de login:
- * - **Firebase Auth** (principal): autentica via Firebase e busca o perfil na collection `users`
- *   do Firestore.
+ * - **Firebase Auth** (principal): autentica via Firebase e busca o perfil na collection `users` do
+ *   Firestore.
  * - **Local (fallback)**: valida credenciais em memória usando hashes SHA-256, útil para
  *   desenvolvimento e testes offline.
  *
@@ -141,7 +142,10 @@ object AuthManager {
   /** Fluxo reativo com as empresas às quais o usuário autenticado tem acesso. */
   val userCompanies: StateFlow<List<Company>> = _userCompanies.asStateFlow()
 
-  /** Define as empresas que o usuário tem acesso e seleciona automaticamente a primeira quando nenhuma empresa está ativa. */
+  /**
+   * Define as empresas que o usuário tem acesso e seleciona automaticamente a primeira quando
+   * nenhuma empresa está ativa.
+   */
   fun setUserCompanies(companies: List<Company>) {
     _userCompanies.value = companies
     if (_currentCompany.value == null && companies.isNotEmpty()) {
@@ -274,8 +278,8 @@ object AuthManager {
   /**
    * Converte um [DocumentSnapshot] do Firestore para o modelo de domínio [AppUser].
    *
-   * Resolve o `id` preferindo o campo numérico `id`, em seguida `legacyId`, e por último um hash
-   * do ID do documento como fallback.
+   * Resolve o `id` preferindo o campo numérico `id`, em seguida `legacyId`, e por último um hash do
+   * ID do documento como fallback.
    *
    * @param fallbackEmail E-mail usado quando o campo `email` estiver ausente no documento.
    */
@@ -300,8 +304,7 @@ object AuthManager {
   /**
    * Insere ou atualiza um [AppUser] na lista reativa local de usuários.
    *
-   * Combina usuários por `id` ou `email` para evitar duplicatas após sincronização com o
-   * Firestore.
+   * Combina usuários por `id` ou `email` para evitar duplicatas após sincronização com o Firestore.
    *
    * @param user Usuário a ser inserido ou atualizado.
    */
