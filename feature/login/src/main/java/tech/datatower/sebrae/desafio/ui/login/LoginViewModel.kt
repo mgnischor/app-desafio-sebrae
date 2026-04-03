@@ -39,8 +39,8 @@ import javax.inject.Inject
 /**
  * ViewModel da tela de login.
  *
- * Coordena o fluxo de autenticação via [AuthManager.loginWithFirebase] e expõe o estado
- * resultante como [StateFlow] para que a tela reaja adequadamente a cada situação.
+ * Coordena o fluxo de autenticação via [AuthManager.loginWithFirebase] e expõe o estado resultante
+ * como [StateFlow] para que a tela reaja adequadamente a cada situação.
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor() : ViewModel() {
