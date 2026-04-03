@@ -105,8 +105,8 @@ class FirebaseDataConnectService(
   private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
   /**
-   * Representa um usuário gerenciado pelo administrador, incluindo hash de senha para operações
-   * de criação e atualização via painel de Gerenciamento de Usuários.
+   * Representa um usuário gerenciado pelo administrador, incluindo hash de senha para operações de
+   * criação e atualização via painel de Gerenciamento de Usuários.
    *
    * @property id Identificador único do usuário.
    * @property name Nome completo exibido na interface.
