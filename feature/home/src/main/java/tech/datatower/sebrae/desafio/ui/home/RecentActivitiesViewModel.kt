@@ -49,9 +49,9 @@ import javax.inject.Inject
 /**
  * ViewModel da tela de atividades recentes.
  *
- * Expõe [allRecents] como [StateFlow] reativo (sem limite de quantidade) filtrado pela empresa ativa.
- * Suporta sincronização pontual com Firebase via [syncHome] e escuta de eventos em tempo real
- * via [observeRealtimeActivities].
+ * Expõe [allRecents] como [StateFlow] reativo (sem limite de quantidade) filtrado pela empresa
+ * ativa. Suporta sincronização pontual com Firebase via [syncHome] e escuta de eventos em tempo
+ * real via [observeRealtimeActivities].
  */
 @HiltViewModel
 class RecentActivitiesViewModel
@@ -61,7 +61,9 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-  /** Todas as atividades recentes da empresa ativa, sem limite de quantidade, em ordem decrescente. */
+  /**
+   * Todas as atividades recentes da empresa ativa, sem limite de quantidade, em ordem decrescente.
+   */
   @OptIn(ExperimentalCoroutinesApi::class)
   val allRecents: StateFlow<List<RecentActivity>> =
       AuthManager.currentCompany
