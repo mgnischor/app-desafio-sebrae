@@ -46,9 +46,9 @@ import javax.inject.Inject
 /**
  * ViewModel da tela de gestão de usuários.
  *
- * Observa a lista de usuários em tempo real via Firestore Realtime Listener e fornece
- * operações de criação e exclusão com remoção otimista.
- * Todas as operações requerem um requester com perfil de ADMINISTRADOR.
+ * Observa a lista de usuários em tempo real via Firestore Realtime Listener e fornece operações de
+ * criação e exclusão com remoção otimista. Todas as operações requerem um requester com perfil de
+ * ADMINISTRADOR.
  */
 @HiltViewModel
 class UserManagementViewModel
@@ -58,19 +58,21 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
-  /**
-   * Estado da lista de usuários gerenciados, derivado do listener em tempo real.
-   */
+  /** Estado da lista de usuários gerenciados, derivado do listener em tempo real. */
   sealed class UsersState {
     /** Lista ainda está sendo carregada. */
     data object Loading : UsersState()
 
-    /** Lista de usuários disponível com sucesso.
+    /**
+     * Lista de usuários disponível com sucesso.
+     *
      * @property users Usuários gerenciados visíveis na UI (já com exclusões otimistas aplicadas).
      */
     data class Success(val users: List<FirebaseDataConnectService.ManagedUser>) : UsersState()
 
-    /** Falha ao carregar ou no listener em tempo real.
+    /**
+     * Falha ao carregar ou no listener em tempo real.
+     *
      * @property message Mensagem de erro para exibir na UI.
      */
     data class Error(val message: String) : UsersState()
@@ -88,9 +90,7 @@ constructor(
 
   private var observeJob: Job? = null
 
-  /**
-   * Resultado de uma operação de criação ou exclusão de usuário.
-   */
+  /** Resultado de uma operação de criação ou exclusão de usuário. */
   sealed class ActionResult {
     /** Nenhuma operação pendente ou resultado já consumido. */
     data object Idle : ActionResult()
@@ -98,7 +98,9 @@ constructor(
     /** Operação concluída com sucesso. */
     data object Success : ActionResult()
 
-    /** Operação falhou.
+    /**
+     * Operação falhou.
+     *
      * @property message Descrição do erro para exibir na UI.
      */
     data class Error(val message: String) : ActionResult()
@@ -110,8 +112,8 @@ constructor(
   /**
    * Inicia ou reinicia o listener em tempo real de usuários.
    *
-   * Cancela o job anterior antes de iniciar um novo. Deve ser chamado uma única vez
-   * após o compose inicializar (via `LaunchedEffect`).
+   * Cancela o job anterior antes de iniciar um novo. Deve ser chamado uma única vez após o compose
+   * inicializar (via `LaunchedEffect`).
    *
    * @param currentUser Usuário logado (deve ser ADMINISTRADOR para ver todos os usuários).
    */
