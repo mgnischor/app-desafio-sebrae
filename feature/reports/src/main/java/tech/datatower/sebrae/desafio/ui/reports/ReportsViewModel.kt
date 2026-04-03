@@ -55,8 +55,8 @@ import javax.inject.Inject
  * - [monthlyEnrollments]: matrículas mensais.
  * - [statusDistribution]: distribuição de status de alunos.
  *
- * Um listener em tempo real do Firestore é iniciado no bloco `init` e cancelado
- * automaticamente quando o ViewModel é destruído.
+ * Um listener em tempo real do Firestore é iniciado no bloco `init` e cancelado automaticamente
+ * quando o ViewModel é destruído.
  */
 @HiltViewModel
 class ReportsViewModel
