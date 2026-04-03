@@ -50,6 +50,34 @@ object RelationshipRules {
   }
 
   /**
+   * Calcula a contagem de cursos ativos por instrutor com base nas turmas existentes.
+   *
+   * @param classes Lista atual de turmas cadastradas.
+   * @return Mapa `nomeDoInstrutor -> quantidadeDeturmas`.
+   */
+  fun realActiveCoursesCountByTeacher(classes: List<SchoolClass>): Map<String, Int> {
+    return classes.groupingBy { it.instructor.trim() }.eachCount()
+  }
+
+  /**
+   * Calcula a contagem de alunos por instrutor com base nas matrículas existentes.
+   *
+   * @param students Lista atual de alunos cadastrados.
+   * @param classes Lista atual de turmas cadastradas.
+   * @return Mapa `nomeDoInstrutor -> totalDeAlunos`.
+   */
+  fun realStudentsByTeacher(students: List<Student>, classes: List<SchoolClass>): Map<String, Int> {
+    val studentsByClass = realStudentsByClass(students)
+    val result = mutableMapOf<String, Int>()
+    classes.forEach { schoolClass ->
+      val teacherName = schoolClass.instructor.trim()
+      val count = studentsByClass[schoolClass.name.trim()] ?: 0
+      result[teacherName] = (result[teacherName] ?: 0) + count
+    }
+    return result
+  }
+
+  /**
    * Valida se um aluno novo/atualizado referencia curso e turma já existentes.
    *
    * @param student Aluno que será persistido.
