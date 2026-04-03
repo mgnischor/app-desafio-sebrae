@@ -4,7 +4,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,13 +15,14 @@ import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import tech.datatower.sebrae.desafio.navigation.AppRoutes
+import javax.inject.Inject
 
 /**
  * ViewModel da tela de detalhes de empresa.
  *
- * Expõe os dados da empresa ([company]), os usuários vinculados ([linkedUserIds]) e
- * a lista global de usuários ([allUsers]) para gestão de acesso.
- * Suporta atualização dos dados da empresa e concessão/revogação de acesso de usuários.
+ * Expõe os dados da empresa ([company]), os usuários vinculados ([linkedUserIds]) e a lista global
+ * de usuários ([allUsers]) para gestão de acesso. Suporta atualização dos dados da empresa e
+ * concessão/revogação de acesso de usuários.
  */
 @HiltViewModel
 class CompanyDetailViewModel
@@ -50,9 +50,7 @@ constructor(
   val allUsers: StateFlow<List<AppUser>> =
       AuthManager.users.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-  /**
-   * Resultado de uma operação de atualização ou vínculo de acesso.
-   */
+  /** Resultado de uma operação de atualização ou vínculo de acesso. */
   sealed class SaveState {
     /** Nenhuma operação pendente. */
     data object Idle : SaveState()
@@ -60,7 +58,9 @@ constructor(
     /** Operação concluída com sucesso. */
     data object Success : SaveState()
 
-    /** Operação falhou.
+    /**
+     * Operação falhou.
+     *
      * @property message Descrição do erro para exibir ao usuário.
      */
     data class Error(val message: String) : SaveState()
