@@ -23,10 +23,10 @@ import javax.inject.Inject
 /**
  * ViewModel de importação de dados via CSV.
  *
- * Lê um arquivo CSV a partir de uma [Uri] de conteúdo e insere os registros
- * no banco local Room via [AppRepository]. Suporta importação de [CsvImportType.STUDENTS],
- * [CsvImportType.COURSES], [CsvImportType.CLASSES] e [CsvImportType.TEACHERS].
- * IDs são gerados localmente; o cabecalho é detectado automaticamente e ignorado.
+ * Lê um arquivo CSV a partir de uma [Uri] de conteúdo e insere os registros no banco local Room via
+ * [AppRepository]. Suporta importação de [CsvImportType.STUDENTS], [CsvImportType.COURSES],
+ * [CsvImportType.CLASSES] e [CsvImportType.TEACHERS]. IDs são gerados localmente; o cabecalho é
+ * detectado automaticamente e ignorado.
  */
 @HiltViewModel
 class CsvImportViewModel
@@ -156,7 +156,8 @@ constructor(
   /**
    * Importa cursos a partir das linhas do CSV e insere no Room.
    *
-   * Formato esperado: `titulo, categoria, instrutor[, totalAlunos, duracaoHoras, conclusao%, publicado]`.
+   * Formato esperado: `titulo, categoria, instrutor[, totalAlunos, duracaoHoras, conclusao%,
+   * publicado]`.
    *
    * @param companyId ID da empresa ativa.
    * @param lines Linhas de dados (sem cabeçalho).
