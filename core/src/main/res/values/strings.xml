@@ -203,6 +203,12 @@
     <string name="label_rating_value">Avaliação: %.1f</string>
     <string name="label_taught_classes">Turmas ministradas (%d)</string>
 
+    <!-- Teacher Edit Section -->
+    <string name="teacher_edit_section_title">Editar instrutor</string>
+    <string name="teacher_edit_save">Salvar alterações</string>
+    <string name="teacher_edit_success">Instrutor atualizado com sucesso.</string>
+    <string name="teacher_edit_error">Falha ao atualizar instrutor.</string>
+
     <string name="parents_section_title">Acompanhamento dos pais</string>
     <string name="parents_rule_1">Registrar canal de contato e responsável pelo registro.</string>
     <string name="parents_rule_2">Status: pendente, aguardando resposta, concluído e não compareceu.</string>
@@ -466,11 +472,35 @@
     <string name="monitoring_entry_date">Data</string>
     <string name="monitoring_entry_notes">Observações</string>
 
+    <!-- Schedule format error -->
+    <string name="class_create_error_schedule">Horário inválido. Use o formato HH-MM:HH-MM (ex: 08-00:09-30).</string>
+
+    <!-- Capacity full error -->
+    <string name="student_create_error_capacity">Turma lotada. Capacidade máxima atingida.</string>
+
+    <!-- Course start date -->
+    <string name="course_create_start_date">Data de início (AAAA-MM-DD)</string>
+
+    <!-- Settings About dialog -->
+    <string name="settings_about_dialog_title">Sobre o Aplicativo</string>
+    <string name="settings_about_dismiss">Fechar</string>
+    <string name="settings_about_credit_1">Miguel Nischor — Desenvolvedor</string>
+    <string name="settings_about_credit_2">Gilson Santos — Orientador Pedagógico</string>
+    <string name="settings_about_credit_3">Daiane Cardoso — Coordenadora de Performance Educacional</string>
+    <string name="settings_about_credit_partner">Desenvolvido em parceria com a equipe do SENAI Lucas do Rio Verde</string>
+    <string name="settings_about_credits_title">Equipe de Criação</string>
+
     <!-- Login credential hints (demo) -->
     <string name="login_hint_admin">Admin: admin@sebrae.edu.br / admin123</string>
     <string name="login_hint_coordenador">Coordenador: coordenador@sebrae.edu.br / coord123</string>
     <string name="login_hint_psicopedagogo">Psicopedagogo: psicopedagogo@sebrae.edu.br / psico123</string>
     <string name="login_hint_orientador">Orientador: orientador@sebrae.edu.br / orient123</string>
     <string name="login_hint_professor">Professor: professor@sebrae.edu.br / prof123</string>
-    <string name="login_hint_responsavel">Responsável: responsavel@sebrae.edu.br / resp123</string>
+    <string name="login_hint_responsavel">Responsvel: responsavel@sebrae.edu.br / resp123</string>
+
+    <!-- Auto-computed field info labels -->
+    <string name="teacher_create_computed_info">Calculado automaticamente ao vincular o instrutor a turmas com alunos</string>
+    <string name="class_create_students_computed_info">Atualizado automaticamente conforme alunos forem matriculados</string>
+    <string name="course_create_students_computed_info">Calculado automaticamente conforme matriculas no curso</string>
+    <string name="course_create_completion_computed_info">Calculado automaticamente a partir da data de inicio e carga horaria</string>
 </resources>
