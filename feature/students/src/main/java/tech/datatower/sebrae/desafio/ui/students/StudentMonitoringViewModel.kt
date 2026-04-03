@@ -44,9 +44,9 @@ import javax.inject.Inject
 /**
  * ViewModel da tela de monitoramento individual de aluno.
  *
- * Carrega o [snapshot] completo de desempenho do aluno (frequência, comportamento,
- * necessidades pedagógicas/psicológicas e seguimentos com responsáveis) via observação reativa.
- * O ID do aluno é recebido do [SavedStateHandle] via rota de navegação.
+ * Carrega o [snapshot] completo de desempenho do aluno (frequência, comportamento, necessidades
+ * pedagógicas/psicológicas e seguimentos com responsáveis) via observação reativa. O ID do aluno é
+ * recebido do [SavedStateHandle] via rota de navegação.
  */
 @HiltViewModel
 class StudentMonitoringViewModel
