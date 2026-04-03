@@ -36,6 +36,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -70,10 +72,14 @@ import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 import tech.datatower.sebrae.desafio.ui.components.SearchableDropdown
 
+/** Regex que valida o padrão de horário HH-MM:HH-MM (ex: 08-00:09-30). */
+private val SCHEDULE_REGEX = Regex("""^\d{2}-\d{2}:\d{2}-\d{2}$""")
+
 /**
- * Executa a rotina de class create screen dentro do contexto deste componente.
+ * Tela de cadastro de nova turma.
  *
- * @param onBack Valor de entrada utilizado por esta opera??o.
+ * O campo [studentsCount] é calculado automaticamente pelo repositório ao vincular alunos à turma.
+ * O [schedule] deve seguir o padrão HH-MM:HH-MM.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,14 +112,13 @@ fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   var name by rememberSaveable { mutableStateOf("") }
   var selectedCourse by remember { mutableStateOf<Course?>(null) }
   var selectedTeacher by remember { mutableStateOf<Teacher?>(null) }
-  var studentsCount by rememberSaveable { mutableStateOf("0") }
-  var maxCapacity by rememberSaveable { mutableStateOf("0") }
+  var maxCapacity by rememberSaveable { mutableStateOf("") }
   var schedule by rememberSaveable { mutableStateOf("") }
   var status by rememberSaveable { mutableStateOf(ClassStatus.Open) }
   val requiredFieldsMessage = stringResource(R.string.class_create_error_required)
   val invalidCapacityMessage = stringResource(R.string.class_create_error_capacity)
+  val scheduleErrorMessage = stringResource(R.string.class_create_error_schedule)
   val deniedMessage = stringResource(R.string.permission_denied)
-  val relationshipMessage = stringResource(R.string.class_create_error_relationship)
 
   Box(modifier = Modifier.fillMaxSize()) {
     DetailScaffold(title = stringResource(R.string.class_create_title), onBack = onBack) {
@@ -172,13 +177,29 @@ fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
             onItemSelected = { selectedTeacher = it },
             modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedTextField(
-            value = studentsCount,
-            onValueChange = { studentsCount = it.filter(Char::isDigit) },
-            label = { Text(stringResource(R.string.class_create_students_count)) },
+
+        // Alunos matriculados — calculado dinamicamente
+        ElevatedCard(
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
+            colors =
+                CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                ),
+        ) {
+          Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = stringResource(R.string.class_create_students_count) + ": 0",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                text = stringResource(R.string.class_create_students_computed_info),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+            )
+          }
+        }
+
         OutlinedTextField(
             value = maxCapacity,
             onValueChange = { maxCapacity = it.filter(Char::isDigit) },
@@ -189,9 +210,20 @@ fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
         OutlinedTextField(
             value = schedule,
             onValueChange = { schedule = it },
-            label = { Text(stringResource(R.string.class_create_schedule)) },
+            label = { Text(stringResource(R.string.class_create_schedule) + " (ex: 08-00:09-30)") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            supportingText = {
+              Text(
+                  text = "Formato: HH-MM:HH-MM",
+                  style = MaterialTheme.typography.bodySmall,
+                  color =
+                      if (schedule.isNotBlank() && !schedule.matches(SCHEDULE_REGEX))
+                          MaterialTheme.colorScheme.error
+                      else MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            },
+            isError = schedule.isNotBlank() && !schedule.matches(SCHEDULE_REGEX),
         )
 
         Text(
@@ -220,7 +252,6 @@ fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
 
         Button(
             onClick = {
-              val enrolled = studentsCount.toIntOrNull()
               val capacity = maxCapacity.toIntOrNull()
               if (
                   name.isBlank() ||
@@ -231,7 +262,11 @@ fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
                 scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
                 return@Button
               }
-              if (enrolled == null || capacity == null || capacity <= 0 || enrolled > capacity) {
+              if (!schedule.matches(SCHEDULE_REGEX)) {
+                scope.launch { snackbarHostState.showSnackbar(scheduleErrorMessage) }
+                return@Button
+              }
+              if (capacity == null || capacity <= 0) {
                 scope.launch { snackbarHostState.showSnackbar(invalidCapacityMessage) }
                 return@Button
               }
@@ -256,7 +291,7 @@ fun ClassCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
                           name = name.trim(),
                           course = selectedCourse!!.title,
                           instructor = selectedTeacher!!.name,
-                          studentsCount = enrolled,
+                          studentsCount = 0, // calculado dinamicamente pelo repositório
                           maxCapacity = capacity,
                           schedule = schedule.trim(),
                           status = status,
