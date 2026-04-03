@@ -3,7 +3,6 @@ package tech.datatower.sebrae.desafio.ui.companies
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,13 +12,14 @@ import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
+import javax.inject.Inject
 
 /**
  * ViewModel da tela de gestão de empresas.
  *
- * Observa a lista de empresas em tempo real e fornece operações de criação e remoção
- * com remoção otimista (a empresa some da lista imediatamente e reaparece se Firestore falhar).
- * Todas as operações requerem um requester com perfil de ADMINISTRADOR.
+ * Observa a lista de empresas em tempo real e fornece operações de criação e remoção com remoção
+ * otimista (a empresa some da lista imediatamente e reaparece se Firestore falhar). Todas as
+ * operações requerem um requester com perfil de ADMINISTRADOR.
  */
 @HiltViewModel
 class CompanyManagementViewModel
@@ -37,12 +37,16 @@ constructor(
     /** Lista ainda está sendo carregada do banco local. */
     data object Loading : CompaniesState()
 
-    /** Lista de empresas disponível com sucesso.
+    /**
+     * Lista de empresas disponível com sucesso.
+     *
      * @property companies Empresas ativas visíveis na UI.
      */
     data class Success(val companies: List<Company>) : CompaniesState()
 
-    /** Falha ao carregar; a [StateFlow] não emite mais updates.
+    /**
+     * Falha ao carregar; a [StateFlow] não emite mais updates.
+     *
      * @property message Mensagem de erro para exibir na UI.
      */
     data class Error(val message: String) : CompaniesState()
@@ -60,7 +64,9 @@ constructor(
     /** Operação concluída com sucesso. */
     data object Success : ActionResult()
 
-    /** Operação falhou.
+    /**
+     * Operação falhou.
+     *
      * @property message Descrição do erro para exibir ao usuário.
      */
     data class Error(val message: String) : ActionResult()
@@ -94,8 +100,8 @@ constructor(
   /**
    * Cria uma nova empresa com o nome e CNPJ informados.
    *
-   * O ID é gerado localmente como `max(ids_atuais) + 1`.
-   * Atualiza [actionResult] com [ActionResult.Success] ou [ActionResult.Error].
+   * O ID é gerado localmente como `max(ids_atuais) + 1`. Atualiza [actionResult] com
+   * [ActionResult.Success] ou [ActionResult.Error].
    *
    * @param requester Usuário que realiza a operação (deve ser ADMINISTRADOR).
    * @param name Nome da empresa.
