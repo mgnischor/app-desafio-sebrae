@@ -59,6 +59,7 @@ object AppModule {
   @Singleton
   fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
       Room.databaseBuilder(context, AppDatabase::class.java, "sebrae_local.db")
+          .addMigrations(AppDatabase.MIGRATION_9_10)
           .fallbackToDestructiveMigration(true)
           .build()
 

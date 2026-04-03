@@ -188,7 +188,7 @@ fun AppNavHost(navController: NavHostController) {
         route = AppRoutes.TEACHER_DETAIL,
         arguments = listOf(navArgument(AppRoutes.TEACHER_ID_ARG) { type = NavType.IntType }),
     ) {
-      TeacherDetailScreen(onBack = { navController.popBackStack() })
+      TeacherDetailScreen(currentUser = currentUser, onBack = { navController.popBackStack() })
     }
     composable(AppRoutes.REPORTS) { ReportsScreen(onBack = { navController.popBackStack() }) }
     composable(AppRoutes.CERTIFICATES) {

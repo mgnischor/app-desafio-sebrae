@@ -48,16 +48,28 @@ import tech.datatower.sebrae.desafio.data.model.RecentActivity
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
+import tech.datatower.sebrae.desafio.domain.usecase.SyncScreenDataUseCase
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela inicial do painel de gestão.
+ *
+ * Expõe [stats] e [recentActivities] como [StateFlow]s reativos filtrados pela empresa ativa.
+ * Suporta sincronização manual com o Firebase via [syncHome] e escuta de eventos em tempo real via
+ * [observeRealtimeActivities].
+ */
 @HiltViewModel
 class HomeViewModel
 @Inject
 constructor(
     private val repository: AppRepository,
+    private val syncScreenDataUseCase: SyncScreenDataUseCase,
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
+  /**
+   * Estatísticas rápidas da empresa ativa (totais de alunos, cursos, turmas, taxas de conclusão).
+   */
   @OptIn(ExperimentalCoroutinesApi::class)
   val stats: StateFlow<List<QuickStat>> =
       AuthManager.currentCompany
@@ -68,6 +80,7 @@ constructor(
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  /** Últimas 5 atividades recentes da empresa ativa, ordenadas por data decrescente. */
   @OptIn(ExperimentalCoroutinesApi::class)
   val recentActivities: StateFlow<List<RecentActivity>> =
       AuthManager.currentCompany
@@ -79,18 +92,33 @@ constructor(
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   private val _isSyncing = MutableStateFlow(false)
+  /**
+   * `true` enquanto a sincronização com o Firebase está em andamento; oculta o botão de refresh na
+   * UI.
+   */
   val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
   private var realtimeJob: Job? = null
 
+  /**
+   * Dispara sincronização completa do escopo HOME com o Firebase Firestore, atualizando
+   * estatísticas e atividades recentes no banco local.
+   */
   fun syncHome() {
     viewModelScope.launch {
       _isSyncing.value = true
-      dataConnectService.syncScope(ScreenDataScope.HOME)
+      syncScreenDataUseCase(ScreenDataScope.HOME)
       _isSyncing.value = false
     }
   }
 
+  /**
+   * Inicia ou reinicia a escuta de atividades em tempo real via Firestore Realtime Listener.
+   *
+   * Cancela o job anterior antes de iniciar um novo. Erros são registrados como avisos no logcat.
+   *
+   * @param user Usuário logado; define o escopo (backoffice) das atividades visíveis.
+   */
   fun observeRealtimeActivities(user: AppUser?) {
     realtimeJob?.cancel()
     realtimeJob = viewModelScope.launch {

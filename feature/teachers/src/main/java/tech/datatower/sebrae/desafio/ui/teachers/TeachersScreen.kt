@@ -84,6 +84,7 @@ import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
 import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Teacher
+import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.EmptyState
 import tech.datatower.sebrae.desafio.ui.components.ListSearchHeader
@@ -115,6 +116,9 @@ fun TeachersScreen(
       AccessPolicy.can(currentUser?.role, ProtectedResource.Teachers, ProtectedAction.Reactivate)
   val canDeleteTeacher =
       AccessPolicy.can(currentUser?.role, ProtectedResource.Teachers, ProtectedAction.Delete)
+  // Nota de avaliação visível apenas para Administrador e Coordenador
+  val showRating =
+      currentUser?.role == UserRole.ADMINISTRADOR || currentUser?.role == UserRole.COORDENADOR
   val actionErrorMessage = stringResource(R.string.action_error)
 
   val viewModel: TeachersViewModel = hiltViewModel()
@@ -213,6 +217,7 @@ fun TeachersScreen(
                     canDeactivate = canDeactivateTeacher,
                     canReactivate = canReactivateTeacher,
                     canDelete = canDeleteTeacher,
+                    showRating = showRating,
                     onDeactivate = { viewModel.deactivateTeacher(currentUser, teacher) },
                     onReactivate = { viewModel.reactivateTeacher(currentUser, teacher) },
                     onDelete = { viewModel.deleteTeacher(currentUser, teacher.id) },
@@ -234,6 +239,7 @@ fun TeachersScreen(
  * Cartão com informações principais de um instrutor.
  *
  * @param teacher Instrutor a ser apresentado no item de lista.
+ * @param showRating Se `true`, exibe a nota de avaliação (restrito a Admin e Coordenador).
  */
 @Composable
 private fun TeacherCard(
@@ -242,6 +248,7 @@ private fun TeacherCard(
     canDeactivate: Boolean,
     canReactivate: Boolean,
     canDelete: Boolean,
+    showRating: Boolean,
     onDeactivate: () -> Unit,
     onReactivate: () -> Unit,
     onDelete: () -> Unit,
@@ -323,18 +330,20 @@ private fun TeacherCard(
       }
 
       Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            imageVector = Icons.Outlined.Star,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.tertiary,
-            modifier = Modifier.size(16.dp),
-        )
-        Text(
-            text = String.format(Locale.getDefault(), "%.1f", teacher.rating),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.tertiary,
-        )
+        if (showRating) {
+          Icon(
+              imageVector = Icons.Outlined.Star,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.tertiary,
+              modifier = Modifier.size(16.dp),
+          )
+          Text(
+              text = String.format(Locale.getDefault(), "%.1f", teacher.rating),
+              style = MaterialTheme.typography.labelMedium,
+              fontWeight = FontWeight.Bold,
+              color = MaterialTheme.colorScheme.tertiary,
+          )
+        }
       }
     }
   }

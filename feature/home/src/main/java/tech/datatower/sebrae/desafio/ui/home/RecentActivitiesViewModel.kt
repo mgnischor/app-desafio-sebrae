@@ -46,6 +46,13 @@ import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de atividades recentes.
+ *
+ * Expõe [allRecents] como [StateFlow] reativo (sem limite de quantidade) filtrado pela empresa
+ * ativa. Suporta sincronização pontual com Firebase via [syncHome] e escuta de eventos em tempo
+ * real via [observeRealtimeActivities].
+ */
 @HiltViewModel
 class RecentActivitiesViewModel
 @Inject
@@ -54,6 +61,9 @@ constructor(
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
+  /**
+   * Todas as atividades recentes da empresa ativa, sem limite de quantidade, em ordem decrescente.
+   */
   @OptIn(ExperimentalCoroutinesApi::class)
   val allRecents: StateFlow<List<RecentActivity>> =
       AuthManager.currentCompany
@@ -64,10 +74,18 @@ constructor(
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  /** Solicita sincronização do escopo HOME uma única vez com o Firestore. */
   fun syncHome() {
     viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.HOME) }
   }
 
+  /**
+   * Inicia a escuta de atividades em tempo real para usuários do backoffice.
+   *
+   * Erros são registrados como avisos no logcat mas não interrompem a coleta.
+   *
+   * @param user Usuário logado; define o escopo visível das atividades.
+   */
   fun observeRealtimeActivities(user: AppUser?) {
     viewModelScope.launch {
       dataConnectService.observeRecentActivitiesRealtimeForBackoffice(user).collect { result ->

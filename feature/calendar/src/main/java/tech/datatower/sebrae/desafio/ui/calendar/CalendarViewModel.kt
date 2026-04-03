@@ -33,8 +33,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -45,14 +43,23 @@ import tech.datatower.sebrae.desafio.data.model.CalendarEvent
 import tech.datatower.sebrae.desafio.data.model.EventType
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppRepository
+import tech.datatower.sebrae.desafio.domain.usecase.ObserveCalendarEventsUseCase
+import tech.datatower.sebrae.desafio.domain.usecase.SyncScreenDataUseCase
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de calendário de eventos.
+ *
+ * Expõe [events] e [groupedEvents] (agrupados por data) como [StateFlow]s reativos filtrados pela
+ * empresa ativa. Suporta criação de novos eventos via [createEvent] com feedback de resultado em
+ * [actionResult].
+ */
 @HiltViewModel
 class CalendarViewModel
 @Inject
 constructor(
-    private val repository: AppRepository,
+    private val observeCalendarEventsUseCase: ObserveCalendarEventsUseCase,
+    private val syncScreenDataUseCase: SyncScreenDataUseCase,
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
@@ -61,22 +68,32 @@ constructor(
           .map { it?.id }
           .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+  /** Lista plana de eventos do calendário para a empresa ativa, atualizada reativamente. */
   val events: StateFlow<List<CalendarEvent>> =
-      companyId
-          .filterNotNull()
-          .flatMapLatest { cid -> repository.observeCalendarEvents(cid) }
+      observeCalendarEventsUseCase()
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  /**
+   * Eventos agrupados por data em ordem cronológica; cada entry contém uma lista de eventos do dia.
+   */
   val groupedEvents: StateFlow<List<Map.Entry<String, List<CalendarEvent>>>> =
       events
           .map { list -> list.groupBy { it.date }.entries.toList() }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  /** Resultado de uma operação de criação de evento. */
   sealed class ActionResult {
+    /** Nenhuma operação pendente ou resultado já consumido. */
     data object Idle : ActionResult()
 
+    /** Evento criado com sucesso. */
     data object Success : ActionResult()
 
+    /**
+     * Criação falhou.
+     *
+     * @property message Descrição do erro para exibir ao usuário.
+     */
     data class Error(val message: String) : ActionResult()
   }
 
@@ -84,9 +101,22 @@ constructor(
   val actionResult: StateFlow<ActionResult> = _actionResult.asStateFlow()
 
   init {
-    viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.CALENDAR) }
+    viewModelScope.launch { syncScreenDataUseCase(ScreenDataScope.CALENDAR) }
   }
 
+  /**
+   * Cria um novo evento de calendário para a empresa ativa.
+   *
+   * O ID é gerado localmente como `max(ids_atuais) + 1`.
+   *
+   * @param requester Usuário logado (deve ter permissão para criar eventos).
+   * @param title Título do evento.
+   * @param course Curso relacionado ao evento.
+   * @param date Data do evento no formato `yyyy-MM-dd`.
+   * @param time Horário do evento no formato `HH:mm`.
+   * @param location Local do evento.
+   * @param type Tipo do evento ([EventType]).
+   */
   fun createEvent(
       requester: AppUser?,
       title: String,
@@ -121,6 +151,7 @@ constructor(
     }
   }
 
+  /** Redefine [actionResult] para [ActionResult.Idle] após o resultado ser tratado pela UI. */
   fun clearActionResult() {
     _actionResult.value = ActionResult.Idle
   }

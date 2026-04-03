@@ -26,6 +26,7 @@
 */
 package tech.datatower.sebrae.desafio.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
@@ -37,6 +38,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Upsert
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 import tech.datatower.sebrae.desafio.data.model.ActivityDeliveryStatus
 import tech.datatower.sebrae.desafio.data.model.AttendanceStatus
@@ -50,7 +53,14 @@ import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.model.UserRole
 import java.time.LocalDate
 
-/** Modelo e comportamento relacionados a company entity. */
+/**
+ * Entidade Room que representa uma empresa (escola) no banco de dados local.
+ *
+ * @property id Identificador único da empresa.
+ * @property name Nome de exibição da empresa.
+ * @property cnpj CNPJ da empresa; string vazia quando não informado.
+ * @property isActive Indica se a empresa está ativa no sistema.
+ */
 @Entity(tableName = "companies")
 data class CompanyEntity(
     @PrimaryKey val id: Int,
@@ -67,7 +77,20 @@ data class UserCompanyEntity(
     val companyId: Int,
 )
 
-/** Modelo e comportamento relacionados a course entity. */
+/**
+ * Entidade Room que representa um curso no banco de dados local.
+ *
+ * @property id Identificador único do curso.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property title Título de exibição do curso.
+ * @property category Categoria temática do curso.
+ * @property instructor Nome do instrutor principal.
+ * @property totalStudents Quantidade total de alunos matriculados (calculado pelo repositório).
+ * @property durationHours Carga horária total em horas.
+ * @property completionRate Taxa de conclusão no intervalo de `0f..1f`.
+ * @property isPublished Indica se o curso está publicado para matrícula.
+ * @property startDate Data de início do curso no formato ISO-8601, ou `null` se não definida.
+ */
 @Entity(tableName = "courses")
 data class CourseEntity(
     @PrimaryKey val id: Int,
@@ -79,9 +102,22 @@ data class CourseEntity(
     val durationHours: Int,
     val completionRate: Float,
     val isPublished: Boolean,
+    @ColumnInfo(defaultValue = "NULL") val startDate: String? = null,
 )
 
-/** Modelo e comportamento relacionados a school class entity. */
+/**
+ * Entidade Room que representa uma turma no banco de dados local.
+ *
+ * @property id Identificador único da turma.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property name Nome ou código da turma.
+ * @property course Curso ao qual a turma está vinculada.
+ * @property instructor Nome do instrutor responsável.
+ * @property studentsCount Quantidade atual de alunos matriculados (calculado pelo repositório).
+ * @property maxCapacity Capacidade máxima de alunos.
+ * @property schedule Descrição textual do horário das aulas.
+ * @property status Estado atual da turma.
+ */
 @Entity(tableName = "school_classes")
 data class SchoolClassEntity(
     @PrimaryKey val id: Int,
@@ -95,7 +131,19 @@ data class SchoolClassEntity(
     val status: ClassStatus,
 )
 
-/** Modelo e comportamento relacionados a teacher entity. */
+/**
+ * Entidade Room que representa um instrutor no banco de dados local.
+ *
+ * @property id Identificador único do instrutor.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property name Nome completo do instrutor.
+ * @property email E-mail institucional.
+ * @property specialty Área principal de atuação.
+ * @property activeCourses Quantidade de cursos em que atua atualmente.
+ * @property totalStudents Total de alunos atendidos nas turmas ativas.
+ * @property rating Avaliação média no intervalo de `0f..5f`.
+ * @property isActive Indica se o instrutor está ativo.
+ */
 @Entity(tableName = "teachers")
 data class TeacherEntity(
     @PrimaryKey val id: Int,
@@ -109,7 +157,18 @@ data class TeacherEntity(
     val isActive: Boolean,
 )
 
-/** Modelo e comportamento relacionados a student entity. */
+/**
+ * Entidade Room que representa um aluno no banco de dados local.
+ *
+ * @property id Identificador único do aluno.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property name Nome completo do aluno.
+ * @property email E-mail de contato.
+ * @property course Nome do curso principal.
+ * @property enrolledClass Identificação da turma atual.
+ * @property progress Progresso de conclusão no intervalo de `0f..1f`.
+ * @property status Situação acadêmica atual.
+ */
 @Entity(tableName = "students")
 data class StudentEntity(
     @PrimaryKey val id: Int,
@@ -130,7 +189,17 @@ data class GuardianStudentEntity(
     val studentId: Int,
 )
 
-/** Modelo e comportamento relacionados a certificate entity. */
+/**
+ * Entidade Room que representa um certificado emitido no banco de dados local.
+ *
+ * @property id Identificador único do certificado.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property studentName Nome do aluno certificado.
+ * @property courseName Nome do curso concluído.
+ * @property issuedDate Data de emissão no formato de exibição.
+ * @property hours Carga horária certificada em horas.
+ * @property code Código único de validação do certificado.
+ */
 @Entity(tableName = "certificates")
 data class CertificateEntity(
     @PrimaryKey val id: Int,
@@ -142,7 +211,18 @@ data class CertificateEntity(
     val code: String,
 )
 
-/** Modelo e comportamento relacionados a calendar event entity. */
+/**
+ * Entidade Room que representa um evento do calendário no banco de dados local.
+ *
+ * @property id Identificador único do evento.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property title Título principal do evento.
+ * @property course Curso ou contexto institucional associado.
+ * @property date Data textual usada para agrupamento e exibição.
+ * @property time Faixa de horário do evento.
+ * @property location Local físico ou referência de sala.
+ * @property type Tipo funcional do evento para regras visuais e filtros.
+ */
 @Entity(tableName = "calendar_events")
 data class CalendarEventEntity(
     @PrimaryKey val id: Int,
@@ -155,7 +235,18 @@ data class CalendarEventEntity(
     val type: EventType,
 )
 
-/** Modelo e comportamento relacionados a recent activity entity. */
+/**
+ * Entidade Room que representa uma atividade recente no banco de dados local.
+ *
+ * Usada para popular o feed de atividades recentes no dashboard.
+ *
+ * @property id Identificador estável para chaveamento de listas no Compose.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property title Título do evento recente.
+ * @property subtitle Descrição complementar do evento.
+ * @property iconKey Chave string que mapeia o ícone vetorial correspondente.
+ * @property timeLabel Marcador textual de tempo relativo.
+ */
 @Entity(tableName = "recent_activities")
 data class RecentActivityEntity(
     @PrimaryKey val id: Int,
@@ -166,7 +257,16 @@ data class RecentActivityEntity(
     val timeLabel: String,
 )
 
-/** Modelo e comportamento relacionados a monthly enrollment entity. */
+/**
+ * Entidade Room que armazena a contagem de matrículas agrupadas por mês.
+ *
+ * Usada para gerar o gráfico de evolução de matrículas na tela de relatórios.
+ *
+ * @property id Identificador gerado automaticamente.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property month Mês de referência no formato `"YYYY-MM"`.
+ * @property count Quantidade de matrículas registradas no mês.
+ */
 @Entity(tableName = "monthly_enrollments")
 data class MonthlyEnrollmentEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -175,7 +275,17 @@ data class MonthlyEnrollmentEntity(
     val count: Int,
 )
 
-/** Modelo e comportamento relacionados a attendance entity. */
+/**
+ * Entidade Room que representa um registro unitário de frequência de aluno.
+ *
+ * @property id Identificador gerado automaticamente.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property studentId Identificador do aluno ao qual o registro pertence.
+ * @property date Data do registro.
+ * @property status Situação de presença no período.
+ * @property minutesLate Minutos de atraso; zero quando não aplicável.
+ * @property justification Justificativa textual para faltas justificadas.
+ */
 @Entity(tableName = "attendance_records")
 data class AttendanceEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -187,7 +297,19 @@ data class AttendanceEntity(
     val justification: String?,
 )
 
-/** Modelo e comportamento relacionados a behavior entity. */
+/**
+ * Entidade Room que representa um registro de comportamento e desempenho acadêmico de um aluno.
+ *
+ * @property id Identificador gerado automaticamente.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property studentId Identificador do aluno ao qual o registro pertence.
+ * @property date Data da observação.
+ * @property participationScore Escala de participação no intervalo de 1 a 5.
+ * @property activityDelivery Situação da entrega de atividade.
+ * @property delayMinutes Minutos de atraso no período.
+ * @property grade Nota acadêmica opcional no intervalo de 0 a 10.
+ * @property note Observação contextual do professor.
+ */
 @Entity(tableName = "behavior_records")
 data class BehaviorEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -201,7 +323,17 @@ data class BehaviorEntity(
     val note: String,
 )
 
-/** Modelo e comportamento relacionados a pedagogical need entity. */
+/**
+ * Entidade Room que representa uma necessidade pedagógica formalizada para um aluno.
+ *
+ * @property id Identificador gerado automaticamente.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property studentId Identificador do aluno ao qual a necessidade pertence.
+ * @property type Tipo de necessidade registrada.
+ * @property description Descrição objetiva do cenário pedagógico.
+ * @property expiresAt Data de validade do documento, quando existir.
+ * @property accommodations Adaptações ativas orientadas pela equipe.
+ */
 @Entity(tableName = "pedagogical_needs")
 data class PedagogicalNeedEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -213,7 +345,17 @@ data class PedagogicalNeedEntity(
     val accommodations: List<String>,
 )
 
-/** Modelo e comportamento relacionados a psychological need entity. */
+/**
+ * Entidade Room que representa um registro de acompanhamento psicológico de um aluno.
+ *
+ * @property id Identificador gerado automaticamente.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property studentId Identificador do aluno ao qual o registro pertence.
+ * @property summary Resumo clínico/pedagógico compartilhável no contexto autorizado.
+ * @property confidentiality Nível de sigilo do registro.
+ * @property nextStep Próxima ação planejada no acompanhamento.
+ * @property reviewAt Data prevista de revisão do caso.
+ */
 @Entity(tableName = "psychological_needs")
 data class PsychologicalNeedEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -225,7 +367,18 @@ data class PsychologicalNeedEntity(
     val reviewAt: LocalDate,
 )
 
-/** Modelo e comportamento relacionados a parent follow up entity. */
+/**
+ * Entidade Room que representa um histórico de contato com responsáveis de um aluno.
+ *
+ * @property id Identificador gerado automaticamente.
+ * @property companyId Identificador da empresa dona do registro.
+ * @property studentId Identificador do aluno ao qual o contato se refere.
+ * @property date Data do contato.
+ * @property channel Canal utilizado para comunicação.
+ * @property outcome Resultado atual do acompanhamento com a família.
+ * @property responsible Profissional que conduziu o contato.
+ * @property notes Observações do atendimento.
+ */
 @Entity(tableName = "parent_follow_ups")
 data class ParentFollowUpEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -238,7 +391,15 @@ data class ParentFollowUpEntity(
     val notes: String,
 )
 
-/** Modelo e comportamento relacionados a app settings entity. */
+/**
+ * Entidade Room que armazena as preferências persistidas do usuário na tabela `settings`.
+ *
+ * @property id Sempre igual a `1`; tabela compatível com um único registro.
+ * @property darkMode Indica se o tema escuro está habilitado.
+ * @property pushEnabled Indica se as notificações push estão ativadas.
+ * @property emailEnabled Indica se o envio de notificações por e-mail está ativado.
+ * @property language Código do idioma da interface.
+ */
 @Entity(tableName = "settings")
 data class AppSettingsEntity(
     @PrimaryKey val id: Int = 1,
@@ -248,7 +409,17 @@ data class AppSettingsEntity(
     val language: String = "pt",
 )
 
-/** Modelo e comportamento relacionados a app user entity. */
+/**
+ * Entidade Room que representa um usuário cadastrado na tabela `app_users`.
+ *
+ * Armazena dados de perfil e o hash da senha para autenticação local (fallback offline).
+ *
+ * @property id Identificador único do usuário.
+ * @property name Nome completo exibido na interface.
+ * @property email Endereço de e-mail utilizado como credencial de login.
+ * @property role Nível de permissão que determina os módulos acessíveis.
+ * @property passwordHash Hash SHA-256 da senha utilizado na autenticação local.
+ */
 @Entity(tableName = "app_users")
 data class AppUserEntity(
     @PrimaryKey val id: Int,
@@ -258,26 +429,35 @@ data class AppUserEntity(
     val passwordHash: String,
 )
 
-/** Modelo e comportamento relacionados a app converters. */
+/**
+ * Conversores de tipo registrados no Room para serializar valores complexos em colunas SQLite.
+ *
+ * Suporta conversão bidirecional de [LocalDate] e de listas de string (usada em `accommodations`).
+ */
 class AppConverters {
   /**
-   * Executa a rotina de string to accommodations dentro do contexto deste componente.
-   *
-   * @param value Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `List<String>`.
+   * Serializa um [LocalDate] no formato ISO-8601 (`"YYYY-MM-DD"`), ou `null` se o valor for nulo.
    */
   @TypeConverter fun localDateToString(value: LocalDate?): String? = value?.toString()
 
+  /** Desserializa uma string ISO-8601 para [LocalDate], ou `null` se o valor for nulo. */
   @TypeConverter fun stringToLocalDate(value: String?): LocalDate? = value?.let(LocalDate::parse)
 
+  /** Serializa uma lista de strings em um único valor delimitado por `"||"`. */
   @TypeConverter fun accommodationsToString(items: List<String>): String = items.joinToString("||")
 
+  /** Desserializa o valor delimitado por `"||"` de volta para lista de strings. */
   @TypeConverter
   fun stringToAccommodations(value: String): List<String> =
       if (value.isBlank()) emptyList() else value.split("||")
 }
 
-/** Contrato que define operações para app dao. */
+/**
+ * Interface DAO (Data Access Object) do Room com todas as operações de persistência local.
+ *
+ * Organizada por domínio (empresa, turma, curso, aluno, etc.) e inclui operações de inserção,
+ * consulta reativa por [Flow], consultas pontuais suspensas e exclusões em lote.
+ */
 @Dao
 interface AppDao {
 
@@ -352,12 +532,7 @@ interface AppDao {
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertCourses(items: List<CourseEntity>)
 
-  /**
-   * Observa altera??es de course by id e publica atualiza??es reativas.
-   *
-   * @param courseId Valor de entrada utilizado por esta opera??o.
-   * @return Resultado produzido pela opera??o em formato `Flow<CourseEntity?> @Insert(onConflict`.
-   */
+  /** Observa em tempo real todos os cursos da empresa informada, ordenados por título. */
   @Query("SELECT * FROM courses WHERE companyId = :companyId ORDER BY title")
   fun observeCourses(companyId: Int): Flow<List<CourseEntity>>
 
@@ -664,7 +839,7 @@ interface AppDao {
             AppSettingsEntity::class,
             AppUserEntity::class,
         ],
-    version = 9,
+    version = 10,
     exportSchema = false,
 )
 /** Modelo e comportamento relacionados a app database. */
@@ -676,4 +851,14 @@ abstract class AppDatabase : RoomDatabase() {
    * @return Resultado produzido pela opera??o em formato `AppDao }`.
    */
   abstract fun appDao(): AppDao
+
+  companion object {
+    /** Migração da versão 9 para 10: adiciona coluna `startDate` à tabela `courses`. */
+    val MIGRATION_9_10 =
+        object : Migration(9, 10) {
+          override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE courses ADD COLUMN startDate TEXT DEFAULT NULL")
+          }
+        }
+  }
 }

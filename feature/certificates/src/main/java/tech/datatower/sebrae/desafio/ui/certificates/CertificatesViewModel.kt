@@ -29,46 +29,39 @@ package tech.datatower.sebrae.desafio.ui.certificates
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.Certificate
-import tech.datatower.sebrae.desafio.data.model.UserRole
-import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppRepository
+import tech.datatower.sebrae.desafio.domain.usecase.ObserveCertificatesUseCase
+import tech.datatower.sebrae.desafio.domain.usecase.SyncScreenDataUseCase
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de certificados.
+ *
+ * Expõe [certificates] como [StateFlow] reativo filtrado pela empresa ativa. Administradores vêem
+ * certificados de todas as empresas; demais perfis vêem apenas os da empresa corrente. A
+ * sincronização inicial com o Firestore é disparada no bloco `init`.
+ */
 @HiltViewModel
 class CertificatesViewModel
 @Inject
 constructor(
-    private val repository: AppRepository,
-    private val dataConnectService: FirebaseDataConnectService,
+    private val observeCertificatesUseCase: ObserveCertificatesUseCase,
+    private val syncScreenDataUseCase: SyncScreenDataUseCase,
 ) : ViewModel() {
 
-  @OptIn(ExperimentalCoroutinesApi::class)
+  /**
+   * Lista de certificados visíveis ao perfil logado, filtrada por empresa quando não-administrador.
+   */
   val certificates: StateFlow<List<Certificate>> =
-      combine(AuthManager.currentUser, AuthManager.currentCompany) { user, company ->
-            Pair(user, company)
-          }
-          .flatMapLatest { (user, company) ->
-            if (user?.role == UserRole.ADMINISTRADOR) {
-              repository.observeAllCertificates()
-            } else {
-              val cid = company?.id ?: return@flatMapLatest flowOf(emptyList())
-              repository.observeCertificates(cid)
-            }
-          }
+      observeCertificatesUseCase()
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   init {
-    viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.CERTIFICATES) }
+    viewModelScope.launch { syncScreenDataUseCase(ScreenDataScope.CERTIFICATES) }
   }
 }

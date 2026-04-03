@@ -49,6 +49,13 @@ import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import tech.datatower.sebrae.desafio.navigation.AppRoutes
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de detalhes de curso.
+ *
+ * Carrega os dados do curso ([course]) e as turmas vinculadas a ele ([classes]) a partir do ID
+ * recebido via [SavedStateHandle]. Administradores vêem todas as turmas; demais perfis apenas as da
+ * empresa corrente.
+ */
 @HiltViewModel
 class CourseDetailViewModel
 @Inject
@@ -60,11 +67,17 @@ constructor(
 
   private val courseId: Int = checkNotNull(savedStateHandle[AppRoutes.COURSE_ID_ARG])
 
+  /**
+   * Dados completos do curso identificado pelo ID recebido na navegação; `null` enquanto carrega.
+   */
   val course: StateFlow<Course?> =
       repository
           .observeCourseById(courseId)
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+  /**
+   * Turmas vinculadas ao título deste curso, filtradas pela empresa ativa quando não-administrador.
+   */
   @OptIn(ExperimentalCoroutinesApi::class)
   val classes: StateFlow<List<SchoolClass>> =
       combine(course, AuthManager.currentUser, AuthManager.currentCompany) { c, user, company ->

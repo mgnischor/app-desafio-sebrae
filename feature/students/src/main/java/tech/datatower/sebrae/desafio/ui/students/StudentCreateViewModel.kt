@@ -50,6 +50,12 @@ import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de cadastro de aluno.
+ *
+ * Expõe [students], [courses] e [classes] para preencher os seletores do formulário. A operação de
+ * persistência é executada via [saveStudent]; o resultado é rastreado em [saveState].
+ */
 @HiltViewModel
 class StudentCreateViewModel
 @Inject
@@ -103,13 +109,22 @@ constructor(
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  /** Resultado da operação de persistência do aluno. */
   sealed class SaveState {
+    /** Formulário ainda não submetido ou resultado já consumido. */
     data object Idle : SaveState()
 
+    /** Persistência em andamento; botão de confirmação deve ser desabilitado. */
     data object Saving : SaveState()
 
+    /** Persistência concluída com sucesso; navegar de volta. */
     data object Success : SaveState()
 
+    /**
+     * Persistência falhou.
+     *
+     * @property message Descrição do erro para exibir ao usuário.
+     */
     data class Error(val message: String) : SaveState()
   }
 
@@ -120,6 +135,12 @@ constructor(
     viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.STUDENTS) }
   }
 
+  /**
+   * Persiste o aluno no Firestore e no banco local.
+   *
+   * @param requester Usuário logado (deve ter permissão para criar alunos).
+   * @param student Dados completos do aluno a cadastrar ou atualizar.
+   */
   fun saveStudent(requester: AppUser?, student: Student) {
     viewModelScope.launch {
       _saveState.value = SaveState.Saving
@@ -135,6 +156,7 @@ constructor(
     }
   }
 
+  /** Redefine [saveState] para [SaveState.Idle]; usado ao reabrir o formulário após erro. */
   fun resetSaveState() {
     _saveState.value = SaveState.Idle
   }

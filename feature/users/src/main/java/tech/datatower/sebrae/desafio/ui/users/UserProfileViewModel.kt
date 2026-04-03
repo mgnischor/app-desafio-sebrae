@@ -66,7 +66,14 @@ data class UserProfileData(
     val classesEnrolled: List<SchoolClass> = emptyList(),
 )
 
-/** ViewModel da tela de perfil de usuário. */
+/**
+ * ViewModel da tela de perfil de usuário.
+ *
+ * Agrega os dados de acesso ([UserProfileData.user]), o perfil de instrutor vinculado pelo e-mail
+ * ([UserProfileData.teacherProfile]) e o perfil de aluno ([UserProfileData.studentProfile]), além
+ * das turmas relacionadas. Também permite gerenciar o acesso do usuário a empresas via
+ * [toggleCompanyAccess].
+ */
 @HiltViewModel
 class UserProfileViewModel
 @Inject
@@ -80,12 +87,23 @@ constructor(
 
   // ── Estados do perfil ────────────────────────────────────────────────────
 
-  /** Estado de carregamento e resultado do perfil. */
+  /** Estado de carregamento e resultado do perfil de usuário. */
   sealed class ProfileState {
+    /** Dados ainda estão sendo carregados do banco local ou do Firestore. */
     data object Loading : ProfileState()
 
+    /**
+     * Dados do perfil carregados com sucesso.
+     *
+     * @property data Dados agregados do usuário: credenciais + vínculos acadêmicos.
+     */
     data class Success(val data: UserProfileData) : ProfileState()
 
+    /**
+     * Falha ao carregar o perfil (usuário não encontrado ou erro de repositório).
+     *
+     * @property message Descrição do erro para exibir na UI.
+     */
     data class Error(val message: String) : ProfileState()
   }
 
@@ -96,10 +114,17 @@ constructor(
 
   /** Resultado de uma operação de vínculo usuário-empresa. */
   sealed class CompanyAccessResult {
+    /** Nenhuma operação pendente ou resultado já consumido. */
     data object Idle : CompanyAccessResult()
 
+    /** Operação concluída com sucesso. */
     data object Success : CompanyAccessResult()
 
+    /**
+     * Operação falhou.
+     *
+     * @property message Descrição do erro para exibir na UI.
+     */
     data class Error(val message: String) : CompanyAccessResult()
   }
 
@@ -134,6 +159,13 @@ constructor(
 
   // ── Observações reativas ─────────────────────────────────────────────────
 
+  /**
+   * Observa o perfil do usuário de forma reativa, combinando empresa ativa + dados do usuário, e
+   * vinculando instrutores e alunos pelo e-mail.
+   *
+   * Emite [ProfileState.Loading] inicialmente, [ProfileState.Success] quando os dados estiverem
+   * disponíveis e [ProfileState.Error] se o usuário não for encontrado.
+   */
   private fun observeProfile() {
     viewModelScope.launch {
       // Combina empresa atual + dados do usuário em uma única observação.
@@ -189,6 +221,10 @@ constructor(
     }
   }
 
+  /**
+   * Observa todas as empresas cadastradas e os IDs das empresas às quais o usuário tem acesso.
+   * Atualiza [allCompanies] e [userCompanyIds] reativamente.
+   */
   private fun observeCompanyAccess() {
     viewModelScope.launch { repository.observeCompanies().collect { _allCompanies.value = it } }
     viewModelScope.launch {

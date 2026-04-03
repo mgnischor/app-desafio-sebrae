@@ -3,7 +3,6 @@ package tech.datatower.sebrae.desafio.ui.companies
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +12,15 @@ import kotlinx.coroutines.launch
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
+import javax.inject.Inject
 
+/**
+ * ViewModel da tela de gestão de empresas.
+ *
+ * Observa a lista de empresas em tempo real e fornece operações de criação e remoção com remoção
+ * otimista (a empresa some da lista imediatamente e reaparece se Firestore falhar). Todas as
+ * operações requerem um requester com perfil de ADMINISTRADOR.
+ */
 @HiltViewModel
 class CompanyManagementViewModel
 @Inject
@@ -21,19 +28,47 @@ constructor(
     private val repository: AppRepository,
 ) : ViewModel() {
 
+  /**
+   * Estado de carregamento da lista de empresas.
+   *
+   * Transita de [Loading] para [Success] ou [Error] conforme o resultado da observação reativa.
+   */
   sealed class CompaniesState {
+    /** Lista ainda está sendo carregada do banco local. */
     data object Loading : CompaniesState()
 
+    /**
+     * Lista de empresas disponível com sucesso.
+     *
+     * @property companies Empresas ativas visíveis na UI.
+     */
     data class Success(val companies: List<Company>) : CompaniesState()
 
+    /**
+     * Falha ao carregar; a [StateFlow] não emite mais updates.
+     *
+     * @property message Mensagem de erro para exibir na UI.
+     */
     data class Error(val message: String) : CompaniesState()
   }
 
+  /**
+   * Resultado de uma operação de criação ou remoção de empresa.
+   *
+   * Deve ser limpo após exibido na UI via [clearActionResult].
+   */
   sealed class ActionResult {
+    /** Nenhuma operação pendente ou já tratada. */
     data object Idle : ActionResult()
 
+    /** Operação concluída com sucesso. */
     data object Success : ActionResult()
 
+    /**
+     * Operação falhou.
+     *
+     * @property message Descrição do erro para exibir ao usuário.
+     */
     data class Error(val message: String) : ActionResult()
   }
 
@@ -51,6 +86,7 @@ constructor(
     observeCompanies()
   }
 
+  /** Observa a lista de empresas do Room, excluindo IDs removidos. */
   private fun observeCompanies() {
     observeJob?.cancel()
     observeJob = viewModelScope.launch {
@@ -61,6 +97,16 @@ constructor(
     }
   }
 
+  /**
+   * Cria uma nova empresa com o nome e CNPJ informados.
+   *
+   * O ID é gerado localmente como `max(ids_atuais) + 1`. Atualiza [actionResult] com
+   * [ActionResult.Success] ou [ActionResult.Error].
+   *
+   * @param requester Usuário que realiza a operação (deve ser ADMINISTRADOR).
+   * @param name Nome da empresa.
+   * @param cnpj CNPJ da empresa.
+   */
   fun createCompany(requester: AppUser?, name: String, cnpj: String) {
     viewModelScope.launch {
       try {
@@ -78,6 +124,12 @@ constructor(
     }
   }
 
+  /**
+   * Remove uma empresa com remoção otimista: some da lista imediatamente e reaparece se falhar.
+   *
+   * @param requester Usuário que realiza a operação (deve ser ADMINISTRADOR).
+   * @param companyId ID da empresa a remover.
+   */
   fun deleteCompany(requester: AppUser?, companyId: Int) {
     viewModelScope.launch {
       _locallyDeletedIds.update { it + companyId }
@@ -94,6 +146,7 @@ constructor(
     }
   }
 
+  /** Redefine [actionResult] para [ActionResult.Idle] após o resultado ser tratado pela UI. */
   fun clearActionResult() {
     _actionResult.value = ActionResult.Idle
   }

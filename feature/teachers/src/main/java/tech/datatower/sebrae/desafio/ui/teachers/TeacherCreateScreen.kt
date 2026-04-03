@@ -35,7 +35,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -60,6 +63,7 @@ import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
 import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Teacher
+import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.ui.components.DetailScaffold
 import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 
@@ -94,12 +98,14 @@ fun TeacherCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
     }
   }
 
+  val canShowRating =
+      currentUser?.role == UserRole.ADMINISTRADOR || currentUser?.role == UserRole.COORDENADOR
+
   var name by rememberSaveable { mutableStateOf("") }
   var email by rememberSaveable { mutableStateOf("") }
   var specialty by rememberSaveable { mutableStateOf("") }
-  var activeCourses by rememberSaveable { mutableStateOf("0") }
-  var totalStudents by rememberSaveable { mutableStateOf("0") }
   var rating by rememberSaveable { mutableStateOf("0.0") }
+
   val requiredFieldsMessage = stringResource(R.string.teacher_create_error_required)
   val invalidNumericMessage = stringResource(R.string.teacher_create_error_numeric)
   val deniedMessage = stringResource(R.string.permission_denied)
@@ -139,39 +145,54 @@ fun TeacherCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
-        OutlinedTextField(
-            value = activeCourses,
-            onValueChange = { activeCourses = it.filter(Char::isDigit) },
-            label = { Text(stringResource(R.string.teacher_create_active_courses)) },
+
+        // Info card — cursos ativos e total de alunos são calculados automaticamente
+        ElevatedCard(
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
-        OutlinedTextField(
-            value = totalStudents,
-            onValueChange = { totalStudents = it.filter(Char::isDigit) },
-            label = { Text(stringResource(R.string.teacher_create_total_students)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
-        OutlinedTextField(
-            value = rating,
-            onValueChange = { rating = it.filter { ch -> ch.isDigit() || ch == '.' } },
-            label = { Text(stringResource(R.string.teacher_create_rating)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
+            colors =
+                CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                ),
+        ) {
+          Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = stringResource(R.string.teacher_create_active_courses) + ": 0",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                text = stringResource(R.string.teacher_create_total_students) + ": 0",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                text = stringResource(R.string.teacher_create_computed_info),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+            )
+          }
+        }
+
+        // Avaliação visível apenas para Administrador e Coordenador
+        if (canShowRating) {
+          OutlinedTextField(
+              value = rating,
+              onValueChange = { rating = it.filter { ch -> ch.isDigit() || ch == '.' } },
+              label = { Text(stringResource(R.string.teacher_create_rating)) },
+              modifier = Modifier.fillMaxWidth(),
+              singleLine = true,
+          )
+        }
 
         Button(
             onClick = {
-              val active = activeCourses.toIntOrNull()
-              val students = totalStudents.toIntOrNull()
-              val score = rating.toFloatOrNull()
-
               if (name.isBlank() || email.isBlank() || specialty.isBlank()) {
                 scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
                 return@Button
               }
-              if (active == null || students == null || score == null || score !in 0f..5f) {
+
+              val score = if (canShowRating) rating.toFloatOrNull() else 0f
+              if (canShowRating && (score == null || score !in 0f..5f)) {
                 scope.launch { snackbarHostState.showSnackbar(invalidNumericMessage) }
                 return@Button
               }
@@ -196,9 +217,9 @@ fun TeacherCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
                           name = name.trim(),
                           email = email.trim(),
                           specialty = specialty.trim(),
-                          activeCourses = active,
-                          totalStudents = students,
-                          rating = score,
+                          activeCourses = 0, // calculado dinamicamente pelo repositório
+                          totalStudents = 0, // calculado dinamicamente pelo repositório
+                          rating = score ?: 0f,
                           isActive = true,
                       ),
               )

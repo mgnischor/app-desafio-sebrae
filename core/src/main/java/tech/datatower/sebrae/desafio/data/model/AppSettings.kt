@@ -28,7 +28,14 @@ package tech.datatower.sebrae.desafio.data.model
 
 import androidx.compose.runtime.Immutable
 
-/** Modelo e comportamento relacionados a app settings. */
+/**
+ * Preferências persistidas do usuário que controlam o comportamento global da aplicação.
+ *
+ * @property darkMode Indica se o tema escuro está habilitado.
+ * @property pushEnabled Indica se as notificações push estão ativadas.
+ * @property emailEnabled Indica se o envio de notificações por e-mail está ativado.
+ * @property language Código do idioma da interface; valores suportados: `"pt"`, `"en"`, `"es"`.
+ */
 @Immutable
 data class AppSettings(
     val darkMode: Boolean,

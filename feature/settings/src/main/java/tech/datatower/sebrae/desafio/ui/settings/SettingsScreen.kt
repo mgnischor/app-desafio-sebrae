@@ -118,6 +118,7 @@ fun SettingsScreen(
   val snackbarHostState = remember { SnackbarHostState() }
   var showPasswordDialog by rememberSaveable { mutableStateOf(false) }
   var showResetDatabaseDialog by rememberSaveable { mutableStateOf(false) }
+  var showAboutDialog by rememberSaveable { mutableStateOf(false) }
   var currentPassword by rememberSaveable { mutableStateOf("") }
   var newPassword by rememberSaveable { mutableStateOf("") }
 
@@ -275,6 +276,7 @@ fun SettingsScreen(
               icon = Icons.Outlined.Info,
               title = stringResource(R.string.settings_item_about),
               subtitle = stringResource(R.string.settings_subtitle_about),
+              onClick = { showAboutDialog = true },
           )
         }
       }
@@ -351,6 +353,46 @@ fun SettingsScreen(
           dismissButton = {
             TextButton(onClick = { showResetDatabaseDialog = false }) {
               Text(stringResource(R.string.settings_reset_database_cancel))
+            }
+          },
+      )
+    }
+
+    if (showAboutDialog) {
+      AlertDialog(
+          onDismissRequest = { showAboutDialog = false },
+          title = { Text(stringResource(R.string.settings_about_dialog_title)) },
+          text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+              Text(
+                  text = stringResource(R.string.settings_about_credits_title),
+                  style = MaterialTheme.typography.labelLarge,
+                  fontWeight = FontWeight.SemiBold,
+                  color = MaterialTheme.colorScheme.primary,
+              )
+              Text(
+                  text = stringResource(R.string.settings_about_credit_1),
+                  style = MaterialTheme.typography.bodyMedium,
+              )
+              Text(
+                  text = stringResource(R.string.settings_about_credit_2),
+                  style = MaterialTheme.typography.bodyMedium,
+              )
+              Text(
+                  text = stringResource(R.string.settings_about_credit_3),
+                  style = MaterialTheme.typography.bodyMedium,
+              )
+              Spacer(modifier = Modifier.height(4.dp))
+              Text(
+                  text = stringResource(R.string.settings_about_credit_partner),
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
+          },
+          confirmButton = {
+            TextButton(onClick = { showAboutDialog = false }) {
+              Text(stringResource(R.string.settings_about_dismiss))
             }
           },
       )

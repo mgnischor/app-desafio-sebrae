@@ -12,11 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -183,16 +186,32 @@ fun MonitoringEntryScreen(
         )
       }
       item {
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
           MonitoringEntryType.entries.forEach { type ->
-            FilterChip(
-                selected = selectedType == type.name,
-                onClick = { selectedType = type.name },
-                label = { Text(type.label, style = MaterialTheme.typography.labelSmall) },
-            )
+            val isSelected = selectedType == type.name
+            if (isSelected) {
+              ElevatedButton(
+                  onClick = { /* já selecionado */ },
+                  modifier = Modifier.fillMaxWidth(),
+                  colors =
+                      ButtonDefaults.elevatedButtonColors(
+                          containerColor = MaterialTheme.colorScheme.primary,
+                          contentColor = MaterialTheme.colorScheme.onPrimary,
+                      ),
+              ) {
+                Text(type.label, style = MaterialTheme.typography.labelLarge)
+              }
+            } else {
+              OutlinedButton(
+                  onClick = { selectedType = type.name },
+                  modifier = Modifier.fillMaxWidth(),
+              ) {
+                Text(type.label, style = MaterialTheme.typography.labelLarge)
+              }
+            }
           }
         }
       }

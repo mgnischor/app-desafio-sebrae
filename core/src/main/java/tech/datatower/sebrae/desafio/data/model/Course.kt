@@ -39,6 +39,8 @@ import androidx.compose.runtime.Immutable
  * @property durationHours Carga horária total em horas.
  * @property completionRate Taxa de conclusão dos alunos no intervalo de `0f..1f`.
  * @property isPublished Indica se o curso está publicado para matrícula.
+ * @property startDate Data de início do curso no formato ISO-8601 (`"YYYY-MM-DD"`), ou `null` se
+ *   não definida.
  */
 @Immutable
 data class Course(
@@ -50,4 +52,5 @@ data class Course(
     val durationHours: Int,
     val completionRate: Float, // 0f..1f
     val isPublished: Boolean,
+    val startDate: String? = null,
 )

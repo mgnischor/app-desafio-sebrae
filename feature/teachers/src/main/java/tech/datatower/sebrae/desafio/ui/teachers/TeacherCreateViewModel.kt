@@ -48,6 +48,12 @@ import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
 import tech.datatower.sebrae.desafio.data.repository.AppRepository
 import javax.inject.Inject
 
+/**
+ * ViewModel da tela de cadastro de professor.
+ *
+ * Expõe [teachers] para o seletor do formulário (preenchimento de dados de id/existência). A
+ * operação de persistência é executada via [saveTeacher]; o resultado é rastreado em [saveState].
+ */
 @HiltViewModel
 class TeacherCreateViewModel
 @Inject
@@ -71,23 +77,39 @@ constructor(
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  /** Resultado da operação de persistência do professor. */
   sealed class SaveState {
+    /** Formulário ainda não submetido ou resultado já consumido. */
     data object Idle : SaveState()
 
+    /** Persistência em andamento; botão de confirmação deve ser desabilitado. */
     data object Saving : SaveState()
 
+    /** Persistência concluída com sucesso; navegar de volta. */
     data object Success : SaveState()
 
+    /**
+     * Persistência falhou.
+     *
+     * @property message Descrição do erro para exibir ao usuário.
+     */
     data class Error(val message: String) : SaveState()
   }
 
   private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
+  /** Estado atual da operação de persistência do professor. */
   val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
 
   init {
     viewModelScope.launch { dataConnectService.syncScope(ScreenDataScope.TEACHERS) }
   }
 
+  /**
+   * Persiste o professor no Firestore e no banco local.
+   *
+   * @param requester Usuário logado (deve ter permissão para criar professores).
+   * @param teacher Dados completos do professor a cadastrar ou atualizar.
+   */
   fun saveTeacher(requester: AppUser?, teacher: Teacher) {
     viewModelScope.launch {
       _saveState.value = SaveState.Saving
@@ -103,6 +125,7 @@ constructor(
     }
   }
 
+  /** Redefine [saveState] para [SaveState.Idle]; usado ao reabrir o formulário após erro. */
   fun resetSaveState() {
     _saveState.value = SaveState.Idle
   }
