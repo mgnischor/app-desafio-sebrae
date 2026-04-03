@@ -76,6 +76,9 @@ import tech.datatower.sebrae.desafio.data.model.StudentStatus
 import tech.datatower.sebrae.desafio.data.model.Teacher
 import tech.datatower.sebrae.desafio.data.model.UserRole
 import java.security.MessageDigest
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 /**
  * Consolida os indicadores agrégados exibidos na tela de relatórios.
@@ -283,10 +286,42 @@ class AppRepository(
   // ── Teachers (filtered by company) ────────────────────────────────────
 
   fun observeTeachers(companyId: Int): Flow<List<Teacher>> =
-      dao.observeTeachers(companyId).map { items -> items.map { it.toModel() } }
+      combine(
+          dao.observeTeachers(companyId),
+          dao.observeClasses(companyId),
+          dao.observeStudents(companyId),
+      ) { teacherEntities, classEntities, studentEntities ->
+        val classes = classEntities.map { it.toModel() }
+        val students = studentEntities.map { it.toModel() }
+        val activeCoursesMap = RelationshipRules.realActiveCoursesCountByTeacher(classes)
+        val studentsMap = RelationshipRules.realStudentsByTeacher(students, classes)
+        teacherEntities.map { entity ->
+          val model = entity.toModel()
+          model.copy(
+              activeCourses = activeCoursesMap[model.name.trim()] ?: 0,
+              totalStudents = studentsMap[model.name.trim()] ?: 0,
+          )
+        }
+      }
 
   fun observeAllTeachers(): Flow<List<Teacher>> =
-      dao.observeAllTeachers().map { items -> items.map { it.toModel() } }
+      combine(
+          dao.observeAllTeachers(),
+          dao.observeAllClasses(),
+          dao.observeAllStudents(),
+      ) { teacherEntities, classEntities, studentEntities ->
+        val classes = classEntities.map { it.toModel() }
+        val students = studentEntities.map { it.toModel() }
+        val activeCoursesMap = RelationshipRules.realActiveCoursesCountByTeacher(classes)
+        val studentsMap = RelationshipRules.realStudentsByTeacher(students, classes)
+        teacherEntities.map { entity ->
+          val model = entity.toModel()
+          model.copy(
+              activeCourses = activeCoursesMap[model.name.trim()] ?: 0,
+              totalStudents = studentsMap[model.name.trim()] ?: 0,
+          )
+        }
+      }
 
   fun observeTeacherById(teacherId: Int): Flow<Teacher?> =
       dao.observeTeacherById(teacherId).map { it?.toModel() }
@@ -700,8 +735,11 @@ private fun CourseEntity.toModel() =
         instructor = instructor,
         totalStudents = totalStudents,
         durationHours = durationHours,
-        completionRate = completionRate,
+        completionRate =
+            if (startDate != null) computeCompletionRate(startDate, durationHours)
+            else completionRate,
         isPublished = isPublished,
+        startDate = startDate,
     )
 
 /** Converte [SchoolClassEntity] para o modelo de domínio [SchoolClass]. */
@@ -766,8 +804,8 @@ private fun CalendarEventEntity.toModel() =
     )
 
 /**
- * Converte [RecentActivityEntity] para o modelo de domínio [RecentActivity],
- * mapeando a `iconKey` string para o [ImageVector] correspondente.
+ * Converte [RecentActivityEntity] para o modelo de domínio [RecentActivity], mapeando a `iconKey`
+ * string para o [ImageVector] correspondente.
  */
 private fun RecentActivityEntity.toModel() =
     RecentActivity(
@@ -852,6 +890,24 @@ private fun AppUser.toEntity(passwordHash: String) =
 private fun sha256(input: String): String {
   val digest = MessageDigest.getInstance("SHA-256")
   return digest.digest(input.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+}
+
+/**
+ * Calcula a taxa de conclusão com base na data de início e carga horária do curso.
+ *
+ * Conta as horas e minutos passados desde [startDate] até agora, dividindo pela carga total
+ * [durationHours]. O resultado é clampeado entre `0f` e `1f`.
+ */
+private fun computeCompletionRate(startDate: String, durationHours: Int): Float {
+  if (durationHours <= 0) return 0f
+  return try {
+    val start = LocalDate.parse(startDate).atStartOfDay()
+    val now = LocalDateTime.now()
+    val elapsedHours = ChronoUnit.HOURS.between(start, now).coerceAtLeast(0L)
+    (elapsedHours.toFloat() / durationHours.toFloat()).coerceIn(0f, 1f)
+  } catch (_: Exception) {
+    0f
+  }
 }
 
 /** Converte valor nulo em zero para manter cálculos agregados consistentes. */
