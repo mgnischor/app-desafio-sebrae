@@ -2,6 +2,7 @@ plugins {
   alias(libs.plugins.android.library)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.google.devtools.ksp)
+  alias(libs.plugins.hilt)
 }
 
 kotlin { jvmToolchain(17) }
@@ -41,4 +42,6 @@ dependencies {
   implementation(platform(libs.androidx.compose.bom))
 
   ksp(libs.androidx.room.compiler)
+  implementation(libs.hilt.android)
+  ksp(libs.hilt.android.compiler)
 }
