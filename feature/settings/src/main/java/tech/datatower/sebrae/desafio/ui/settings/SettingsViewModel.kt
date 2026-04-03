@@ -42,9 +42,9 @@ import javax.inject.Inject
 /**
  * ViewModel da tela de configurações do aplicativo.
  *
- * Expõe [settings] como [StateFlow] reativo persistido via Room.
- * Fornece métodos para atualizar cada preferência individualmente e para
- * limpar o armazenamento local preservando os cadastros de usuários.
+ * Expõe [settings] como [StateFlow] reativo persistido via Room. Fornece métodos para atualizar
+ * cada preferência individualmente e para limpar o armazenamento local preservando os cadastros de
+ * usuários.
  */
 @HiltViewModel
 class SettingsViewModel
@@ -75,6 +75,7 @@ constructor(
 
   /**
    * Ativa ou desativa o tema escuro (dark mode).
+   *
    * @param enabled `true` para ativar o modo escuro.
    */
   fun updateDarkMode(enabled: Boolean) {
@@ -83,6 +84,7 @@ constructor(
 
   /**
    * Ativa ou desativa notificações push.
+   *
    * @param enabled `true` para receber notificações push.
    */
   fun updatePushEnabled(enabled: Boolean) {
@@ -91,6 +93,7 @@ constructor(
 
   /**
    * Ativa ou desativa notificações por e-mail.
+   *
    * @param enabled `true` para receber notificações por e-mail.
    */
   fun updateEmailEnabled(enabled: Boolean) {
@@ -99,6 +102,7 @@ constructor(
 
   /**
    * Atualiza o idioma preferido do aplicativo.
+   *
    * @param language Código ISO 639-1 do idioma (ex.: `"pt"`, `"en"`).
    */
   fun updateLanguage(language: String) {
@@ -106,8 +110,8 @@ constructor(
   }
 
   /**
-   * Limpa todas as tabelas do banco local Room, exceto a tabela de usuários.
-   * Usado para redefinir os dados de demonstração sem perder os logins cadastrados.
+   * Limpa todas as tabelas do banco local Room, exceto a tabela de usuários. Usado para redefinir
+   * os dados de demonstração sem perder os logins cadastrados.
    */
   fun clearStoragePreservingUsers() {
     viewModelScope.launch { repository.clearStoragePreservingUsers() }
