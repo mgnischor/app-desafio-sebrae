@@ -35,6 +35,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -68,9 +70,10 @@ import tech.datatower.sebrae.desafio.ui.components.LoadingOverlay
 import tech.datatower.sebrae.desafio.ui.components.SearchableDropdown
 
 /**
- * Executa a rotina de course create screen dentro do contexto deste componente.
+ * Tela de cadastro de novo curso.
  *
- * @param onBack Valor de entrada utilizado por esta opera??o.
+ * Os campos [totalStudents] e [completionRate] são calculados automaticamente pelo repositório. A
+ * [startDate] (formato AAAA-MM-DD) alimenta o cálculo dinâmico da taxa de conclusão.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,9 +105,8 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
   var title by rememberSaveable { mutableStateOf("") }
   var category by rememberSaveable { mutableStateOf("") }
   var selectedTeacher by remember { mutableStateOf<Teacher?>(null) }
-  var totalStudents by rememberSaveable { mutableStateOf("0") }
-  var durationHours by rememberSaveable { mutableStateOf("0") }
-  var completionRatePercent by rememberSaveable { mutableStateOf("0") }
+  var durationHours by rememberSaveable { mutableStateOf("") }
+  var startDate by rememberSaveable { mutableStateOf("") }
   var isPublished by rememberSaveable { mutableStateOf(true) }
   val requiredFieldsMessage = stringResource(R.string.course_create_error_required)
   val invalidNumericMessage = stringResource(R.string.course_create_error_numeric)
@@ -147,13 +149,6 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         )
         OutlinedTextField(
-            value = totalStudents,
-            onValueChange = { totalStudents = it.filter(Char::isDigit) },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.course_create_students)) },
-            singleLine = true,
-        )
-        OutlinedTextField(
             value = durationHours,
             onValueChange = { durationHours = it.filter(Char::isDigit) },
             modifier = Modifier.fillMaxWidth(),
@@ -161,12 +156,45 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
             singleLine = true,
         )
         OutlinedTextField(
-            value = completionRatePercent,
-            onValueChange = { completionRatePercent = it.filter(Char::isDigit) },
+            value = startDate,
+            onValueChange = { startDate = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.course_create_completion)) },
+            label = { Text(stringResource(R.string.course_create_start_date)) },
             singleLine = true,
+            placeholder = { Text("AAAA-MM-DD") },
         )
+
+        // Total de alunos e taxa de conclusão — calculados dinamicamente
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth(),
+            colors =
+                CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                ),
+        ) {
+          Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = stringResource(R.string.course_create_students) + ": 0",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                text = stringResource(R.string.course_create_students_computed_info),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+            )
+            Text(
+                text = stringResource(R.string.course_create_completion) + ": 0%",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                text = stringResource(R.string.course_create_completion_computed_info),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+            )
+          }
+        }
 
         Text(
             text = stringResource(R.string.course_create_published),
@@ -185,17 +213,13 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
 
         Button(
             onClick = {
-              val students = totalStudents.toIntOrNull()
               val hours = durationHours.toIntOrNull()
-              val completion = completionRatePercent.toIntOrNull()
 
               if (title.isBlank() || category.isBlank() || selectedTeacher == null) {
                 scope.launch { snackbarHostState.showSnackbar(requiredFieldsMessage) }
                 return@Button
               }
-              if (
-                  students == null || hours == null || completion == null || completion !in 0..100
-              ) {
+              if (hours == null || hours <= 0) {
                 scope.launch { snackbarHostState.showSnackbar(invalidNumericMessage) }
                 return@Button
               }
@@ -220,10 +244,11 @@ fun CourseCreateScreen(currentUser: AppUser?, onBack: () -> Unit) {
                           title = title.trim(),
                           category = category.trim(),
                           instructor = selectedTeacher!!.name,
-                          totalStudents = students,
+                          totalStudents = 0, // calculado dinamicamente pelo repositório
                           durationHours = hours,
-                          completionRate = completion / 100f,
+                          completionRate = 0f, // calculado dinamicamente a partir de startDate
                           isPublished = isPublished,
+                          startDate = startDate.trim().ifBlank { null },
                       ),
               )
             },
