@@ -29,68 +29,53 @@ package tech.datatower.sebrae.desafio.ui.courses
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import tech.datatower.sebrae.desafio.data.auth.AuthManager
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Course
-import tech.datatower.sebrae.desafio.data.model.UserRole
 import tech.datatower.sebrae.desafio.data.remote.firebase.FirebaseDataConnectService
 import tech.datatower.sebrae.desafio.data.remote.firebase.ScreenDataScope
-import tech.datatower.sebrae.desafio.data.repository.AppRepository
+import tech.datatower.sebrae.desafio.domain.usecase.ObserveCoursesUseCase
+import tech.datatower.sebrae.desafio.domain.usecase.SyncScreenDataUseCase
 import javax.inject.Inject
 
 /**
  * ViewModel da tela de listagem de cursos.
  *
- * Expõe [courses] como [StateFlow] reativo filtrado pelo papel do usuário:
- * administradores vêem todos os cursos; demais perfis apenas os da empresa corrente.
- * Fornece [refresh], [deactivateCourse], [reactivateCourse] e [deleteCourse]
- * com feedback via [actionResult].
+ * Expõe [courses] como [StateFlow] reativo filtrado pelo papel do usuário: administradores vêem
+ * todos os cursos; demais perfis apenas os da empresa corrente. Fornece [refresh],
+ * [deactivateCourse], [reactivateCourse] e [deleteCourse] com feedback via [actionResult].
  */
 @HiltViewModel
 class CoursesViewModel
 @Inject
 constructor(
-    private val repository: AppRepository,
+    private val observeCoursesUseCase: ObserveCoursesUseCase,
+    private val syncScreenDataUseCase: SyncScreenDataUseCase,
     private val dataConnectService: FirebaseDataConnectService,
 ) : ViewModel() {
 
   /** Lista de cursos visível para o perfil logado, atualizada reativamente pelo Room. */
-  @OptIn(ExperimentalCoroutinesApi::class)
   val courses: StateFlow<List<Course>> =
-      combine(AuthManager.currentUser, AuthManager.currentCompany) { user, company ->
-            Pair(user, company)
-          }
-          .flatMapLatest { (user, company) ->
-            if (user?.role == UserRole.ADMINISTRADOR) {
-              repository.observeAllCourses()
-            } else {
-              val cid = company?.id ?: return@flatMapLatest flowOf(emptyList())
-              repository.observeCourses(cid)
-            }
-          }
+      observeCoursesUseCase()
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   private val _isInitialLoading = MutableStateFlow(true)
-  /** `true` até a primeira sincronização com o Firestore concluir; controla o indicador inicial de carga. */
+  /**
+   * `true` até a primeira sincronização com o Firestore concluir; controla o indicador inicial de
+   * carga.
+   */
   val isInitialLoading: StateFlow<Boolean> = _isInitialLoading.asStateFlow()
 
   private val _isRefreshing = MutableStateFlow(false)
   /** `true` enquanto um pull-to-refresh manual está em andamento. */
   val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-  /**
-   * Resultado de uma operação de desativação, reativação ou exclusão de curso.
-   */
+  /** Resultado de uma operação de desativação, reativação ou exclusão de curso. */
   sealed class ActionResult {
     /** Nenhuma operação pendente ou resultado já consumido. */
     data object Idle : ActionResult()
@@ -98,7 +83,9 @@ constructor(
     /** Operação concluída com sucesso. */
     data object Success : ActionResult()
 
-    /** Operação falhou.
+    /**
+     * Operação falhou.
+     *
      * @property message Descrição do erro para exibir na UI.
      */
     data class Error(val message: String) : ActionResult()
@@ -109,21 +96,21 @@ constructor(
 
   init {
     viewModelScope.launch {
-      dataConnectService.syncScope(ScreenDataScope.COURSES)
+      syncScreenDataUseCase(ScreenDataScope.COURSES)
       _isInitialLoading.value = false
     }
   }
 
   /**
-   * Solicita nova sincronização com o Firestore (pull-to-refresh).
-   * Ignorado se já há um refresh em andamento.
+   * Solicita nova sincronização com o Firestore (pull-to-refresh). Ignorado se já há um refresh em
+   * andamento.
    */
   fun refresh() {
     if (_isRefreshing.value) return
     viewModelScope.launch {
       _isRefreshing.value = true
       try {
-        dataConnectService.syncScope(ScreenDataScope.COURSES)
+        syncScreenDataUseCase(ScreenDataScope.COURSES)
       } finally {
         _isRefreshing.value = false
       }
