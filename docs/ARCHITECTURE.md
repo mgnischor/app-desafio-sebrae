@@ -297,9 +297,9 @@ na `MainActivity`.
   `@HiltViewModel` e `@Inject constructor`
 - [x] **Criar módulos Gradle por feature** (`students`, `courses`, etc.) para melhorar tempos
   de build incremental e limitar visibilidade entre módulos
-- [ ] **Definir UseCases** (interactors) entre o `AppRepository` e a UI, evitando que regras de
+- [x] **Definir UseCases** (interactors) entre o `AppRepository` e a UI, evitando que regras de
   negócio fiquem espalhadas nos Composables
-- [ ] **Implementar o `RemoteBootstrapper`** com hydration real do Firestore (atualmente retorna
+- [x] **Implementar o `RemoteBootstrapper`** com hydration real do Firestore (atualmente retorna
   `false` sem fazer nada)
 - [x] **Adicionar tratamento de estado offline** explícito: exibir indicador de dados desatualizados
   quando não há conectividade
