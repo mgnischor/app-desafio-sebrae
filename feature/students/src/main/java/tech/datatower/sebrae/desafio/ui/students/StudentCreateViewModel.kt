@@ -53,8 +53,8 @@ import javax.inject.Inject
 /**
  * ViewModel da tela de cadastro de aluno.
  *
- * Expõe [students], [courses] e [classes] para preencher os seletores do formulário.
- * A operação de persistência é executada via [saveStudent]; o resultado é rastreado em [saveState].
+ * Expõe [students], [courses] e [classes] para preencher os seletores do formulário. A operação de
+ * persistência é executada via [saveStudent]; o resultado é rastreado em [saveState].
  */
 @HiltViewModel
 class StudentCreateViewModel
@@ -109,9 +109,7 @@ constructor(
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-  /**
-   * Resultado da operação de persistência do aluno.
-   */
+  /** Resultado da operação de persistência do aluno. */
   sealed class SaveState {
     /** Formulário ainda não submetido ou resultado já consumido. */
     data object Idle : SaveState()
@@ -122,7 +120,9 @@ constructor(
     /** Persistência concluída com sucesso; navegar de volta. */
     data object Success : SaveState()
 
-    /** Persistência falhou.
+    /**
+     * Persistência falhou.
+     *
      * @property message Descrição do erro para exibir ao usuário.
      */
     data class Error(val message: String) : SaveState()
