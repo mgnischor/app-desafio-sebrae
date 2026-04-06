@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">App Desafio SEBRAE</string>
+    <string name="app_name">Educalink</string>
 
     <!-- General -->
     <string name="back">Voltar</string>
@@ -343,7 +343,7 @@
     <string name="settings_item_storage">Armazenamento</string>
     <string name="settings_subtitle_storage">Limpar cache e dados</string>
     <string name="settings_item_about">Sobre</string>
-    <string name="settings_subtitle_about">Versão 1.0.0 · App Desafio SEBRAE</string>
+    <string name="settings_subtitle_about">Versão 1.0.0 · Educalink</string>
     <string name="settings_item_user_management">Usuários</string>
     <string name="settings_subtitle_user_management">Cadastro e controle de acesso</string>
 
