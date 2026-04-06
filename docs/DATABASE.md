@@ -1,4 +1,4 @@
-# Banco de Dados — App Desafio SEBRAE
+# Banco de Dados — Educalink
 
 ## Visão Geral
 
