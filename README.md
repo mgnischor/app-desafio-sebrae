@@ -1,4 +1,4 @@
-# App Desafio SEBRAE
+# Educalink
 
 Aplicativo Android nativo para gestão educacional, com foco em acompanhamento de alunos, cursos, turmas, instrutores e indicadores operacionais. O projeto foi desenvolvido com Kotlin, Jetpack Compose, Room e integração com Firebase (Auth + Firestore).
 
@@ -16,7 +16,7 @@ Aplicativo Android nativo para gestão educacional, com foco em acompanhamento d
 - [Observações de segurança](#observações-de-segurança)
 
 ## Visão geral
-O **App Desafio SEBRAE** organiza, em uma única experiência, as operações acadêmicas e administrativas de uma instituição de ensino:
+O **Educalink** organiza, em uma única experiência, as operações acadêmicas e administrativas de uma instituição de ensino:
 
 - Gestão de alunos, cursos, turmas e instrutores
 - Acompanhamento individual do aluno
