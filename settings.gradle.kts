@@ -22,7 +22,7 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "App Desafio SEBRAE"
+rootProject.name = "Educalink"
 
 include(":app")
 
