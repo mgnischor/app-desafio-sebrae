@@ -1,4 +1,4 @@
-# Arquitetura — App Desafio SEBRAE
+# Arquitetura — Educalink
 
 ## Visão Geral
 
