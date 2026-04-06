@@ -1,4 +1,4 @@
-# Padrões de Código — App Desafio SEBRAE
+# Padrões de Código — Educalink
 
 ## Linguagem e Versão
 
