@@ -1,4 +1,4 @@
-# Segurança — App Desafio SEBRAE
+# Segurança — Educalink
 
 ## Visão Geral
 
