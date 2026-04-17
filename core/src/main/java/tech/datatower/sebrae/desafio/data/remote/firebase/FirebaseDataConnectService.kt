@@ -236,11 +236,11 @@ class FirebaseDataConnectService(
   ): Result<Map<String, Int>> {
     val counters = linkedMapOf<String, Int>()
     /**
-     * Executa a rotina de merge count dentro do contexto deste componente.
+     * Acumula a contagem de documentos sincronizados por coleção e retorna erro se aplicável.
      *
-     * @param collection Valor de entrada utilizado por esta operação.
-     * @param result Valor de entrada utilizado por esta operação.
-     * @return Resultado produzido pela operação em formato `Result<Map<String, Int>>?`.
+     * @param collection Nome da coleção Firestore sincronizada.
+     * @param result Resultado da operação de seed individual.
+     * @return [Result.Error] quando a falha não é por PERMISSION_DENIED; `null` para continuar.
      */
     fun mergeCount(collection: String, result: Result<Int>): Result<Map<String, Int>>? {
       return when (result) {
@@ -267,6 +267,9 @@ class FirebaseDataConnectService(
     }
 
     if (includeRestrictedCollections) {
+      // SEGURANÇA: passwordHash é enviado ao Firestore para manter sincronização com login local.
+      // Em produção, remover este campo e usar exclusivamente Firebase Auth para autenticação.
+      // Proteger a collection 'users' no Firestore Rules para leitura/escrita apenas de admins.
       val userResult =
           seedCollectionFromMaps(
               collectionName = COLLECTION_USERS,
