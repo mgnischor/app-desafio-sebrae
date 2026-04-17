@@ -601,6 +601,10 @@ interface AppDao {
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertGuardianStudents(items: List<GuardianStudentEntity>)
 
+  /** Retorna vínculos existentes entre responsável e alunos (consulta síncrona one-shot). */
+  @Query("SELECT * FROM guardian_students WHERE guardianUserId = :guardianUserId")
+  suspend fun getGuardianStudentLinksOnce(guardianUserId: Int): List<GuardianStudentEntity>
+
   @Query(
       "SELECT s.* FROM students s INNER JOIN guardian_students gs ON s.id = gs.studentId WHERE gs.guardianUserId = :guardianUserId AND s.companyId = :companyId ORDER BY s.name"
   )
