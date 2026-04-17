@@ -383,6 +383,15 @@
     <string name="settings_reset_database_action">Resetar tudo</string>
     <string name="settings_reset_database_success">Base de dados resetada com sucesso.</string>
     <string name="settings_reset_database_cancel">Cancelar</string>
+
+    <!-- Settings – Sincronização manual -->
+    <string name="settings_item_sync">Sincronizar dados</string>
+    <string name="settings_subtitle_sync">Sincronizar dados locais com o Firebase</string>
+    <string name="settings_sync_confirm_title">Confirmar sincronização</string>
+    <string name="settings_sync_confirm_message">Esta ação irá enviar os dados locais para o Firebase e em seguida baixar todos os dados remotos para o dispositivo, mantendo os dois lados atualizados. Deseja continuar?</string>
+    <string name="settings_sync_action">Sincronizar</string>
+    <string name="settings_sync_success">Dados sincronizados com sucesso.</string>
+    <string name="settings_sync_error">Erro ao sincronizar. Verifique sua conexão e tente novamente.</string>
     <string name="settings_change_password_title" translatable="false">Alterar senha</string>
     <string name="settings_current_password" translatable="false">Senha atual</string>
     <string name="settings_new_password" translatable="false">Nova senha (mínimo 8 caracteres)</string>
