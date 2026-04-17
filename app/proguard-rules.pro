@@ -5,17 +5,30 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# ── Preserve line numbers for crash reporting ──────────────────────────────────
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# ── Firebase Firestore / Auth ──────────────────────────────────────────────────
+-keep class com.google.firebase.firestore.** { *; }
+-keep class com.google.firebase.auth.** { *; }
+-dontwarn com.google.firebase.**
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ── Hilt / Dagger ──────────────────────────────────────────────────────────────
+-dontwarn dagger.hilt.internal.**
+-keep class javax.inject.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.** { *; }
+-keep @dagger.hilt.android.AndroidEntryPoint class * { *; }
+-keep @dagger.hilt.InstallIn class * { *; }
+
+# ── Room entities (data classes mapped to DB) ──────────────────────────────────
+-keep class tech.datatower.sebrae.desafio.data.local.** { *; }
+
+# ── Domain models (used in reflection-based serialization) ─────────────────────
+-keep class tech.datatower.sebrae.desafio.data.model.** { *; }
+
+# ── Kotlin coroutines ─────────────────────────────────────────────────────────
+-dontwarn kotlinx.coroutines.**
+
+# ── Compose ────────────────────────────────────────────────────────────────────
+-dontwarn androidx.compose.**
