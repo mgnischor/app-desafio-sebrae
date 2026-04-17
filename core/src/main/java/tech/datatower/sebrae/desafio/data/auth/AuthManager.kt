@@ -38,6 +38,7 @@ import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.Company
 import tech.datatower.sebrae.desafio.data.model.UserRole
 import java.security.MessageDigest
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Gerencia autenticação e sessão de usuário para toda a aplicação.
@@ -100,14 +101,20 @@ object AuthManager {
           )
       )
 
-  private val hashedCredentials =
-      mutableMapOf(
-          "professor@sebrae.edu.br" to sha256("prof123"),
-          "coordenador@sebrae.edu.br" to sha256("coord123"),
-          "admin@sebrae.edu.br" to sha256("admin123"),
-          "orientador@sebrae.edu.br" to sha256("orient123"),
-          "psicopedagogo@sebrae.edu.br" to sha256("psico123"),
-          "responsavel@sebrae.edu.br" to sha256("resp123"),
+  // SEGURANÇA: Credenciais de demonstração — NÃO usar em produção.
+  // Em produção, substituir por autenticação exclusiva via Firebase Auth
+  // e remover completamente o fluxo de login local com senhas em memória.
+  // Além disso, SHA-256 puro não é adequado para senhas; preferir bcrypt/scrypt/PBKDF2.
+  private val hashedCredentials: ConcurrentHashMap<String, String> =
+      ConcurrentHashMap(
+          mapOf(
+              "professor@sebrae.edu.br" to sha256("prof123"),
+              "coordenador@sebrae.edu.br" to sha256("coord123"),
+              "admin@sebrae.edu.br" to sha256("admin123"),
+              "orientador@sebrae.edu.br" to sha256("orient123"),
+              "psicopedagogo@sebrae.edu.br" to sha256("psico123"),
+              "responsavel@sebrae.edu.br" to sha256("resp123"),
+          )
       )
 
   private val _currentUser = MutableStateFlow<AppUser?>(null)
@@ -420,7 +427,12 @@ object AuthManager {
     _userCompanies.value = emptyList()
   }
 
-  /** Retorna o hash SHA-256 hexadecimal da string fornecida. */
+  /**
+   * Retorna o hash SHA-256 hexadecimal da string fornecida.
+   *
+   * **SEGURANÇA:** SHA-256 puro (sem salt) é vulnerável a ataques de rainbow table. Em produção,
+   * substituir por bcrypt, scrypt ou PBKDF2 com salt aleatório por usuário.
+   */
   private fun sha256(input: String): String {
     val digest = MessageDigest.getInstance("SHA-256")
     return digest.digest(input.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
