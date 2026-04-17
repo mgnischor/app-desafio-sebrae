@@ -33,19 +33,15 @@ package tech.datatower.sebrae.desafio.data.remote
  */
 interface RemoteBootstrapper {
   /**
-   * Executa a rotina de bootstrap no cache local dentro do contexto deste componente.
+   * Busca dados remotos e os persiste no cache local (Room).
    *
-   * @return Resultado produzido pela operação em formato `Boolean`.
+   * @return `true` quando os dados remotos foram obtidos e gravados com sucesso.
    */
   suspend fun bootstrapIntoLocalCache(): Boolean
 }
 
 /** Fallback bootstrapper used when no remote backend is configured. */
 object NoOpRemoteBootstrapper : RemoteBootstrapper {
-  /**
-   * Executa a rotina de bootstrap no cache local dentro do contexto deste componente.
-   *
-   * @return Resultado produzido pela operação em formato `Boolean`.
-   */
+  /** Retorna `false` imediatamente — nenhum backend remoto está configurado. */
   override suspend fun bootstrapIntoLocalCache(): Boolean = false
 }
