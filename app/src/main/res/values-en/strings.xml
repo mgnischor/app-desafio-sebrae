@@ -310,6 +310,15 @@
     <string name="settings_reset_database_success">Database reset successfully.</string>
     <string name="settings_reset_database_cancel">Cancel</string>
 
+    <!-- Settings – Manual sync -->
+    <string name="settings_item_sync">Sync data</string>
+    <string name="settings_subtitle_sync">Sync local data with Firebase</string>
+    <string name="settings_sync_confirm_title">Confirm sync</string>
+    <string name="settings_sync_confirm_message">This action will upload local data to Firebase and then download all remote data to the device, keeping both sides up to date. Do you want to continue?</string>
+    <string name="settings_sync_action">Sync</string>
+    <string name="settings_sync_success">Data synced successfully.</string>
+    <string name="settings_sync_error">Sync error. Check your connection and try again.</string>
+
     <!-- Loading overlay -->
     <string name="loading_syncing">Syncing data…</string>
     <string name="loading_saving">Saving…</string>
