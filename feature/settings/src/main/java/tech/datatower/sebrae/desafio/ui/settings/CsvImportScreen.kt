@@ -224,6 +224,12 @@ fun CsvImportScreen(
               fontWeight = FontWeight.SemiBold,
           )
 
+          Text(
+              text = "Delimitadores aceitos: vírgula (,) ou ponto-e-vírgula (;)",
+              style = MaterialTheme.typography.labelSmall,
+              color = MaterialTheme.colorScheme.primary,
+          )
+
           val formatHint =
               when (CsvImportType.entries.firstOrNull { it.name == selectedType }) {
                 CsvImportType.STUDENTS ->
