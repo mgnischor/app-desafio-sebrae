@@ -60,6 +60,7 @@ constructor(
         }
 
         val companyId = AuthManager.currentCompany.value?.id ?: 1
+        val delimiter = detectDelimiter(lines.first())
         val dataLines = if (looksLikeHeader(lines.first(), type)) lines.drop(1) else lines
         if (dataLines.isEmpty()) {
           onError("Nenhum registro encontrado após o cabeçalho.")
@@ -68,10 +69,10 @@ constructor(
 
         val count =
             when (type) {
-              CsvImportType.STUDENTS -> importStudents(companyId, dataLines)
-              CsvImportType.COURSES -> importCourses(companyId, dataLines)
-              CsvImportType.CLASSES -> importClasses(companyId, dataLines)
-              CsvImportType.TEACHERS -> importTeachers(companyId, dataLines)
+              CsvImportType.STUDENTS -> importStudents(companyId, dataLines, delimiter)
+              CsvImportType.COURSES -> importCourses(companyId, dataLines, delimiter)
+              CsvImportType.CLASSES -> importClasses(companyId, dataLines, delimiter)
+              CsvImportType.TEACHERS -> importTeachers(companyId, dataLines, delimiter)
             }
 
         onSuccess(count)
@@ -115,12 +116,29 @@ constructor(
   }
 
   /**
-   * Divide uma linha CSV por vírgula, removendo espaços extras em cada campo.
+   * Detecta o delimitador predominante na primeira linha de dados do CSV.
+   *
+   * Compara a quantidade de vírgulas e ponto-e-vírgulas; o mais frequente é eleito como separador.
+   * Caso haja empate, a vírgula é usada como fallback padrão.
+   *
+   * @param line Linha representativa do CSV (preferencialmente a primeira linha de dados).
+   * @return Caractere delimitador detectado (',' ou ';').
+   */
+  private fun detectDelimiter(line: String): Char {
+    val commas = line.count { it == ',' }
+    val semicolons = line.count { it == ';' }
+    return if (semicolons > commas) ';' else ','
+  }
+
+  /**
+   * Divide uma linha CSV pelo delimitador detectado, removendo espaços extras em cada campo.
    *
    * @param line Linha do arquivo CSV.
+   * @param delimiter Caractere delimitador (',' ou ';').
    * @return Lista de valores dos campos.
    */
-  private fun parseLine(line: String): List<String> = line.split(",").map { it.trim() }
+  private fun parseLine(line: String, delimiter: Char = ','): List<String> =
+      line.split(delimiter).map { it.trim() }
 
   /**
    * Importa alunos a partir das linhas do CSV e insere no Room.
@@ -131,10 +149,10 @@ constructor(
    * @param lines Linhas de dados (sem cabeçalho).
    * @return Quantidade de registros importados com sucesso.
    */
-  private suspend fun importStudents(companyId: Int, lines: List<String>): Int {
-    val baseId = System.currentTimeMillis().toInt().let { if (it < 0) -it else it } % 100_000
+  private suspend fun importStudents(companyId: Int, lines: List<String>, delimiter: Char): Int {
+    val baseId = generateSafeBaseId()
     val entities = lines.mapIndexedNotNull { index, line ->
-      val parts = parseLine(line)
+      val parts = parseLine(line, delimiter)
       if (parts.size < 4) return@mapIndexedNotNull null
       StudentEntity(
           id = baseId + index,
@@ -163,10 +181,10 @@ constructor(
    * @param lines Linhas de dados (sem cabeçalho).
    * @return Quantidade de registros importados com sucesso.
    */
-  private suspend fun importCourses(companyId: Int, lines: List<String>): Int {
-    val baseId = System.currentTimeMillis().toInt().let { if (it < 0) -it else it } % 100_000
+  private suspend fun importCourses(companyId: Int, lines: List<String>, delimiter: Char): Int {
+    val baseId = generateSafeBaseId()
     val entities = lines.mapIndexedNotNull { index, line ->
-      val parts = parseLine(line)
+      val parts = parseLine(line, delimiter)
       if (parts.size < 3) return@mapIndexedNotNull null
       CourseEntity(
           id = baseId + index,
@@ -193,10 +211,10 @@ constructor(
    * @param lines Linhas de dados (sem cabeçalho).
    * @return Quantidade de registros importados com sucesso.
    */
-  private suspend fun importClasses(companyId: Int, lines: List<String>): Int {
-    val baseId = System.currentTimeMillis().toInt().let { if (it < 0) -it else it } % 100_000
+  private suspend fun importClasses(companyId: Int, lines: List<String>, delimiter: Char): Int {
+    val baseId = generateSafeBaseId()
     val entities = lines.mapIndexedNotNull { index, line ->
-      val parts = parseLine(line)
+      val parts = parseLine(line, delimiter)
       if (parts.size < 3) return@mapIndexedNotNull null
       SchoolClassEntity(
           id = baseId + index,
@@ -225,10 +243,10 @@ constructor(
    * @param lines Linhas de dados (sem cabeçalho).
    * @return Quantidade de registros importados com sucesso.
    */
-  private suspend fun importTeachers(companyId: Int, lines: List<String>): Int {
-    val baseId = System.currentTimeMillis().toInt().let { if (it < 0) -it else it } % 100_000
+  private suspend fun importTeachers(companyId: Int, lines: List<String>, delimiter: Char): Int {
+    val baseId = generateSafeBaseId()
     val entities = lines.mapIndexedNotNull { index, line ->
-      val parts = parseLine(line)
+      val parts = parseLine(line, delimiter)
       if (parts.size < 3) return@mapIndexedNotNull null
       TeacherEntity(
           id = baseId + index,
@@ -245,4 +263,16 @@ constructor(
     repository.importTeachers(entities)
     return entities.size
   }
+
+  /**
+   * Gera um ID base seguro para importação de entidades via CSV.
+   *
+   * Usa [System.nanoTime] como fonte de entropia e aplica módulo sobre a faixa completa de inteiros
+   * positivos, reduzindo o risco de colisão comparado ao antigo `System.currentTimeMillis().toInt()
+   * % 100_000`.
+   *
+   * @return Inteiro positivo no intervalo `[0, 1_000_000)` para ser somado ao índice da linha.
+   */
+  private fun generateSafeBaseId(): Int =
+      (System.nanoTime() % 1_000_000).let { if (it < 0) -it.toInt() else it.toInt() }
 }
