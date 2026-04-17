@@ -55,6 +55,7 @@ enum class ProtectedAction {
   ChangeOwnPassword,
   ImportCsv,
   CreateCompanyUsers,
+  ManualSync,
 }
 
 /**
@@ -129,7 +130,12 @@ object AccessPolicy {
           action in setOf(ProtectedAction.View, ProtectedAction.Create, ProtectedAction.Update)
       ProtectedResource.Calendar -> action in setOf(ProtectedAction.View, ProtectedAction.Create)
       ProtectedResource.Settings ->
-          action in setOf(ProtectedAction.View, ProtectedAction.ChangeOwnPassword)
+          action in
+              setOf(
+                  ProtectedAction.View,
+                  ProtectedAction.ChangeOwnPassword,
+                  ProtectedAction.ManualSync,
+              )
       ProtectedResource.Users -> action == ProtectedAction.CreateCompanyUsers
       ProtectedResource.Companies -> false
     }
