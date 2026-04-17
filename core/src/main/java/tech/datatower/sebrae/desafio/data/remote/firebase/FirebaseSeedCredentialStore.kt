@@ -48,35 +48,35 @@ class FirebaseSeedCredentialStore(context: Context) {
       context.applicationContext.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
 
   /**
-   * Executa a rotina de has credentials dentro do contexto deste componente.
+   * Indica se existem credenciais de seed salvas localmente.
    *
-   * @return Resultado produzido pela operação em formato `Boolean`.
+   * @return `true` se e-mail e senha estiverem armazenados e decódáveis.
    */
   fun hasCredentials(): Boolean =
       decrypt(KEY_EMAIL_DATA, KEY_EMAIL_IV).isNotBlank() &&
           decrypt(KEY_PASSWORD_DATA, KEY_PASSWORD_IV).isNotBlank()
 
   /**
-   * Obtém dados necessários para email de forma consistente.
+   * Recupera o e-mail de seed armazenado localmente.
    *
-   * @param ) Valor de entrada utilizado por esta operação.
-   * @return Resultado produzido pela operação em formato `String`.
+   * @return E-mail descriptografado, ou string vazia se ausente ou corrompido.
    */
   fun getEmail(): String = decrypt(KEY_EMAIL_DATA, KEY_EMAIL_IV)
 
   /**
-   * Obtém dados necessários para password de forma consistente.
+   * Recupera a senha de seed armazenada localmente.
    *
-   * @param ) Valor de entrada utilizado por esta operação.
-   * @return Resultado produzido pela operação em formato `String`.
+   * @return Senha descriptografada, ou string vazia se ausente ou corrompida.
    */
   fun getPassword(): String = decrypt(KEY_PASSWORD_DATA, KEY_PASSWORD_IV)
 
   /**
-   * Executa a rotina de save credentials dentro do contexto deste componente.
+   * Salva credenciais de seed criptografadas com AES/GCM no SharedPreferences.
    *
-   * @param email Valor de entrada utilizado por esta operação.
-   * @param password Valor de entrada utilizado por esta operação.
+   * Valores em branco são silenciosamente ignorados para evitar corromper o armazenamento.
+   *
+   * @param email E-mail do usuário de seed.
+   * @param password Senha do usuário de seed.
    */
   fun saveCredentials(email: String, password: String) {
     if (email.isBlank() || password.isBlank()) return
@@ -84,7 +84,7 @@ class FirebaseSeedCredentialStore(context: Context) {
     encryptAndSave(password, KEY_PASSWORD_DATA, KEY_PASSWORD_IV)
   }
 
-  /** Executa a rotina de clear credentials dentro do contexto deste componente. */
+  /** Remove todas as credenciais de seed armazenadas localmente. */
   fun clearCredentials() {
     prefs
         .edit()
@@ -96,11 +96,11 @@ class FirebaseSeedCredentialStore(context: Context) {
   }
 
   /**
-   * Executa a rotina de encrypt and save dentro do contexto deste componente.
+   * Criptografa [value] com AES/GCM e persiste dados cifrados e IV no SharedPreferences.
    *
-   * @param value Valor de entrada utilizado por esta operação.
-   * @param dataKey Valor de entrada utilizado por esta operação.
-   * @param ivKey Valor de entrada utilizado por esta operação.
+   * @param value Texto plano a ser criptografado.
+   * @param dataKey Chave do SharedPreferences para armazenar os bytes cifrados.
+   * @param ivKey Chave do SharedPreferences para armazenar o IV (Initialization Vector).
    */
   private fun encryptAndSave(value: String, dataKey: String, ivKey: String) {
     val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -112,11 +112,11 @@ class FirebaseSeedCredentialStore(context: Context) {
   }
 
   /**
-   * Executa a rotina de decrypt dentro do contexto deste componente.
+   * Descriptografa dados AES/GCM do SharedPreferences.
    *
-   * @param dataKey Valor de entrada utilizado por esta operação.
-   * @param ivKey Valor de entrada utilizado por esta operação.
-   * @return Resultado produzido pela operação em formato `String`.
+   * @param dataKey Chave do SharedPreferences contendo os bytes cifrados.
+   * @param ivKey Chave do SharedPreferences contendo o IV.
+   * @return Texto descriptografado, ou string vazia se ausente ou corrompido.
    */
   private fun decrypt(dataKey: String, ivKey: String): String {
     val encryptedBase64 = prefs.getString(dataKey, null) ?: return ""
@@ -133,9 +133,9 @@ class FirebaseSeedCredentialStore(context: Context) {
   }
 
   /**
-   * Obtém dados necessários para or create secret key de forma consistente.
+   * Obtém ou cria a chave AES-256 no Android Keystore para cifra de credenciais.
    *
-   * @return Resultado produzido pela operação em formato `SecretKey`.
+   * @return Chave simétrica AES-256 gerenciada pelo hardware do dispositivo.
    */
   private fun getOrCreateSecretKey(): SecretKey {
     val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
