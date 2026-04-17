@@ -22,11 +22,12 @@ class AppRepositoryRecentActivitiesTest {
   fun `observeRecentActivitiesPaged deve mapear apenas a pagina solicitada`() = runTest {
     val dao = mock<AppDao>()
     val database = mock<AppDatabase>()
-    whenever(dao.observeRecentActivitiesPaged(limit = 10, offset = 20))
+    whenever(dao.observeRecentActivitiesPaged(companyId = 1, limit = 10, offset = 20))
         .thenReturn(
             flowOf(
                 listOf(
                     RecentActivityEntity(
+                        companyId = 1,
                         id = 21,
                         title = "Curso atualizado",
                         subtitle = "Turma A",
@@ -34,6 +35,7 @@ class AppRepositoryRecentActivitiesTest {
                         timeLabel = "Agora",
                     ),
                     RecentActivityEntity(
+                        companyId = 1,
                         id = 22,
                         title = "Novo aluno",
                         subtitle = "João Silva",
@@ -45,7 +47,8 @@ class AppRepositoryRecentActivitiesTest {
         )
 
     val repository = AppRepository(database = database, dao = dao)
-    val result = repository.observeRecentActivitiesPaged(limit = 10, offset = 20).first()
+    val result =
+        repository.observeRecentActivitiesPaged(companyId = 1, limit = 10, offset = 20).first()
 
     assertEquals(2, result.size)
     assertEquals(21, result[0].id)
@@ -53,19 +56,19 @@ class AppRepositoryRecentActivitiesTest {
     assertEquals(Icons.AutoMirrored.Outlined.MenuBook, result[0].icon)
     assertEquals(22, result[1].id)
     assertEquals(Icons.Outlined.Person, result[1].icon)
-    verify(dao).observeRecentActivitiesPaged(limit = 10, offset = 20)
+    verify(dao).observeRecentActivitiesPaged(companyId = 1, limit = 10, offset = 20)
   }
 
   @Test
   fun `observeRecentActivitiesCount deve refletir total reativo do DAO`() = runTest {
     val dao = mock<AppDao>()
     val database = mock<AppDatabase>()
-    whenever(dao.observeRecentActivitiesCount()).thenReturn(flowOf(137))
+    whenever(dao.observeRecentActivitiesCount(companyId = 1)).thenReturn(flowOf(137))
 
     val repository = AppRepository(database = database, dao = dao)
-    val total = repository.observeRecentActivitiesCount().first()
+    val total = repository.observeRecentActivitiesCount(companyId = 1).first()
 
     assertEquals(137, total)
-    verify(dao).observeRecentActivitiesCount()
+    verify(dao).observeRecentActivitiesCount(companyId = 1)
   }
 }
