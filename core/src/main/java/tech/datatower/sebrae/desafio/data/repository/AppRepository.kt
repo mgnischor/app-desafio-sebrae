@@ -149,18 +149,34 @@ class AppRepository(
 
   // ── Company ─────────────────────────────────────────────────────────────
 
+  /** Observa todas as empresas cadastradas no banco local. */
   fun observeCompanies(): Flow<List<Company>> =
       dao.observeCompanies().map { items -> items.map { it.toModel() } }
 
+  /** Observa apenas as empresas cuja flag `isActive` esteja ativa. */
   fun observeActiveCompanies(): Flow<List<Company>> =
       dao.observeActiveCompanies().map { items -> items.map { it.toModel() } }
 
+  /**
+   * Observa a empresa identificada por [companyId].
+   *
+   * @param companyId Identificador da empresa.
+   * @return [Flow] que emite a empresa ou `null` se não existir.
+   */
   fun observeCompanyById(companyId: Int): Flow<Company?> =
       dao.observeCompanyById(companyId).map { it?.toModel() }
 
+  /** Observa as empresas às quais o usuário [userId] tem acesso. */
   fun observeCompaniesForUser(userId: Int): Flow<List<Company>> =
       dao.observeCompaniesForUser(userId).map { items -> items.map { it.toModel() } }
 
+  /**
+   * Cria ou atualiza uma empresa. Apenas administradores podem executar esta operação.
+   *
+   * @param requester Usuário que solicita a operação.
+   * @param company Dados da empresa a cadastrar ou atualizar.
+   * @throws SecurityException Quando o [requester] não é administrador.
+   */
   suspend fun upsertCompanyForAdmin(requester: AppUser?, company: Company) {
     if (requester?.role != UserRole.ADMINISTRADOR) {
       throw SecurityException("Apenas administrador pode cadastrar empresas.")
@@ -168,6 +184,13 @@ class AppRepository(
     dao.upsertCompany(company.toEntity())
   }
 
+  /**
+   * Remove uma empresa e seus vínculos de acesso. Apenas administradores podem executar.
+   *
+   * @param requester Usuário que solicita a operação.
+   * @param companyId Identificador da empresa a remover.
+   * @throws SecurityException Quando o [requester] não é administrador.
+   */
   suspend fun deleteCompanyForAdmin(requester: AppUser?, companyId: Int) {
     if (requester?.role != UserRole.ADMINISTRADOR) {
       throw SecurityException("Apenas administrador pode remover empresas.")
@@ -180,12 +203,22 @@ class AppRepository(
 
   // ── User ↔ Company ────────────────────────────────────────────────────
 
+  /** Observa os vínculos empresa–usuário para o [userId] informado. */
   fun observeUserCompanies(userId: Int): Flow<List<UserCompanyEntity>> =
       dao.observeUserCompanies(userId)
 
+  /** Observa os IDs de usuários vinculados à empresa [companyId]. */
   fun observeUserIdsByCompany(companyId: Int): Flow<Set<Int>> =
       dao.observeUserIdsByCompany(companyId).map { it.toSet() }
 
+  /**
+   * Concede acesso de um usuário a uma empresa. Apenas administradores podem executar.
+   *
+   * @param requester Usuário que solicita a operação.
+   * @param userId Identificador do usuário que receberá acesso.
+   * @param companyId Identificador da empresa alvo.
+   * @throws SecurityException Quando o [requester] não é administrador.
+   */
   suspend fun grantUserCompanyAccess(requester: AppUser?, userId: Int, companyId: Int) {
     if (requester?.role != UserRole.ADMINISTRADOR) {
       throw SecurityException("Apenas administrador pode conceder acesso a empresas.")
@@ -196,6 +229,14 @@ class AppRepository(
     }
   }
 
+  /**
+   * Revoga o acesso de um usuário a uma empresa. Apenas administradores podem executar.
+   *
+   * @param requester Usuário que solicita a operação.
+   * @param userId Identificador do usuário cujo acesso será revogado.
+   * @param companyId Identificador da empresa alvo.
+   * @throws SecurityException Quando o [requester] não é administrador.
+   */
   suspend fun revokeUserCompanyAccess(requester: AppUser?, userId: Int, companyId: Int) {
     if (requester?.role != UserRole.ADMINISTRADOR) {
       throw SecurityException("Apenas administrador pode revogar acesso a empresas.")
@@ -205,6 +246,10 @@ class AppRepository(
 
   // ── Courses (filtered by company) ─────────────────────────────────────
 
+  /**
+   * Observa cursos da empresa [companyId], enriquecendo `totalStudents` com base nas matrículas
+   * reais.
+   */
   fun observeCourses(companyId: Int): Flow<List<Course>> =
       combine(dao.observeCourses(companyId), dao.observeStudents(companyId)) {
           courseEntities,
@@ -217,6 +262,7 @@ class AppRepository(
         }
       }
 
+  /** Observa todos os cursos de todas as empresas (visão de administrador). */
   fun observeAllCourses(): Flow<List<Course>> =
       combine(dao.observeAllCourses(), dao.observeAllStudents()) { courseEntities, studentEntities
         ->
@@ -228,9 +274,11 @@ class AppRepository(
         }
       }
 
+  /** Observa um curso específico pelo [courseId]. */
   fun observeCourseById(courseId: Int): Flow<Course?> =
       dao.observeCourseById(courseId).map { it?.toModel() }
 
+  /** Observa curso por [courseId] com contagem real de alunos na empresa [companyId]. */
   fun observeCourseByIdWithStudents(courseId: Int, companyId: Int): Flow<Course?> =
       combine(dao.observeCourseById(courseId), dao.observeStudents(companyId)) {
           courseEntity,
@@ -243,6 +291,7 @@ class AppRepository(
 
   // ── Classes (filtered by company) ─────────────────────────────────────
 
+  /** Observa turmas da empresa [companyId], enriquecendo `studentsCount` com matrículas reais. */
   fun observeClasses(companyId: Int): Flow<List<SchoolClass>> =
       combine(dao.observeClasses(companyId), dao.observeStudents(companyId)) {
           classEntities,
@@ -255,6 +304,7 @@ class AppRepository(
         }
       }
 
+  /** Observa todas as turmas de todas as empresas (visão de administrador). */
   fun observeAllClasses(): Flow<List<SchoolClass>> =
       combine(dao.observeAllClasses(), dao.observeAllStudents()) { classEntities, studentEntities ->
         val students = studentEntities.map { it.toModel() }
@@ -265,6 +315,7 @@ class AppRepository(
         }
       }
 
+  /** Observa turma por [classId] com contagem real de alunos na empresa [companyId]. */
   fun observeClassById(classId: Int, companyId: Int): Flow<SchoolClass?> =
       combine(dao.observeClassById(classId), dao.observeStudents(companyId)) {
           classEntity,
@@ -275,9 +326,11 @@ class AppRepository(
         model.copy(studentsCount = realByClass[model.name.trim()].orZero())
       }
 
+  /** Observa turmas vinculadas ao curso [courseName] na empresa [companyId]. */
   fun observeClassesByCourse(companyId: Int, courseName: String): Flow<List<SchoolClass>> =
       dao.observeClassesByCourse(companyId, courseName).map { items -> items.map { it.toModel() } }
 
+  /** Observa turmas associadas ao instrutor [teacherName] na empresa [companyId]. */
   fun observeClassesByTeacher(companyId: Int, teacherName: String): Flow<List<SchoolClass>> =
       dao.observeClassesByTeacher(companyId, teacherName).map { items ->
         items.map { it.toModel() }
@@ -285,6 +338,10 @@ class AppRepository(
 
   // ── Teachers (filtered by company) ────────────────────────────────────
 
+  /**
+   * Observa instrutores da empresa [companyId], enriquecendo `activeCourses` e `totalStudents` com
+   * dados reais calculados via [RelationshipRules].
+   */
   fun observeTeachers(companyId: Int): Flow<List<Teacher>> =
       combine(
           dao.observeTeachers(companyId),
@@ -304,6 +361,7 @@ class AppRepository(
         }
       }
 
+  /** Observa todos os instrutores de todas as empresas (visão de administrador). */
   fun observeAllTeachers(): Flow<List<Teacher>> =
       combine(
           dao.observeAllTeachers(),
@@ -323,48 +381,59 @@ class AppRepository(
         }
       }
 
+  /** Observa um instrutor específico pelo [teacherId]. */
   fun observeTeacherById(teacherId: Int): Flow<Teacher?> =
       dao.observeTeacherById(teacherId).map { it?.toModel() }
 
   // ── Students (filtered by company) ────────────────────────────────────
 
+  /** Observa alunos da empresa [companyId]. */
   fun observeStudents(companyId: Int): Flow<List<Student>> =
       dao.observeStudents(companyId).map { items -> items.map { it.toModel() } }
 
+  /** Observa todos os alunos de todas as empresas (visão de administrador). */
   fun observeAllStudents(): Flow<List<Student>> =
       dao.observeAllStudents().map { items -> items.map { it.toModel() } }
 
+  /** Observa alunos vinculados ao responsável [guardianUserId] na empresa [companyId]. */
   fun observeStudentsByGuardian(guardianUserId: Int, companyId: Int): Flow<List<Student>> =
       dao.observeStudentsByGuardian(guardianUserId, companyId).map { items ->
         items.map { it.toModel() }
       }
 
+  /** Observa alunos matriculados na turma [className] da empresa [companyId]. */
   fun observeStudentsByClass(companyId: Int, className: String): Flow<List<Student>> =
       dao.observeStudentsByClass(companyId, className).map { items -> items.map { it.toModel() } }
 
   // ── Certificates (filtered by company) ────────────────────────────────
 
+  /** Observa certificados emitidos na empresa [companyId]. */
   fun observeCertificates(companyId: Int): Flow<List<Certificate>> =
       dao.observeCertificates(companyId).map { items -> items.map { it.toModel() } }
 
+  /** Observa todos os certificados de todas as empresas (visão de administrador). */
   fun observeAllCertificates(): Flow<List<Certificate>> =
       dao.observeAllCertificates().map { items -> items.map { it.toModel() } }
 
   // ── Calendar Events (filtered by company) ─────────────────────────────
 
+  /** Observa eventos de calendário da empresa [companyId], ordenados cronologicamente. */
   fun observeCalendarEvents(companyId: Int): Flow<List<CalendarEvent>> =
       dao.observeCalendarEvents(companyId).map { items -> items.map { it.toModel() } }
 
   // ── Recent Activities (filtered by company) ───────────────────────────
 
+  /** Observa todas as atividades recentes da empresa [companyId]. */
   fun observeRecentActivities(companyId: Int): Flow<List<RecentActivity>> =
       dao.observeRecentActivities(companyId).map { items -> items.map { it.toModel() } }
 
+  /** Observa as últimas [limit] atividades recentes da empresa [companyId]. */
   fun observeRecentActivities(companyId: Int, limit: Int): Flow<List<RecentActivity>> =
       dao.observeRecentActivitiesLimited(companyId, limit).map { items ->
         items.map { it.toModel() }
       }
 
+  /** Observa atividades recentes da empresa [companyId] com paginação [limit]/[offset]. */
   fun observeRecentActivitiesPaged(
       companyId: Int,
       limit: Int,
@@ -374,11 +443,13 @@ class AppRepository(
         items.map { it.toModel() }
       }
 
+  /** Observa a contagem total de atividades recentes na empresa [companyId]. */
   fun observeRecentActivitiesCount(companyId: Int): Flow<Int> =
       dao.observeRecentActivitiesCount(companyId)
 
   // ── Home Quick Stats (filtered by company) ────────────────────────────
 
+  /** Observa estatísticas rápidas (dashboard) da empresa [companyId]. */
   fun observeHomeQuickStats(companyId: Int): Flow<List<QuickStat>> =
       combine(
           dao.observeStudentsByStatusCount(companyId, StudentStatus.Active),
@@ -405,6 +476,7 @@ class AppRepository(
 
   // ── Report Summary (filtered by company) ──────────────────────────────
 
+  /** Observa indicadores agregados de relatórios da empresa [companyId]. */
   fun observeReportSummary(companyId: Int): Flow<ReportSummary> =
       combine(
           combine(
@@ -436,6 +508,7 @@ class AppRepository(
         )
       }
 
+  /** Observa métricas de taxa de conclusão por curso na empresa [companyId]. */
   fun observeCourseCompletionMetrics(companyId: Int): Flow<List<CourseCompletionMetric>> =
       dao.observeCourses(companyId).map { courses ->
         courses
@@ -443,11 +516,13 @@ class AppRepository(
             .sortedByDescending { it.rate }
       }
 
+  /** Observa evolução mensal de matrículas na empresa [companyId]. */
   fun observeMonthlyEnrollmentMetrics(companyId: Int): Flow<List<MonthlyEnrollmentMetric>> =
       dao.observeMonthlyEnrollments(companyId).map { items ->
         items.map { MonthlyEnrollmentMetric(month = it.month, count = it.count) }
       }
 
+  /** Observa distribuição de alunos por status acadêmico na empresa [companyId]. */
   fun observeStatusDistribution(companyId: Int): Flow<List<StatusDistributionMetric>> =
       combine(
           dao.observeStudentsByStatusCount(companyId, StudentStatus.Active),
@@ -463,6 +538,10 @@ class AppRepository(
 
   // ── Student Monitoring ────────────────────────────────────────────────
 
+  /**
+   * Observa o snapshot completo de acompanhamento do aluno [studentId], agregando frequência,
+   * comportamento, necessidades pedagógicas/psicológicas e contatos familiares.
+   */
   fun observeStudentMonitoringSnapshot(studentId: Int): Flow<StudentMonitoringSnapshot?> =
       combine(
           dao.observeStudentById(studentId),
@@ -589,22 +668,27 @@ class AppRepository(
 
   // ── CSV Bulk Import ───────────────────────────────────────────────────
 
+  /** Importa uma lista de alunos parseados de CSV para o banco local via inserção em lote. */
   suspend fun importStudents(entities: List<StudentEntity>) {
     dao.insertStudents(entities)
   }
 
+  /** Importa uma lista de cursos parseados de CSV para o banco local via inserção em lote. */
   suspend fun importCourses(entities: List<CourseEntity>) {
     dao.insertCourses(entities)
   }
 
+  /** Importa uma lista de turmas parseadas de CSV para o banco local via inserção em lote. */
   suspend fun importClasses(entities: List<SchoolClassEntity>) {
     dao.insertClasses(entities)
   }
 
+  /** Importa uma lista de instrutores parseados de CSV para o banco local via inserção em lote. */
   suspend fun importTeachers(entities: List<TeacherEntity>) {
     dao.insertTeachers(entities)
   }
 
+  /** Observa as configurações do aplicativo reativamente, fornecendo defaults quando inexistentes. */
   fun observeSettings(): Flow<AppSettings> =
       dao.observeSettings().map {
         if (it == null) {
@@ -621,9 +705,15 @@ class AppRepository(
 
   // ── Users ─────────────────────────────────────────────────────────────
 
+  /** Observa o usuário pelo [userId]. Retorna `null` se não encontrado. */
   fun observeUserById(userId: Int): Flow<AppUser?> =
       dao.observeUserById(userId).map { it?.toModel() }
 
+  /**
+   * Observa a lista de usuários cadastrados; disponível apenas para administradores e coordenadores.
+   *
+   * @param requester Usuário que solicita a operação; perfis sem permissão recebem lista vazia.
+   */
   fun observeRegisteredUsersForAdmin(requester: AppUser?): Flow<List<AppUser>> {
     return if (
         requester?.role == UserRole.ADMINISTRADOR || requester?.role == UserRole.COORDENADOR
@@ -634,6 +724,15 @@ class AppRepository(
     }
   }
 
+  /**
+   * Cria ou atualiza um usuário no sistema. Apenas administradores e coordenadores podem executar.
+   *
+   * @param requester Usuário que solicita a operação.
+   * @param user Dados do usuário a cadastrar ou atualizar.
+   * @param plainPassword Senha em texto plano (será hasheada antes de persistir).
+   * @throws SecurityException Quando o [requester] não possui permissão suficiente.
+   * @throws IllegalArgumentException Quando a [plainPassword] é vazia.
+   */
   suspend fun upsertRegisteredUserForAdmin(
       requester: AppUser?,
       user: AppUser,
@@ -650,21 +749,41 @@ class AppRepository(
 
   // ── Settings updates ──────────────────────────────────────────────────
 
+  /**
+   * Ativa ou desativa o modo escuro.
+   *
+   * @param enabled `true` para ativar o dark mode.
+   */
   suspend fun updateDarkMode(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(darkMode = enabled))
   }
 
+  /**
+   * Ativa ou desativa notificações push.
+   *
+   * @param enabled `true` para receber notificações push.
+   */
   suspend fun updatePushEnabled(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(pushEnabled = enabled))
   }
 
+  /**
+   * Ativa ou desativa notificações por e-mail.
+   *
+   * @param enabled `true` para receber notificações por e-mail.
+   */
   suspend fun updateEmailEnabled(enabled: Boolean) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(emailEnabled = enabled))
   }
 
+  /**
+   * Atualiza o idioma preferido do aplicativo.
+   *
+   * @param language Código ISO 639-1 do idioma (ex.: `"pt"`, `"en"`).
+   */
   suspend fun updateLanguage(language: String) {
     val current = dao.observeSettingsOnce()
     dao.upsertSettings((current ?: defaultSettingsEntity()).copy(language = language))
@@ -690,24 +809,15 @@ class AppRepository(
     }
   }
 
-  /** Executa o reset completo da base de dados local, preservando os usuários cadastrados. */
+  /**
+   * Executa o reset completo da base de dados local, preservando os usuários cadastrados.
+   *
+   * Delega internamente para [clearStoragePreservingUsers] já que a lógica é idêntica. Caso no
+   * futuro o reset precise remover dados adicionais (ex.: vínculos guardian-student), este método
+   * deve ser estendido de forma independente.
+   */
   suspend fun resetAllData() {
-    database.withTransaction {
-      dao.clearParentFollowUps()
-      dao.clearPsychologicalNeeds()
-      dao.clearPedagogicalNeeds()
-      dao.clearBehaviors()
-      dao.clearAttendance()
-      dao.clearMonthlyEnrollments()
-      dao.clearRecentActivities()
-      dao.clearCalendarEvents()
-      dao.clearCertificates()
-      dao.clearStudents()
-      dao.clearTeachers()
-      dao.clearClasses()
-      dao.clearCourses()
-      dao.upsertSettings(defaultSettingsEntity())
-    }
+    clearStoragePreservingUsers()
   }
 
   private fun defaultSettingsEntity() =
@@ -720,9 +830,11 @@ class AppRepository(
       )
 }
 
+/** Converte [CompanyEntity] para o modelo de domínio [Company]. */
 private fun CompanyEntity.toModel() =
     Company(id = id, name = name, cnpj = cnpj, isActive = isActive)
 
+/** Converte [Company] para [CompanyEntity] para persistência Room. */
 private fun Company.toEntity() =
     CompanyEntity(id = id, name = name, cnpj = cnpj, isActive = isActive)
 
@@ -883,6 +995,9 @@ private fun AppUser.toEntity(passwordHash: String) =
 
 /**
  * Calcula o hash SHA-256 hexadecimal da string fornecida para armazenamento seguro de senhas.
+ *
+ * **SEGURANÇA:** SHA-256 puro (sem salt) é vulnerável a ataques de rainbow table. Em produção,
+ * substituir por bcrypt, scrypt ou PBKDF2 com salt aleatório por usuário.
  *
  * @param input Valor a ser hasheado.
  * @return Hash SHA-256 em representação hexadecimal minúscula.
