@@ -58,11 +58,14 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.UnfoldMore
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -72,8 +75,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -99,7 +105,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import tech.datatower.sebrae.desafio.core.R
+import tech.datatower.sebrae.desafio.data.auth.AccessPolicy
 import tech.datatower.sebrae.desafio.data.auth.AuthManager
+import tech.datatower.sebrae.desafio.data.auth.ProtectedAction
+import tech.datatower.sebrae.desafio.data.auth.ProtectedResource
 import tech.datatower.sebrae.desafio.data.model.AppUser
 import tech.datatower.sebrae.desafio.data.model.MenuModule
 import tech.datatower.sebrae.desafio.data.model.QuickStat
@@ -150,9 +159,27 @@ fun HomeScreen(
       remember(user?.role) {
         RealtimeNotificationRules.canReceiveBackofficeNotifications(user?.role)
       }
+  val canSyncData =
+      remember(user?.role) {
+        AccessPolicy.can(user?.role, ProtectedResource.Settings, ProtectedAction.ManualSync)
+      }
   val stats by viewModel.stats.collectAsState()
   val recents by viewModel.recentActivities.collectAsState()
+  val syncState by viewModel.syncState.collectAsState()
   var query by rememberSaveable { mutableStateOf("") }
+  var showSyncConfirmDialog by rememberSaveable { mutableStateOf(false) }
+  val snackbarHostState = remember { SnackbarHostState() }
+  val syncSuccessMessage = stringResource(R.string.settings_sync_success)
+  val syncErrorMessage = stringResource(R.string.settings_sync_error)
+
+  // React to sync state changes
+  LaunchedEffect(syncState) {
+    when (syncState) {
+      is HomeViewModel.SyncState.Success -> snackbarHostState.showSnackbar(syncSuccessMessage)
+      is HomeViewModel.SyncState.Error -> snackbarHostState.showSnackbar(syncErrorMessage)
+      else -> Unit
+    }
+  }
 
   LaunchedEffect(user?.id, user?.role) { viewModel.observeRealtimeActivities(user) }
 
@@ -199,11 +226,15 @@ fun HomeScreen(
             notificationCount = notificationCount,
             companyName = currentCompany?.name,
             showCompanySwitcher = userCompanies.size > 1,
+            canSyncData = canSyncData,
+            syncState = syncState,
+            onSyncClick = { showSyncConfirmDialog = true },
             onCompanySwitcherClick = onOpenCompanySelector,
             onNotificationsClick = onNotificationsClick,
             onLogout = onLogout,
         )
       },
+      snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       containerColor = MaterialTheme.colorScheme.background,
   ) { innerPadding ->
     LazyColumn(
@@ -212,9 +243,9 @@ fun HomeScreen(
     ) {
 
       // ── Greeting + search ──────────────────────────────────────────
-      item { GreetingSection(userName = user?.name ?: "") }
+      item(key = "greeting") { GreetingSection(userName = user?.name ?: "") }
 
-      item {
+      item(key = "search") {
         SearchBar(
             query = query,
             onQueryChange = { query = it },
@@ -222,24 +253,24 @@ fun HomeScreen(
       }
 
       // ── Quick stats ───────────────────────────────────────────────
-      item {
+      item(key = "stats_title") {
         SectionTitle(
             text = stringResource(R.string.section_overview),
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
         )
       }
 
-      item { StatsRow(stats = stats) }
+      item(key = "stats_row") { StatsRow(stats = stats) }
 
       // ── Modules grid ──────────────────────────────────────────────
-      item {
+      item(key = "modules_title") {
         SectionTitle(
             text = stringResource(R.string.section_modules),
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp),
         )
       }
 
-      item {
+      item(key = "modules_grid") {
         ModulesGrid(
             modules = filteredModules,
             onModuleClick = onModuleClick,
@@ -247,7 +278,7 @@ fun HomeScreen(
       }
 
       // ── Recent activity ───────────────────────────────────────────
-      item {
+      item(key = "recents_header") {
         Row(
             modifier =
                 Modifier.fillMaxWidth()
@@ -271,7 +302,7 @@ fun HomeScreen(
       }
 
       if (homeRecents.isEmpty()) {
-        item {
+        item(key = "recents_empty") {
           Text(
               text = stringResource(R.string.recent_empty),
               style = MaterialTheme.typography.bodyMedium,
@@ -293,6 +324,30 @@ fun HomeScreen(
       }
     }
   }
+
+  // ── Sync confirmation dialog ──────────────────────────────────────
+  if (showSyncConfirmDialog) {
+    AlertDialog(
+        onDismissRequest = { showSyncConfirmDialog = false },
+        title = { Text(stringResource(R.string.settings_sync_confirm_title)) },
+        text = { Text(stringResource(R.string.settings_sync_confirm_message)) },
+        confirmButton = {
+          TextButton(
+              onClick = {
+                showSyncConfirmDialog = false
+                viewModel.syncData()
+              }
+          ) {
+            Text(stringResource(R.string.settings_sync_action))
+          }
+        },
+        dismissButton = {
+          TextButton(onClick = { showSyncConfirmDialog = false }) {
+            Text(stringResource(R.string.back))
+          }
+        },
+    )
+  }
 }
 
 // ── TopAppBar ─────────────────────────────────────────────────────────────────
@@ -312,6 +367,9 @@ private fun HomeTopBar(
     notificationCount: Int,
     companyName: String? = null,
     showCompanySwitcher: Boolean = false,
+    canSyncData: Boolean = false,
+    syncState: HomeViewModel.SyncState = HomeViewModel.SyncState.Idle,
+    onSyncClick: () -> Unit = {},
     onCompanySwitcherClick: () -> Unit = {},
     onNotificationsClick: () -> Unit,
     onLogout: () -> Unit,
@@ -376,6 +434,24 @@ private fun HomeTopBar(
         }
       },
       actions = {
+        if (canSyncData) {
+          val isSyncing = syncState is HomeViewModel.SyncState.Loading
+          IconButton(onClick = onSyncClick, enabled = !isSyncing) {
+            if (isSyncing) {
+              CircularProgressIndicator(
+                  modifier = Modifier.size(20.dp),
+                  strokeWidth = 2.dp,
+                  color = MaterialTheme.colorScheme.primary,
+              )
+            } else {
+              Icon(
+                  imageVector = Icons.Outlined.Sync,
+                  contentDescription = stringResource(R.string.settings_item_sync),
+                  tint = MaterialTheme.colorScheme.primary,
+              )
+            }
+          }
+        }
         BadgedBox(
             badge = {
               if (notificationCount > 0) {
@@ -609,10 +685,13 @@ private fun ModulesGrid(
   if (modules.isEmpty()) return
 
   // Fixed-height grid (avoids nested scroll issues inside LazyColumn)
-  val rows = (modules.size + 1) / 2
   val cardHeight = 100.dp
   val verticalSpacing = 12.dp
-  val gridHeight = cardHeight * rows + verticalSpacing * (rows - 1).coerceAtLeast(0)
+  val gridHeight =
+      remember(modules.size) {
+        val rows = (modules.size + 1) / 2
+        cardHeight * rows + verticalSpacing * (rows - 1).coerceAtLeast(0)
+      }
 
   LazyVerticalGrid(
       columns = GridCells.Fixed(2),
