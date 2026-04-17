@@ -121,9 +121,14 @@ object AppGraph {
   /**
    * Vincula o usuário RESPONSAVEL de demonstração aos dois primeiros alunos disponíveis na empresa,
    * caso ainda não existam vínculos.
+   *
+   * Verifica vínculos existentes antes de inserir para evitar violação de restrição única em
+   * reinicializações do app.
    */
   private suspend fun seedGuardianStudentLinks(dao: AppDao) {
     val guardian = AuthManager.users.value.firstOrNull { it.role == UserRole.RESPONSAVEL } ?: return
+    val existingLinks = dao.getGuardianStudentLinksOnce(guardian.id)
+    if (existingLinks.isNotEmpty()) return
     val students = dao.getStudentsOnce()
     if (students.isEmpty()) return
     // Link guardian to first 2 students in the company
