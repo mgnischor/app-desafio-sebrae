@@ -32,6 +32,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -91,6 +92,22 @@ constructor(
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+  /** Estados possíveis da sincronização manual com o Firebase. */
+  sealed class SyncState {
+    data object Idle : SyncState()
+
+    data object Loading : SyncState()
+
+    data object Success : SyncState()
+
+    data class Error(val message: String) : SyncState()
+  }
+
+  private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
+
+  /** Estado atual da sincronização manual, observável pela UI. */
+  val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
+
   private val _isSyncing = MutableStateFlow(false)
   /**
    * `true` enquanto a sincronização com o Firebase está em andamento; oculta o botão de refresh na
@@ -109,6 +126,39 @@ constructor(
       _isSyncing.value = true
       syncScreenDataUseCase(ScreenDataScope.HOME)
       _isSyncing.value = false
+    }
+  }
+
+  /**
+   * Executa sincronização bidirecional completa entre Room e Firebase:
+   * 1. Envia dados locais para o Firestore (push).
+   * 2. Puxa todos os dados do Firestore para o cache local (pull).
+   *
+   * O estado da operação é exposto via [syncState].
+   */
+  fun syncData() {
+    if (_syncState.value is SyncState.Loading) return
+    viewModelScope.launch {
+      _syncState.value = SyncState.Loading
+      // Push: local → Firebase
+      val pushResult = dataConnectService.seedAllCollectionsFromLocalCache()
+      if (pushResult is FirebaseDataConnectService.Result.Error) {
+        _syncState.value = SyncState.Error(pushResult.message)
+        delay(4_000)
+        _syncState.value = SyncState.Idle
+        return@launch
+      }
+      // Pull: Firebase → local
+      val pullResult = dataConnectService.syncScope(ScreenDataScope.APP_STARTUP)
+      if (pullResult is FirebaseDataConnectService.Result.Error) {
+        _syncState.value = SyncState.Error(pullResult.message)
+        delay(4_000)
+        _syncState.value = SyncState.Idle
+        return@launch
+      }
+      _syncState.value = SyncState.Success
+      delay(3_000)
+      _syncState.value = SyncState.Idle
     }
   }
 
