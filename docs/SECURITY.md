@@ -85,10 +85,15 @@ Se nenhum perfil for encontrado, o login é **abortado** e a sessão Firebase é
 ### Papéis de Usuário
 
 ```
-PROFESSOR       → acesso mínimo (leitura de turmas/cursos/alunos, calendário, certificados)
-COORDENADOR     → acesso intermediário (criar/editar alunos, cursos, turmas, instrutores)
-ADMINISTRADOR   → acesso completo (inclui gestão de usuários, configurações avançadas)
+RESPONSAVEL         → acesso mínimo: visualiza apenas alunos vinculados via guardian_students
+PROFESSOR           → leitura de alunos, turmas, cursos, calendário, certificados
+ORIENTADOR_EDUCACIONAL → idem PROFESSOR + lançamento de acompanhamento pedagógico
+PSICOPEDAGOGO       → idem ORIENTADOR + acesso a dados psicológicos e pedagógicos
+COORDENADOR         → acesso intermediário (criar/editar alunos, cursos, turmas, instrutores)
+ADMINISTRADOR       → acesso completo (inclui gestão de usuários, configurações avançadas)
 ```
+
+Hierarquia: `ADMINISTRADOR` > `COORDENADOR` > `PSICOPEDAGOGO` > `ORIENTADOR_EDUCACIONAL` > `PROFESSOR` > `RESPONSAVEL`
 
 ### AccessPolicy — Regras Centralizadas
 
@@ -98,31 +103,41 @@ Todas as decisões de autorização passam pelo `AccessPolicy.can()`:
 fun can(role: UserRole?, resource: ProtectedResource, action: ProtectedAction): Boolean {
     if (role == null) return false  // sem sessão = sem acesso
     return when (role) {
-        UserRole.ADMINISTRADOR -> true
-        UserRole.COORDENADOR   -> coordinatorRules(resource, action)
-        UserRole.PROFESSOR     -> professorRules(resource, action)
+        UserRole.ADMINISTRADOR          -> true
+        UserRole.COORDENADOR            -> coordinatorRules(resource, action)
+        UserRole.PSICOPEDAGOGO          -> psicopedagogoRules(resource, action)
+        UserRole.ORIENTADOR_EDUCACIONAL -> orientadorRules(resource, action)
+        UserRole.PROFESSOR              -> professorRules(resource, action)
+        UserRole.RESPONSAVEL            -> responsavelRules(resource, action)
     }
 }
 ```
 
 ### Matriz de Permissões
 
-| Recurso | Ação | PROFESSOR | COORDENADOR | ADMINISTRADOR |
-|---|---|---|---|---|
-| Students | View | ✅ | ✅ | ✅ |
-| Students | Create / Update | ❌ | ✅ | ✅ |
-| Students | Deactivate / Reactivate | ❌ | ✅ | ✅ |
-| Students | LaunchStudentRecord | ✅ | ✅ | ✅ |
-| Students | Delete | ❌ | ❌ | ✅ |
-| Courses / Classes | View | ✅ | ✅ | ✅ |
-| Courses / Classes | Create / Update / Deactivate | ❌ | ✅ | ✅ |
-| Teachers | View | ❌ | ✅ | ✅ |
-| Teachers | Create / Update / Deactivate | ❌ | ✅ | ✅ |
-| Calendar | View | ✅ | ✅ | ✅ |
-| Calendar | Create | ❌ | ✅ | ✅ |
-| Settings | View / ChangeOwnPassword | ✅ | ✅ | ✅ |
-| Settings | ClearStorage | ❌ | ❌ | ✅ |
-| Users | Qualquer ação | ❌ | ❌ | ✅ |
+| Recurso | Ação | RESPONSAVEL | PROFESSOR | ORIENTADOR | PSICOPEDAGOGO | COORDENADOR | ADMINISTRADOR |
+|---|---|---|---|---|---|---|---|
+| Students | View | ✅* | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Students | Create / Update | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Students | Deactivate / Reactivate | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Students | LaunchStudentRecord | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Students | Delete | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| StudentMonitoring | View | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| StudentMonitoring | Create / Update | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Courses / Classes | View | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Courses / Classes | Create / Update / Deactivate | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Teachers | View | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Teachers | Create / Update / Deactivate | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Calendar | View | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Calendar | Create | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Settings | View / ChangeOwnPassword | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Settings | ManualSync | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Settings | ClearStorage / ResetDatabase | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Users | CreateCompanyUsers | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Users | Demais ações | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Companies | Qualquer ação | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+> \* `RESPONSAVEL` vê apenas alunos vinculados a si via tabela `guardian_students`.
 
 ### Aplicação na UI e no Serviço Remoto
 
