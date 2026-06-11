@@ -2,28 +2,37 @@
 
 ## Linguagem e Versão
 
-- **Kotlin 2.3.20** com compilação via **KSP 2.3.6** (sem KAPT)
-- **AGP 9.1.0** + Gradle com Version Catalogs (`libs.versions.toml`)
-- Target SDK / Compile SDK: Android mais recente configurado no AGP 9.1
+- **Kotlin 2.4.0** com compilação via **KSP 2.3.6** (sem KAPT)
+- **AGP 9.1.1** + Gradle com Version Catalogs (`libs.versions.toml`)
+- Target SDK / Compile SDK: Android 36 (configurado no AGP 9.1.1)
 
 ---
 
 ## Organização de Pacotes
 
-O código segue organização **por feature dentro de cada camada**:
+O código segue organização **multi-módulo**, com separação por camada dentro de cada módulo:
 
 ```
-data/
-  auth/       — autenticação e autorização
-  local/      — Room (entidades, DAOs, converters, DB)
-  model/      — modelos de domínio (imutáveis)
-  remote/     — integrações externas (Firebase)
-  repository/ — orquestração de fontes de dados
+app/                          — ponto de entrada; configuração Hilt e navegação
+  di/                         — AppModule (singletons Hilt)
+  navigation/                 — AppNavHost (grafo de rotas e argumentos)
+  data/repository/            — AppGraph (bridge Hilt/Compose)
 
-ui/
-  <feature>/  — uma pasta por tela/feature
-  components/ — componentes Compose reutilizáveis
-  theme/      — Color, Theme, Type
+core/                         — código compartilhado entre módulos
+  data/
+    auth/                     — autenticação, autorização e seleção de empresa
+    connectivity/             — observação reativa do estado de rede
+    local/                    — Room (entidades, DAOs, converters, DB)
+    model/                    — modelos de domínio (imutáveis, @Immutable)
+    remote/                   — integrações externas (Firebase)
+    repository/               — AppRepository (orquestração de fontes de dados)
+  domain/usecase/             — use cases reativos (ObserveXxxUseCase, SyncScreenDataUseCase)
+  ui/
+    components/               — componentes Compose reutilizáveis
+    theme/                    — Color, Theme, Type
+
+feature/<nome>/               — um módulo por feature (12 no total)
+  ui/<nome>/                  — Screen + ViewModel por tela
 ```
 
 ---
@@ -41,7 +50,7 @@ ui/
 | Repositórios | `<Contexto>Repository.kt` | `AppRepository.kt` |
 | Objeto singleton | `<Contexto>` + `object` | `AppGraph`, `AuthManager` |
 | Políticas de domínio | `<Contexto>Rules` | `EntityLifecycleRules`, `RelationshipRules` |
-| Rotas de navegação | `AppRoutes.kt` (object com constantes) | — |
+| Use Cases | `Observe<Entidade>UseCase.kt` | `ObserveStudentsUseCase.kt` |
 
 ### Variáveis e Funções
 
@@ -188,13 +197,16 @@ verdade para versões de bibliotecas:
 ```toml
 [versions]
 room = "2.8.4"
-hilt = "2.56.2"
-composeBom = "2026.03.00"
+hilt = "2.59.2"
+composeBom = "2026.05.01"
+navigationCompose = "2.9.8"
+vico = "3.2.2"
 
 [libraries]
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
 
 [plugins]
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
@@ -275,9 +287,8 @@ configurado para `HiltTestRunner` quando ViewModels injetados estiverem em escop
 
 ## Checklist de Melhorias de Código
 
-- [ ] **Introduzir ViewModels por feature**: remover a lógica de estado dos Composables e
-  centralizar em `ViewModel` com `StateFlow<UiState>`, seguindo a arquitetura UDF recomendada
-  pelo Android
+- [x] **Introduzir ViewModels por feature**: ViewModels com `@HiltViewModel` e `StateFlow<T>`
+  implementados em todos os módulos `feature/*`, separando lógica de estado da camada de UI
 - [x] **Eliminar acesso direto ao `AppGraph` em Activities**: `MainActivity` agora recebe
   `AppRepository` via `@Inject` gracias ao Hilt; composables ainda usam `AppGraph` como bridge
   até a migração para ViewModels
