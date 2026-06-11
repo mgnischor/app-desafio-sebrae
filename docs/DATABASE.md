@@ -76,6 +76,18 @@ Tabela associativa N:N entre usuários e empresas. Define quais empresas cada us
 
 ---
 
+### `guardian_students`
+
+Tabela associativa N:N entre responsáveis (`RESPONSAVEL`) e alunos. Permite filtrar alunos visíveis por responsável.
+
+| Coluna | Tipo Kotlin | Tipo SQL | Restrições |
+|---|---|---|---|
+| `id` | `Int` | INTEGER | PRIMARY KEY AUTOINCREMENT |
+| `guardianUserId` | `Int` | INTEGER | NOT NULL — FK lógica para `app_users.id` |
+| `studentId` | `Int` | INTEGER | NOT NULL — FK lógica para `students.id` |
+
+---
+
 ### `courses`
 
 Armazena os cursos oferecidos pela instituição.
@@ -334,7 +346,9 @@ Usuários da aplicação com hash de senha para autenticação local.
 | `role` | `UserRole` | TEXT | NOT NULL — via TypeConverter |
 | `passwordHash` | `String` | TEXT | NOT NULL — SHA-256 hex |
 
-`UserRole`: `PROFESSOR`, `COORDENADOR`, `ADMINISTRADOR`
+`UserRole`: `RESPONSAVEL`, `PROFESSOR`, `ORIENTADOR_EDUCACIONAL`, `PSICOPEDAGOGO`, `COORDENADOR`, `ADMINISTRADOR`
+
+> Hierarquia de acesso: ADMINISTRADOR > COORDENADOR > PSICOPEDAGOGO > ORIENTADOR_EDUCACIONAL > PROFESSOR > RESPONSAVEL
 
 ---
 
@@ -343,6 +357,8 @@ Usuários da aplicação com hash de senha para autenticação local.
 ```
 companies (id)  ──< user_companies (companyId)
 app_users (id)  ──< user_companies (userId)
+app_users (id)  ──< guardian_students (guardianUserId)
+students (id)   ──< guardian_students (studentId)
 
 companies (id)  ──< courses (companyId)
 companies (id)  ──< school_classes (companyId)
