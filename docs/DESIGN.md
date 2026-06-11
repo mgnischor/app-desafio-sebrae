@@ -135,16 +135,18 @@ Google Play Services em runtime.
 
 #### Módulos visíveis por papel
 
-| Módulo | PROFESSOR | COORDENADOR | ADMINISTRADOR |
-|---|---|---|---|
-| Alunos | ✅ | ✅ | ✅ |
-| Cursos | ✅ | ✅ | ✅ |
-| Turmas | ✅ | ✅ | ✅ |
-| Instrutores | ❌ | ✅ | ✅ |
-| Relatórios | ❌ | ✅ | ✅ |
-| Certificados | ✅ | ✅ | ✅ |
-| Calendário | ✅ | ✅ | ✅ |
-| Configurações | ✅ | ✅ | ✅ |
+| Módulo | RESPONSAVEL | PROFESSOR | ORIENTADOR | PSICOPEDAGOGO | COORDENADOR | ADMINISTRADOR |
+|---|---|---|---|---|---|---|
+| Alunos | ✅* | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cursos | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Turmas | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Instrutores | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Relatórios | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Certificados | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Calendário | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Configurações | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+> \* `RESPONSAVEL` vê apenas os alunos vinculados a si via `guardian_students`.
 
 ---
 
@@ -195,8 +197,7 @@ Tela com abas ou seções scrolláveis cobrindo:
 
 - Cards de métricas agregadas: alunos ativos, cursos ativos, total de turmas,
   taxa média de conclusão, certificados emitidos, avaliação média dos instrutores
-- Gráfico de matrículas mensais (`MonthlyEnrollmentMetric`)
-- Ranking de cursos por taxa de conclusão (`CourseCompletionMetric`)
+- Gráficos de barras (matrículas mensais) e de conclusão por curso implementados com **Vico 3.2.2**
 
 ---
 
@@ -206,6 +207,7 @@ Tela com abas ou seções scrolláveis cobrindo:
 - Toggle para notificações push (`pushEnabled`)
 - Toggle para notificações por e-mail (`emailEnabled`)
 - Seleção de idioma (pt / en / es)
+- Botão "Importar dados via CSV" — abre `CsvImportScreen` para carga em lote de registros
 - Botão "Gestão de Usuários" visível apenas para `ADMINISTRADOR`
 - Botão "Limpar armazenamento local" para `ADMINISTRADOR`
 
