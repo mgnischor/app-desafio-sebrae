@@ -253,8 +253,9 @@ através do campo `companyId`.
 
 - **ADMINISTRADOR** — acesso a todas as empresas ativas; pode criar, editar e excluir empresas;
   pode vincular/desvincular usuários a empresas.
-- **COORDENADOR / PROFESSOR** — acesso somente às empresas explicitamente vinculadas via
+- **COORDENADOR / PROFESSOR / ORIENTADOR_EDUCACIONAL / PSICOPEDAGOGO** — acesso somente às empresas explicitamente vinculadas via
   `user_companies`.
+- **RESPONSAVEL** — acesso apenas aos alunos vinculados via `guardian_students`; sem acesso a empresas.
 
 ### Fluxo de Seleção de Empresa
 
