@@ -12,17 +12,18 @@ com o padrão **Repository** e injeção de dependências via **Hilt**.
 
 | Camada | Tecnologia | Versão |
 |---|---|---|
-| Linguagem | Kotlin | 2.3.20 |
-| UI | Jetpack Compose (BOM) | 2026.03.00 |
+| Linguagem | Kotlin | 2.4.0 |
+| UI | Jetpack Compose (BOM) | 2026.05.01 |
 | Design System | Material 3 | via BOM |
-| Navegação | Navigation Compose | 2.9.7 |
+| Gráficos | Vico | 3.2.2 |
+| Navegação | Navigation Compose | 2.9.8 |
 | Banco local | Room | 2.8.4 |
-| Backend remoto | Firebase Firestore | 26.1.2 |
-| Autenticação | Firebase Auth | 24.0.1 |
+| Backend remoto | Firebase Firestore | 26.3.0 |
+| Autenticação | Firebase Auth | 24.1.0 |
 | Injeção de Dependências | Hilt | 2.59.2 |
 | Geração de código | KSP | 2.3.6 |
-| Coroutines | Kotlinx Coroutines | 1.10.2 |
-| Build | AGP | 9.1.0 |
+| Coroutines | Kotlinx Coroutines | 1.11.0 |
+| Build | AGP | 9.1.1 |
 
 ---
 
@@ -39,9 +40,15 @@ com o padrão **Repository** e injeção de dependências via **Hilt**.
                         │ coleta StateFlow / Flow
 ┌───────────────────────▼──────────────────────────────┐
 │                  Navigation Layer                    │
-│  AppNavHost  ·  AppRoutes                            │
+│  AppNavHost                                          │
 └───────────────────────┬──────────────────────────────┘
-                        │ callbacks / lambdas
+                        │ eventos / callbacks
+┌───────────────────────▼──────────────────────────────┐
+│                  Domain Layer                        │
+│  Use Cases (ObserveStudentsUseCase, etc.)            │
+│  SyncScreenDataUseCase · regras de negócio           │
+└───────────────────────┬──────────────────────────────┘
+                        │ Flow<T> / suspend fun
 ┌───────────────────────▼──────────────────────────────┐
 │                   Data Layer                         │
 │                                                      │
@@ -76,56 +83,65 @@ com o padrão **Repository** e injeção de dependências via **Hilt**.
 ## Módulos e Pacotes Principais
 
 ```
-tech.datatower.sebrae.desafio/
+:app  (tech.datatower.sebrae.desafio)
 ├── SebraeApplication.kt          # @HiltAndroidApp — pre-warm + bootstrap via AppGraph
 ├── MainActivity.kt               # @AndroidEntryPoint — @Inject AppRepository; aplica tema
-│
 ├── di/
 │   └── AppModule.kt              # @Module @InstallIn(SingletonComponent) — provê todos os singletons
-│
 ├── navigation/
-│   ├── AppNavHost.kt             # Declaração do NavHost com todas as rotas
-│   └── AppRoutes.kt              # Catálogo de rotas; args de navegação
-│
+│   └── AppNavHost.kt             # Declaração do NavHost com todas as rotas e argumentos
+└── data/repository/
+    └── AppGraph.kt               # @EntryPoint bridge — acesso ao grafo Hilt em contextos Compose
+
+:core  (tech.datatower.sebrae.desafio)
 ├── data/
-│   ├── model/                    # DTOs / modelos de domínio imutáveis
-│   ├── local/
-│   │   └── AppDatabase.kt        # Room: entidades, DAOs, converters, DB
-│   ├── remote/
-│   │   └── firebase/
-│   │       ├── FirebaseDataConnectService.kt   # Sync Firestore → Room
-│   │       ├── FirebaseRemoteBootstrapper.kt   # Bootstrap inicial
-│   │       ├── FirebaseScreenSyncPlanner.kt    # Escopo mínimo por tela
-│   │       └── FirebaseSeedCredentialStore.kt  # Credenciais cifradas (AES/GCM)
 │   ├── auth/
-│   │   ├── AuthManager.kt        # Login Firebase + fallback local
+│   │   ├── AuthManager.kt        # Login Firebase + fallback local + seleção de empresa
 │   │   └── AccessPolicy.kt       # RBAC — regras por papel e recurso
+│   ├── connectivity/
+│   │   ├── ConnectivityObserver.kt         # Interface de observação de rede
+│   │   └── NetworkConnectivityObserver.kt  # Implementação via ConnectivityManager
+│   ├── local/
+│   │   └── AppDatabase.kt        # Room: entidades, DAOs, converters, DB (versão 7)
+│   ├── model/                    # DTOs / modelos de domínio imutáveis (@Immutable)
+│   ├── remote/firebase/
+│   │   ├── FirebaseDataConnectService.kt   # Sync Firestore → Room
+│   │   ├── FirebaseRemoteBootstrapper.kt   # Bootstrap inicial
+│   │   ├── FirebaseScreenSyncPlanner.kt    # Escopo mínimo de dados por tela
+│   │   └── FirebaseSeedCredentialStore.kt  # Credenciais cifradas (AES-256/GCM + Keystore)
 │   └── repository/
-│       ├── AppRepository.kt      # Único repositório; expõe Flow<T>
-│       └── AppGraph.kt           # @EntryPoint bridge — acesso ao grafo Hilt em contextos Compose
-│
+│       └── AppRepository.kt      # Único repositório; expõe Flow<T>
+├── domain/usecase/               # Use cases reativos
+│   ├── ObserveStudentsUseCase.kt
+│   ├── ObserveCoursesUseCase.kt
+│   ├── ObserveClassesUseCase.kt
+│   ├── ObserveTeachersUseCase.kt
+│   ├── ObserveCertificatesUseCase.kt
+│   ├── ObserveCalendarEventsUseCase.kt
+│   └── SyncScreenDataUseCase.kt
 └── ui/
     ├── theme/                    # Color.kt, Theme.kt, Type.kt
-    ├── components/               # Componentes reutilizáveis (DetailScaffold, etc.)
-    ├── home/                     # HomeScreen, RecentActivitiesScreen
-    ├── login/                    # LoginScreen
-    ├── students/                 # StudentsScreen, StudentCreateScreen, StudentMonitoringScreen
-    ├── courses/                  # CoursesScreen, CourseCreateScreen, CourseDetailScreen
-    ├── classes/                  # ClassesScreen, ClassCreateScreen, ClassDetailScreen
-    ├── teachers/                 # TeachersScreen, TeacherCreateScreen, TeacherDetailScreen
-    ├── reports/                  # ReportsScreen
-    ├── certificates/             # CertificatesScreen
-    ├── calendar/                 # CalendarScreen
-    ├── settings/                 # SettingsScreen
-    ├── users/                    # UserManagementScreen
-    └── companies/                # CompanyManagementScreen, CompanyDetailScreen, CompanySelectorScreen
+    └── components/               # Componentes reutilizáveis (DetailScaffold, EmptyState, etc.)
+
+:feature:login      → LoginScreen, LoginViewModel
+:feature:home       → HomeScreen, HomeViewModel, RecentActivitiesScreen, RecentActivitiesViewModel
+:feature:students   → StudentsScreen, StudentCreateScreen, StudentMonitoringScreen + ViewModels
+:feature:courses    → CoursesScreen, CourseCreateScreen, CourseDetailScreen + ViewModels
+:feature:classes    → ClassesScreen, ClassCreateScreen, ClassDetailScreen + ViewModels
+:feature:teachers   → TeachersScreen, TeacherCreateScreen, TeacherDetailScreen + ViewModels
+:feature:companies  → CompanyManagementScreen, CompanyDetailScreen, CompanySelectorScreen + ViewModels
+:feature:reports    → ReportsScreen + ViewModel
+:feature:certificates → CertificatesScreen + ViewModel
+:feature:calendar   → CalendarScreen + ViewModel
+:feature:settings   → SettingsScreen, CsvImportScreen + ViewModels
+:feature:users      → UserManagementScreen, UserProfileScreen + ViewModels
 ```
 
 ---
 
 ## Injeção de Dependências (Hilt)
 
-O projeto utiliza **Hilt** (`com.google.dagger:hilt-android:2.56.2`) para gerenciar o ciclo de vida
+O projeto utiliza **Hilt** (`com.google.dagger:hilt-android:2.59.2`) para gerenciar o ciclo de vida
 de todas as dependências singleton da camada de dados. O processamento de anotações é feito via
 **KSP** (sem KAPT).
 
@@ -277,8 +293,8 @@ val data = companyId.filterNotNull().flatMapLatest { cid ->
 ## Single Activity + Compose Navigation
 
 A aplicação possui **uma única Activity** (`MainActivity`). Toda a navegação é declarativa via
-`NavHost`. As rotas são definidas como constantes tipadas em `AppRoutes`, com argumentos
-inteiros passados via path parameter (`{studentId}`, `{courseId}`, etc.).
+`NavHost`. As rotas e seus argumentos estão definidos diretamente em `AppNavHost.kt`, com
+argumentos inteiros passados via path parameter (`{studentId}`, `{courseId}`, etc.).
 
 A tela de login é o `startDestination`. Após autenticação bem-sucedida, o back-stack do login
 é limpo com `popUpTo(LOGIN) { inclusive = true }`, impedindo que o usuário volte para ela.
