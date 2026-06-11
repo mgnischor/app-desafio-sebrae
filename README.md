@@ -34,59 +34,77 @@ As funcionalidades são expostas por módulos navegáveis na Home e por rotas ce
 - **Cursos**: listagem, cadastro e detalhamento
 - **Turmas**: listagem, cadastro e detalhamento
 - **Instrutores**: listagem, cadastro e detalhamento
+- **Empresas**: listagem e detalhamento
 - **Relatórios**
 - **Certificados**
 - **Calendário**
-- **Configurações**
+- **Configurações** com importação de dados via CSV
 - **Gestão de usuários** (acesso administrativo)
 
 ## Arquitetura do projeto
-A arquitetura é organizada em camadas com separação clara entre UI, navegação, regras de dados, persistência local e integração remota.
+O projeto adota uma estrutura **multi-módulo** com separação clara entre UI, navegação, regras de domínio, persistência local e integração remota. Os módulos são:
+
+- **`app`** — ponto de entrada, configuração Hilt, grafo de navegação
+- **`core`** — código compartilhado: dados, domínio, componentes de UI e tema
+- **`feature/*`** — módulos de funcionalidade independentes (login, home, students, courses, classes, teachers, companies, reports, certificates, calendar, settings, users)
 
 ### 1) Camada de apresentação (UI)
-Implementada com **Jetpack Compose**, responsável por renderização, interação e navegação entre telas.
+Implementada com **Jetpack Compose**, responsável por renderização, interação e navegação entre telas. Cada módulo `feature` contém seus próprios `Screen` e `ViewModel`.
 
-- Pacotes: `ui/*`
-- Navegação: `navigation/AppNavHost.kt` e `navigation/AppRoutes.kt`
+- Navegação centralizada: `app/navigation/AppNavHost.kt`
+- Componentes e tema compartilhados: `core/ui/`
 
-### 2) Camada de domínio/modelos
-Modelos de dados imutáveis que representam as entidades do app (aluno, curso, turma, usuário etc.).
+### 2) Camada de domínio
+Use cases reativos que encapsulam regras de negócio e expõem `Flow` para a UI.
 
-- Pacote: `data/model/*`
+- Pacote: `core/domain/usecase/`
+- Exemplos: `ObserveStudentsUseCase`, `ObserveCoursesUseCase`, `SyncScreenDataUseCase`
 
 ### 3) Camada de dados
-Concentra regras de acesso e transformação de dados.
+Concentra regras de acesso e transformação de dados, localizada no módulo `core`.
 
-- **Repository**: `data/repository/AppRepository.kt`
+- **Repository**: `core/data/repository/AppRepository.kt`
   - Exposição de `Flow` para consumo reativo na UI
   - CRUD e composições de métricas
-- **Graph/Service Locator**: `data/repository/AppGraph.kt`
-  - Inicialização singleton de dependências
-  - Criação do banco Room e serviços remotos
+- **AppGraph**: `app/data/repository/AppGraph.kt`
+  - Acesso a dependências Hilt em contextos não-Hilt via `EntryPoint`
 
-### 4) Persistência local
+### 4) Injeção de dependências
+**Hilt** gerencia o ciclo de vida de todas as dependências singleton.
+
+- Módulo de DI: `app/di/AppModule.kt`
+
+### 5) Persistência local
 Persistência via **Room** + SQLite.
 
-- Banco e entidades: `data/local/AppDatabase.kt`
+- Banco e entidades: `core/data/local/AppDatabase.kt`
 - DAOs e consultas: `AppDao` no mesmo arquivo
 - Base local: `sebrae_local.db`
 
-### 5) Autenticação e dados remotos
+### 6) Monitoramento de conectividade
+Observação reativa do estado de rede do dispositivo.
+
+- `core/data/connectivity/ConnectivityObserver.kt`
+- `core/data/connectivity/NetworkConnectivityObserver.kt`
+
+### 7) Autenticação e dados remotos
 Integração com Firebase para autenticação e sincronização.
 
-- Autenticação: `data/auth/AuthManager.kt`
+- Autenticação: `core/data/auth/AuthManager.kt`
   - Fluxo principal com Firebase Auth
+  - Política de acesso por perfil: `AccessPolicy.kt`
   - Fallback local com credenciais seed para uso em ambiente local
-- Remoto: `data/remote/firebase/*`
+- Remoto: `core/data/remote/firebase/`
   - `FirebaseDataConnectService.kt`
   - `FirebaseRemoteBootstrapper.kt`
+  - `FirebaseScreenSyncPlanner.kt`
   - `FirebaseSeedCredentialStore.kt`
 
 ## Fluxos principais da aplicação
 
 ### Inicialização
-1. `SebraeApplication` chama `AppGraph.warmUp(...)`
-2. `AppGraph` inicializa repositório, Room e bootstrap remoto
+1. `SebraeApplication` inicializa o Hilt e chama `AppGraph.warmUp(...)`
+2. `AppGraph` acessa dependências via Hilt `EntryPoint` e dispara o bootstrap remoto
 3. `MainActivity` monta o Compose e inicia `AppNavHost`
 4. Rota inicial: `login`
 
@@ -104,24 +122,37 @@ Integração com Firebase para autenticação e sincronização.
 ## Estrutura de diretórios
 ```text
 app-desafio-sebrae/
-├── app/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/tech/datatower/sebrae/desafio/
-│   │   │   │   ├── data/
-│   │   │   │   │   ├── auth/
-│   │   │   │   │   ├── local/
-│   │   │   │   │   ├── model/
-│   │   │   │   │   ├── remote/
-│   │   │   │   │   └── repository/
-│   │   │   │   ├── navigation/
-│   │   │   │   ├── ui/
-│   │   │   │   ├── MainActivity.kt
-│   │   │   │   └── SebraeApplication.kt
-│   │   │   └── AndroidManifest.xml
-│   │   ├── test/         # testes unitários (JUnit4)
-│   │   └── androidTest/  # testes instrumentados
-│   └── build.gradle.kts
+├── app/                          # Módulo principal (entry point)
+│   └── src/main/java/tech/datatower/sebrae/desafio/
+│       ├── data/repository/      # AppGraph (EntryPoint Hilt)
+│       ├── di/                   # AppModule (Hilt)
+│       ├── navigation/           # AppNavHost.kt
+│       ├── MainActivity.kt
+│       └── SebraeApplication.kt
+├── core/                         # Módulo compartilhado
+│   └── src/main/java/tech/datatower/sebrae/desafio/
+│       ├── data/
+│       │   ├── auth/             # AuthManager, AccessPolicy
+│       │   ├── connectivity/     # ConnectivityObserver
+│       │   ├── local/            # AppDatabase, AppDao
+│       │   ├── model/            # Entidades de domínio
+│       │   ├── remote/firebase/  # Firebase services
+│       │   └── repository/       # AppRepository
+│       ├── domain/usecase/       # Use cases reativos
+│       └── ui/                   # Componentes e tema compartilhados
+├── feature/
+│   ├── calendar/
+│   ├── certificates/
+│   ├── classes/
+│   ├── companies/
+│   ├── courses/
+│   ├── home/
+│   ├── login/
+│   ├── reports/
+│   ├── settings/
+│   ├── students/
+│   ├── teachers/
+│   └── users/
 ├── gradle/
 │   └── libs.versions.toml
 ├── build.gradle.kts
@@ -130,14 +161,16 @@ app-desafio-sebrae/
 ```
 
 ## Tecnologias e dependências
-- **Kotlin** 2.3.20
-- **Android Gradle Plugin (AGP)** 9.1.0
-- **Jetpack Compose** (BOM 2026.03.00)
-- **Material 3**
-- **Navigation Compose**
+- **Kotlin** 2.4.0
+- **Android Gradle Plugin (AGP)** 9.1.1
+- **Jetpack Compose** (BOM 2026.05.01)
+- **Material 3** com Material Icons Extended
+- **Navigation Compose** 2.9.8
 - **Room** 2.8.4
-- **Firebase Auth** e **Firebase Firestore** (via Firebase BOM 34.11.0)
-- **Coroutines**
+- **Hilt** 2.59.2 (injeção de dependência)
+- **Firebase Auth** e **Firebase Firestore** (via Firebase BOM 34.14.1)
+- **Coroutines** 1.11.0
+- **Vico** 3.2.2 (gráficos e visualizações)
 - **JUnit 4** e Mockito para testes unitários
 
 As versões são centralizadas em `gradle/libs.versions.toml`.
